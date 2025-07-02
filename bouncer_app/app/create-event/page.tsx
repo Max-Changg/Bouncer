@@ -17,6 +17,7 @@ export default function CreateEvent() {
   const [endDate, setEndDate] = useState<Date | null>(new Date());
   const [timeZone, setTimeZone] = useState('America/Los_Angeles');
   const [additionalInfo, setAdditionalInfo] = useState('');
+  const [inviteLink, setInviteLink] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
   const supabase = createClientComponentClient();
@@ -79,14 +80,21 @@ export default function CreateEvent() {
           user_id: session.user.id,
           time_zone: timeZone
         },
-      ]);
+      ])
+      .select();
 
     if (error) {
       console.error('Error creating event:', error);
       setError(`Error: ${error.message}. Please check the database permissions.`);
     } else {
       console.log('Event created successfully:', data);
-      router.push('/event'); // Redirect to the event page
+      if (data && data.length > 0) {
+        const eventId = data[0].id;
+        setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
+        setStep(5); // Move to the next step to display the invite link
+      } else {
+        setError('Event created but no data returned.');
+      }
     }
   };
 
@@ -263,6 +271,31 @@ export default function CreateEvent() {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div>
+              <h1 className="text-4xl font-bold" style={{color: 'var(--foreground)'}}>Event Created!</h1>
+              <p className="mt-4 text-lg" style={{color: 'var(--foreground)'}}>Share this link with your guests:</p>
+              <input
+                type="text"
+                value={inviteLink}
+                readOnly
+                className="mt-2 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
+              />
+              <button
+                onClick={() => navigator.clipboard.writeText(inviteLink)}
+                className="mt-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Copy Invite Link
+              </button>
+              <button
+                onClick={() => router.push('/event')}
+                className="mt-4 ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Go to My Events
+              </button>
             </div>
           )}
         </main>
