@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import type { Session } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/database.types";
 
@@ -14,19 +15,35 @@ export default function Rsvp() {
   const searchParams = useSearchParams();
   const [eventId, setEventId] = useState<string | null>(null);
   const supabase = createClientComponentClient<Database>();
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      if (!session) {
+        router.push('/login'); // Redirect to login if not signed in
+      }
+    };
+    getSession();
+
     const id = searchParams.get('event_id');
     if (id) {
       setEventId(id);
     }
-  }, [searchParams]);
+  }, [supabase.auth, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!eventId) {
       console.error("Event ID not found in URL.");
+      return;
+    }
+
+    if (!session) {
+      console.error("User not authenticated.");
+      router.push('/login');
       return;
     }
 
@@ -38,6 +55,7 @@ export default function Rsvp() {
           email,
           status,
           event_id: Number(eventId),
+          user_id: session.user.id, // Associate RSVP with the logged-in user
         },
       ])
       .select();
@@ -48,6 +66,10 @@ export default function Rsvp() {
       router.push("/event");
     }
   };
+
+  if (!session) {
+    return <div>Loading...</div>; // Or a loading spinner
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">

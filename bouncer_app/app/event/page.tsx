@@ -10,6 +10,8 @@ import type { Database } from '@/lib/database.types';
 export default function Event() {
   const [session, setSession] = useState<Session | null>(null);
   const [events, setEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [sortBy, setSortBy] = useState<'start_date' | 'name'>('start_date'); // Default sort by date
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default ascending
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -22,19 +24,20 @@ export default function Event() {
       if (!session) {
         router.push('/login');
       } else {
-        fetchEvents(session.user.id);
+        fetchEvents(session.user.id, sortBy, sortOrder);
       }
     };
 
     getSession();
-  }, [supabase.auth, router]);
+  }, [supabase.auth, router, sortBy, sortOrder]);
 
-  const fetchEvents = async (userId: string) => {
+  const fetchEvents = async (userId: string, sortBy: 'start_date' | 'name', sortOrder: 'asc' | 'desc') => {
     setLoading(true);
     const { data, error } = await supabase
       .from('Events')
       .select('*, rsvps(*)')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .order(sortBy, { ascending: sortOrder === 'asc' });
 
     if (error) {
       console.error('Error fetching events:', error);
@@ -69,6 +72,29 @@ export default function Event() {
       <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
         <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
           <h1 className="text-4xl font-bold">My Events</h1>
+          <div className="flex gap-4 mb-4">
+            <label htmlFor="sortBy" className="block text-sm font-medium text-white-700">Sort by:</label>
+            <select
+              id="sortBy"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'start_date' | 'name')}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-black"
+            >
+              <option value="start_date">Start Date</option>
+              <option value="name">Event Name</option>
+            </select>
+
+            <label htmlFor="sortOrder" className="block text-sm font-medium text-white-700">Order:</label>
+            <select
+              id="sortOrder"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-black"
+            >
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </div>
           {events.length === 0 ? (
             <p>No events created yet. Create one from the home page!</p>
           ) : (
@@ -81,7 +107,7 @@ export default function Event() {
                   <p className="text-gray-600">End: {new Date(event.end_date).toLocaleString()}</p>
                   <p className="text-gray-600">Additional Info: {event.additional_info}</p>
                   <button
-                    onClick={() => handleShare(event.id)}
+                    onClick={() => handleShare(event.id.toString())}
                     className="mt-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     Share Invite

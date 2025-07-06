@@ -5,9 +5,17 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Session } from '@supabase/supabase-js';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import { format, toZonedTime } from 'date-fns-tz';
+import { ChevronDownIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function CreateEvent() {
   const [step, setStep] = useState(1);
@@ -15,6 +23,8 @@ export default function CreateEvent() {
   const [eventTheme, setEventTheme] = useState('');
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
+  const [startTime, setStartTime] = useState('10:00');
+  const [endTime, setEndTime] = useState('11:00');
   const [timeZone, setTimeZone] = useState('America/Los_Angeles');
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [inviteLink, setInviteLink] = useState('');
@@ -68,14 +78,26 @@ export default function CreateEvent() {
       return format(toZonedTime(date, tz), fmt, { timeZone: tz });
     };
 
+    // Combine date and time
+    const createDateTime = (date: Date | null, time: string) => {
+      if (!date) return null;
+      const [hours, minutes] = time.split(':').map(Number);
+      const combinedDate = new Date(date);
+      combinedDate.setHours(hours, minutes, 0, 0);
+      return combinedDate;
+    };
+
+    const startDateTime = createDateTime(startDate, startTime);
+    const endDateTime = createDateTime(endDate, endTime);
+
     const { data, error } = await supabase
       .from('Events')
       .insert([
         {
           name: eventName,
           theme: eventTheme,
-          start_date: startDate ? formatInTimeZone(startDate, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timeZone) : null,
-          end_date: endDate ? formatInTimeZone(endDate, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timeZone) : null,
+          start_date: startDateTime ? formatInTimeZone(startDateTime, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timeZone) : null,
+          end_date: endDateTime ? formatInTimeZone(endDateTime, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timeZone) : null,
           additional_info: additionalInfo,
           user_id: session.user.id,
           time_zone: timeZone
@@ -174,33 +196,71 @@ export default function CreateEvent() {
               <h1 className="text-4xl font-bold" style={{color: 'var(--foreground)'}}>When is your event?</h1>
               <form onSubmit={(e) => { e.preventDefault(); handleNext(() => { if (!startDate || !endDate) { setError('Start and end dates are required.'); return false; } return true; }); }} className="space-y-4 block text-sm font-medium">
                 <div className="flex gap-4">
-                  <div>
-                    <label htmlFor="startDate" className="block text-sm font-medium" style={{color: 'var(--foreground)'}}>
+                  <div className="flex flex-col gap-3">
+                    <Label htmlFor="start-date-picker" className="px-1">
                       Start Date and Time
-                    </label>
-                    <DatePicker
-                      selected={startDate}
-                      onChange={(date) => setStartDate(date)}
-                      showTimeSelect
-                      timeFormat="HH:mm"
-                      timeIntervals={15}
-                      dateFormat="MMMM d, yyyy h:mm aa"
-                      className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
-                    />
+                    </Label>
+                    <div className="flex gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            id="start-date-picker"
+                            className="w-40 justify-between font-normal"
+                          >
+                            {startDate ? startDate.toLocaleDateString() : "Select date"}
+                            <ChevronDownIcon />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                                                     <Calendar
+                             mode="single"
+                             selected={startDate || undefined}
+                             onSelect={(date) => setStartDate(date || null)}
+                           />
+                        </PopoverContent>
+                      </Popover>
+                      <Input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        step="60"
+                        className="w-a bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label htmlFor="endDate" className="block text-sm font-medium" style={{color: 'var(--foreground)'}}>
+                  <div className="flex flex-col gap-3">
+                    <Label htmlFor="end-date-picker" className="px-1">
                       End Date and Time
-                    </label>
-                    <DatePicker
-                      selected={endDate}
-                      onChange={(date) => setEndDate(date)}
-                      showTimeSelect
-                      timeFormat="HH:mm"
-                      timeIntervals={15}
-                      dateFormat="MMMM d, yyyy h:mm aa"
-                      className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
-                    />
+                    </Label>
+                    <div className="flex gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            id="end-date-picker"
+                            className="w-40 justify-between font-normal"
+                          >
+                            {endDate ? endDate.toLocaleDateString() : "Select date"}
+                            <ChevronDownIcon />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                                                     <Calendar
+                             mode="single"
+                             selected={endDate || undefined}
+                             onSelect={(date) => setEndDate(date || null)}
+                           />
+                        </PopoverContent>
+                      </Popover>
+                      <Input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        step="60"
+                        className="w-32 bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div>

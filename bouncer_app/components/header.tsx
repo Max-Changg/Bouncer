@@ -25,6 +25,7 @@ export default function Header({ session }: { session: Session | null }) {
                 <li><a href="/about" className="hover:underline">About</a></li>
                 <li><a href="/contact" className="hover:underline">Contact</a></li>
                 {session && <li><a href="/event" className="hover:underline">My Events</a></li>}
+                {session && <li><a href="/qr-code" className="hover:underline">My QR Code</a></li>}
                 {session && <li><button onClick={handleSignOut} className="hover:underline">Sign Out</button></li>}
             </ul>
             </nav>
