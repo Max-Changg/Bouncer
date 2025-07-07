@@ -3,7 +3,7 @@
 export interface Database {
   public: {
     Tables: {
-      events: {
+      Events: {
         Row: {
           id: number;
           name: string;

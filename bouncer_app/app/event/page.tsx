@@ -9,7 +9,7 @@ import type { Database } from '@/lib/database.types';
 
 export default function Event() {
   const [session, setSession] = useState<Session | null>(null);
-  const [events, setEvents] = useState<Database['public']['Tables']['events']['Row'][]>([]);
+  const [events, setEvents] = useState<Database['public']['Tables']['Events']['Row'][]>([]);
   const [sortBy, setSortBy] = useState<'start_date' | 'name'>('start_date'); // Default sort by date
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default ascending
   const [loading, setLoading] = useState(true);
@@ -52,6 +52,40 @@ export default function Event() {
     const inviteLink = `${window.location.origin}/rsvp?event_id=${eventId}`;
     navigator.clipboard.writeText(inviteLink);
     alert('Invite link copied to clipboard!');
+  };
+
+  const handleEdit = (eventId: number) => {
+    router.push(`/create-event?event_id=${eventId}`);
+  };
+
+  const handleDelete = async (eventId: number) => {
+    if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      // First, delete all RSVPs associated with the event
+      const { error: rsvpError } = await supabase
+        .from('rsvps')
+        .delete()
+        .eq('event_id', eventId);
+
+      if (rsvpError) {
+        console.error('Error deleting RSVPs:', rsvpError);
+        setError(rsvpError.message);
+        return;
+      }
+
+      // Then, delete the event itself
+      const { error: eventError } = await supabase
+        .from('Events')
+        .delete()
+        .eq('id', eventId);
+
+      if (eventError) {
+        console.error('Error deleting event:', eventError);
+        setError(eventError.message);
+      } else {
+        // Refresh the events list
+        fetchEvents(session!.user.id, sortBy, sortOrder);
+      }
+    }
   };
 
   if (loading) {
@@ -111,6 +145,18 @@ export default function Event() {
                     className="mt-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     Share Invite
+                  </button>
+                  <button
+                    onClick={() => handleEdit(event.id)}
+                    className="mt-4 ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(event.id)}
+                    className="mt-4 ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    Delete
                   </button>
                   {/* Placeholder for RSVPs - will implement in next step */}
                   <h3 className="text-xl font-semibold mt-6">RSVPs:</h3>
