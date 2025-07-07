@@ -35,7 +35,7 @@ export default function Event() {
     setLoading(true);
     const { data, error } = await supabase
       .from('Events')
-      .select('*, rsvps(*)')
+      .select('*')
       .eq('user_id', userId)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
@@ -52,40 +52,6 @@ export default function Event() {
     const inviteLink = `${window.location.origin}/rsvp?event_id=${eventId}`;
     navigator.clipboard.writeText(inviteLink);
     alert('Invite link copied to clipboard!');
-  };
-
-  const handleEdit = (eventId: number) => {
-    router.push(`/create-event?event_id=${eventId}`);
-  };
-
-  const handleDelete = async (eventId: number) => {
-    if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-      // First, delete all RSVPs associated with the event
-      const { error: rsvpError } = await supabase
-        .from('rsvps')
-        .delete()
-        .eq('event_id', eventId);
-
-      if (rsvpError) {
-        console.error('Error deleting RSVPs:', rsvpError);
-        setError(rsvpError.message);
-        return;
-      }
-
-      // Then, delete the event itself
-      const { error: eventError } = await supabase
-        .from('Events')
-        .delete()
-        .eq('id', eventId);
-
-      if (eventError) {
-        console.error('Error deleting event:', eventError);
-        setError(eventError.message);
-      } else {
-        // Refresh the events list
-        fetchEvents(session!.user.id, sortBy, sortOrder);
-      }
-    }
   };
 
   if (loading) {
@@ -141,38 +107,17 @@ export default function Event() {
                   <p className="text-gray-600">End: {new Date(event.end_date).toLocaleString()}</p>
                   <p className="text-gray-600">Additional Info: {event.additional_info}</p>
                   <button
-                    onClick={() => handleShare(event.id.toString())}
+                    onClick={() => router.push(`/event/${event.id}`)}
                     className="mt-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
-                    Share Invite
+                    View
                   </button>
                   <button
-                    onClick={() => handleEdit(event.id)}
-                    className="mt-4 ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                    onClick={() => handleShare(event.id.toString())}
+                    className="mt-4 ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                   >
-                    Edit
+                    Get Invite Link
                   </button>
-                  <button
-                    onClick={() => handleDelete(event.id)}
-                    className="mt-4 ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    Delete
-                  </button>
-                  {/* Placeholder for RSVPs - will implement in next step */}
-                  <h3 className="text-xl font-semibold mt-6">RSVPs:</h3>
-                  {
-                    event.rsvps && event.rsvps.length > 0 ? (
-                      <ul className="list-disc list-inside">
-                        {event.rsvps.map((rsvp) => (
-                          <li key={rsvp.id}>
-                            {rsvp.name} ({rsvp.email}) - {rsvp.status}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>No RSVPs yet.</p>
-                    )
-                  }
                 </div>
               ))}
             </div>
