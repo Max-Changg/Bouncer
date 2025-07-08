@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/header';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -11,14 +11,52 @@ import { columns } from './columns';
 
 export default function EventDetails() {
   const [session, setSession] = useState<Session | null>(null);
-  const [event, setEvent] = useState<Database['public']['Tables']['events']['Row'] | null>(null);
+  const [event, setEvent] = useState<Database['public']['Tables']['Events']['Row'] | null>(null);
   const [rsvps, setRsvps] = useState<Database['public']['Tables']['rsvps']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
   const supabase = createClientComponentClient<Database>();
-  const eventId = params.id;
+  const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
+
+  const fetchEventDetails = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('Events')
+      .select('*')
+      .eq('id', eventId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching event details:', error.message, error.details, error.hint);
+      setError(error.message);
+      setEvent(null); // Ensure event is null on error
+    } else if (data) {
+      setEvent(data);
+    } else {
+      setError('Event not found.');
+      setEvent(null);
+    }
+    setLoading(false);
+  }, [supabase, eventId]);
+
+  const fetchRsvps = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('rsvps')
+      .select('*')
+      .eq('event_id', eventId);
+
+    if (error) {
+      console.error('Error fetching RSVPs:', error.message, error.details, error.hint);
+      setError(error.message);
+      setRsvps([]); // Ensure rsvps is empty array on error
+    } else if (data) {
+      setRsvps(data);
+    } else {
+      setRsvps([]);
+    }
+  }, [supabase, eventId]);
 
   useEffect(() => {
     const getSession = async () => {
@@ -33,37 +71,7 @@ export default function EventDetails() {
     };
 
     getSession();
-  }, [supabase.auth, router, eventId]);
-
-  const fetchEventDetails = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('Events')
-      .select('*')
-      .eq('id', eventId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching event details:', error);
-      setError(error.message);
-    } else {
-      setEvent(data);
-    }
-    setLoading(false);
-  };
-
-  const fetchRsvps = async () => {
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('*')
-      .eq('event_id', eventId);
-
-    if (error) {
-      console.error('Error fetching RSVPs:', error);
-    } else {
-      setRsvps(data || []);
-    }
-  };
+  }, [supabase.auth, router, eventId, fetchEventDetails, fetchRsvps]);
 
   const handleShare = (eventId: string) => {
     const inviteLink = `${window.location.origin}/rsvp?event_id=${eventId}`;

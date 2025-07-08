@@ -1,4 +1,4 @@
-'''export type Json = | string | number | boolean | null | { [key: string]: Json } | Json[];
+export type Json = | string | number | boolean | null | { [key: string]: Json } | Json[];
 
 export interface Database {
   public: {
@@ -14,16 +14,7 @@ export interface Database {
           additional_info: string;
           user_id: string;
           created_at: string;
-          rsvps: {
-            id: string; /* Corrected: uuid maps to string */
-            event_id: number;
-            name: string;
-            email: string;
-            status: string;
-            created_at: string;
-            is_approved: boolean;
-            user_id: string; /* Corrected: uuid maps to string */
-          }[];
+          
         };
         Insert: {
           name: string;
@@ -101,4 +92,3 @@ export interface Database {
     };
   };
 }
-'''

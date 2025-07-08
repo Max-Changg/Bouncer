@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Session } from '@supabase/supabase-js';
+
 import { format, toZonedTime } from 'date-fns-tz';
 import { ChevronDownIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,28 @@ export default function CreateEvent() {
       }
     };
 
+    const fetchEventData = async (id: number) => {
+      const { data, error } = await supabase
+        .from('Events')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching event data:', error);
+        setError(error.message);
+      } else if (data) {
+        setEventName(data.name);
+        setEventTheme(data.theme);
+        setStartDate(new Date(data.start_date));
+        setEndDate(new Date(data.end_date));
+        setTimeZone(data.time_zone);
+        setAdditionalInfo(data.additional_info);
+
+        
+      }
+    };
+
     getSession();
 
     const params = new URLSearchParams(window.location.search);
@@ -52,27 +75,7 @@ export default function CreateEvent() {
       setEventId(id);
       fetchEventData(id);
     }
-  }, [supabase.auth, router]);
-
-  const fetchEventData = async (id: number) => {
-    const { data, error } = await supabase
-      .from('Events')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error('Error fetching event data:', error);
-      setError(error.message);
-    } else if (data) {
-      setEventName(data.name);
-      setEventTheme(data.theme);
-      setStartDate(new Date(data.start_date));
-      setEndDate(new Date(data.end_date));
-      setTimeZone(data.time_zone);
-      setAdditionalInfo(data.additional_info);
-    }
-  };
+  }, [supabase.auth, router, supabase]);
 
   const nextStep = () => {
     setError('');

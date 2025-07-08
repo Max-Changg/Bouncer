@@ -17,12 +17,18 @@ export default function Rsvp() {
   const supabase = createClientComponentClient<Database>();
   const [session, setSession] = useState<Session | null>(null);
 
+
+
+
+
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       if (!session) {
         router.push('/login'); // Redirect to login if not signed in
+      } else if (session.user.email) {
+        setEmail(session.user.email);
       }
     };
     getSession();
@@ -68,7 +74,7 @@ export default function Rsvp() {
   };
 
   if (!session) {
-    return <div>Loading...</div>; // Or a loading spinner
+    return <div>You need to be signed in to RSVP. Redirecting to login...</div>;
   }
 
   return (
@@ -104,6 +110,8 @@ export default function Rsvp() {
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
+                value={email}
+                readOnly={!!session} // Make read-only if session exists
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
@@ -123,15 +131,6 @@ export default function Rsvp() {
                 <option>Not Attending</option>
               </select>
             </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              RSVP
-            </button>
           </div>
         </form>
       </main>

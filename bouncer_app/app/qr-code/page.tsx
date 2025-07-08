@@ -6,7 +6,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import type { Session } from "@supabase/supabase-js";
 import QRCode from "react-qr-code";
 
-import type { Database } from "@/lib/database.types";
+import type { Database } from '@/lib/database.types';
 
 export default function QRCodePage() {
   const [session, setSession] = useState<Session | null>(null);

@@ -28,25 +28,25 @@ export default function Event() {
       }
     };
 
+    const fetchEvents = async (userId: string, sortBy: 'start_date' | 'name', sortOrder: 'asc' | 'desc') => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('Events')
+        .select('*')
+        .eq('user_id', userId)
+        .order(sortBy, { ascending: sortOrder === 'asc' });
+
+      if (error) {
+        console.error('Error fetching events:', error);
+        setError(error.message);
+      } else {
+        setEvents(data || []);
+      }
+      setLoading(false);
+    };
+
     getSession();
-  }, [supabase.auth, router, sortBy, sortOrder]);
-
-  const fetchEvents = async (userId: string, sortBy: 'start_date' | 'name', sortOrder: 'asc' | 'desc') => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('Events')
-      .select('*')
-      .eq('user_id', userId)
-      .order(sortBy, { ascending: sortOrder === 'asc' });
-
-    if (error) {
-      console.error('Error fetching events:', error);
-      setError(error.message);
-    } else {
-      setEvents(data || []);
-    }
-    setLoading(false);
-  };
+  }, [supabase.auth, router, sortBy, sortOrder, supabase]);
 
   const handleShare = (eventId: string) => {
     const inviteLink = `${window.location.origin}/rsvp?event_id=${eventId}`;
