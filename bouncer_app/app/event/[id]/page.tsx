@@ -3,21 +3,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/header';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Session } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { Session, User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { DataTable } from '@/components/data-table';
 import { columns } from './columns';
 
 export default function EventDetails() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<User | null>(null);
   const [event, setEvent] = useState<Database['public']['Tables']['Events']['Row'] | null>(null);
   const [rsvps, setRsvps] = useState<Database['public']['Tables']['rsvps']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
-  const supabase = createClientComponentClient<Database>();
+  const supabase = createBrowserClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookieOptions: { name: 'sb-auth-token' } });
   const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const fetchEventDetails = useCallback(async () => {
@@ -59,18 +59,36 @@ export default function EventDetails() {
   }, [supabase, eventId]);
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      if (!session) {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setSession(session.user);
+      } else {
+        setSession(null); // Clear session on logout
         router.push('/login');
-      } else if (eventId) {
-        fetchEventDetails();
-        fetchRsvps();
       }
-    };
+    });
 
-    getSession();
+    // Initial session check
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSession(user);
+      } else {
+        setSession(null); // Clear session on logout
+        router.push('/login');
+      }
+    });
+
+    // Also call fetch functions if eventId is already available on initial render
+    if (eventId) {
+      fetchEventDetails();
+      fetchRsvps();
+    }
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [supabase.auth, router, eventId, fetchEventDetails, fetchRsvps]);
 
   const handleShare = (eventId: string) => {

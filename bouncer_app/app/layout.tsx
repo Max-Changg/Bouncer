@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from "@/lib/supabase-server-client";
 import type { Database } from '@/lib/database.types';
 
 const geistSans = Geist({
@@ -25,8 +24,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const supabase = createServerComponentClient<Database>({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  let session = null;
+  
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    session = user;
+  } catch (error) {
+    console.error('Error initializing Supabase client:', error);
+    // Continue without session if there's an error
+  }
 
   return (
     <html lang="en">

@@ -1,18 +1,59 @@
 
 'use client';
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import type { Database } from "@/lib/database.types";
-import type { Session } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 
-export default function Header({ session }: { session: Session | null }) {
-  const supabase = createClientComponentClient<Database>();
+export default function Header() {
+  const [session, setSession] = useState<User | null>(null);
+  const supabase = createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return document.cookie
+            .split('; ')
+            .find((row) => row.startsWith(`${name}=`))
+            ?.split('=')[1]
+        },
+        set(name: string, value: string, options: any) {
+          document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}`
+        },
+        remove(name: string, options: any) {
+          document.cookie = `${name}=; path=/; max-age=0`
+        },
+      },
+    }
+  );
   const router = useRouter();
+
+  useEffect(() => {
+    checkSession();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session?.user || null);
+    } catch (error) {
+      console.error('Error checking session:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.refresh();
+    setSession(null);
+    router.push('/login'); // Redirect to login page after sign out
   };
 
   return (

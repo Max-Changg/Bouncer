@@ -3,30 +3,43 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Session } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { Session, User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 
 export default function Event() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<User | null>(null);
   const [events, setEvents] = useState<Database['public']['Tables']['Events']['Row'][]>([]);
   const [sortBy, setSortBy] = useState<'start_date' | 'name'>('start_date'); // Default sort by date
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default ascending
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClientComponentClient<Database>();
+  const supabase = createBrowserClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookieOptions: { name: 'sb-auth-token' } });
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      if (!session) {
-        router.push('/login');
-      } else {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setSession(session.user);
         fetchEvents(session.user.id, sortBy, sortOrder);
+      } else {
+        setSession(null); // Clear session on logout
+        router.push('/login');
       }
-    };
+    });
+
+    // Initial session check
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSession(user);
+        fetchEvents(user.id, sortBy, sortOrder);
+      } else {
+        setSession(null); // Clear session on logout
+        router.push('/login');
+      }
+    });
 
     const fetchEvents = async (userId: string, sortBy: 'start_date' | 'name', sortOrder: 'asc' | 'desc') => {
       setLoading(true);
@@ -45,7 +58,9 @@ export default function Event() {
       setLoading(false);
     };
 
-    getSession();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [supabase.auth, router, sortBy, sortOrder, supabase]);
 
   const handleShare = (eventId: string) => {

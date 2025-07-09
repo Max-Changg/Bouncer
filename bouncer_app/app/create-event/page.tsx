@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Session } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { Session, User } from '@supabase/supabase-js';
 
 import { format, toZonedTime } from 'date-fns-tz';
 import { ChevronDownIcon } from "lucide-react";
@@ -31,18 +31,31 @@ export default function CreateEvent() {
   const [inviteLink, setInviteLink] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  const supabase = createClientComponentClient();
-  const [session, setSession] = useState<Session | null>(null);
+  const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookieOptions: { name: 'sb-auth-token' } });
+  const [session, setSession] = useState<User | null>(null);
   const [eventId, setEventId] = useState<number | null>(null);
 
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      if (!session) {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setSession(session.user);
+      } else {
+        setSession(null); // Clear session on logout
         router.push('/login');
       }
-    };
+    });
+
+    // Initial session check
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setSession(user);
+      } else {
+        setSession(null); // Clear session on logout
+        router.push('/login');
+      }
+    });
 
     const fetchEventData = async (id: number) => {
       const { data, error } = await supabase
@@ -66,8 +79,6 @@ export default function CreateEvent() {
       }
     };
 
-    getSession();
-
     const params = new URLSearchParams(window.location.search);
     const eventIdParam = params.get('event_id');
     if (eventIdParam) {
@@ -75,6 +86,10 @@ export default function CreateEvent() {
       setEventId(id);
       fetchEventData(id);
     }
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [supabase.auth, router, supabase]);
 
   const nextStep = () => {
@@ -153,7 +168,7 @@ export default function CreateEvent() {
             start_date: startDateTime ? formatInTimeZone(startDateTime, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timeZone) : null,
             end_date: endDateTime ? formatInTimeZone(endDateTime, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timeZone) : null,
             additional_info: additionalInfo,
-            user_id: session.user.id,
+            user_id: session.id,
             time_zone: timeZone
           },
         ])

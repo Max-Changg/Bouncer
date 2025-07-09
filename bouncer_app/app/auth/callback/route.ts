@@ -1,19 +1,71 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
-
-import type { NextRequest } from 'next/server';
-import type { Database } from '@/lib/database.types';
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  const error = searchParams.get('error')
+  const errorDescription = searchParams.get('error_description')
+  const codeVerifier = searchParams.get('code_verifier')
+  
+  // if "next" is in param, use it as the redirect URL
+  const next = searchParams.get('next') ?? '/'
 
-  if (code) {
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    await supabase.auth.exchangeCodeForSession(code);
+  if (error) {
+    console.error('OAuth error:', error, errorDescription)
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error)}`)
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(requestUrl.origin);
+  if (code) {
+    let response = NextResponse.redirect(origin)
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: any) {
+            request.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+          },
+          remove(name: string, options: any) {
+            request.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+          },
+        },
+      }
+    )
+
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (!exchangeError) {
+      return response
+    } else {
+      console.error('Code exchange error:', exchangeError)
+      return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(`Exchange failed: ${exchangeError.message}`)}`)
+    }
+  }
+
+  // No code or error - redirect back to login with error
+  return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('No authorization code received')}`)
 }
