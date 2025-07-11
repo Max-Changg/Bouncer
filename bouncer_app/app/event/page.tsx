@@ -1,73 +1,64 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import { createBrowserClient } from '@supabase/ssr';
-import type { Session, User } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 
 export default function Event() {
   const [session, setSession] = useState<User | null>(null);
   const [events, setEvents] = useState<Database['public']['Tables']['Events']['Row'][]>([]);
-  const [sortBy, setSortBy] = useState<'start_date' | 'name'>('start_date'); // Default sort by date
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default ascending
+  const [sortBy, setSortBy] = useState<'start_date' | 'name'>('start_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createBrowserClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookieOptions: { name: 'sb-auth-token' } });
+  const supabase = createBrowserClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+  const fetchEvents = useCallback(async (userId: string) => {
+    setLoading(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from('Events')
+      .select('*')
+      .eq('user_id', userId)
+      .order(sortBy, { ascending: sortOrder === 'asc' });
+
+    if (error) {
+      console.error('Error fetching events:', error);
+      setError(error.message);
+    } else {
+      setEvents(data || []);
+    }
+    setLoading(false);
+  }, [supabase, sortBy, sortOrder]);
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session?.user ?? null);
+      if (!session) {
+        router.push('/login');
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setSession(session.user);
-        fetchEvents(session.user.id, sortBy, sortOrder);
       } else {
-        setSession(null); // Clear session on logout
         router.push('/login');
       }
     });
 
-    // Initial session check
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setSession(user);
-        fetchEvents(user.id, sortBy, sortOrder);
-      } else {
-        setSession(null); // Clear session on logout
-        router.push('/login');
-      }
-    });
+    return () => subscription.unsubscribe();
+  }, [router, supabase.auth]);
 
-    const fetchEvents = async (userId: string, sortBy: 'start_date' | 'name', sortOrder: 'asc' | 'desc') => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('Events')
-        .select('*')
-        .eq('user_id', userId)
-        .order(sortBy, { ascending: sortOrder === 'asc' });
-
-      if (error) {
-        console.error('Error fetching events:', error);
-        setError(error.message);
-      } else {
-        setEvents(data || []);
-      }
-      setLoading(false);
-    };
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase.auth, router, sortBy, sortOrder, supabase]);
-
-  const handleShare = (eventId: string) => {
-    const inviteLink = `${window.location.origin}/rsvp?event_id=${eventId}`;
-    navigator.clipboard.writeText(inviteLink);
-    alert('Invite link copied to clipboard!');
-  };
+  useEffect(() => {
+    if (session) {
+      fetchEvents(session.id);
+    }
+  }, [session, fetchEvents]);
 
   if (loading) {
     return <div>Loading events...</div>;
@@ -78,12 +69,12 @@ export default function Event() {
   }
 
   if (!session) {
-    return null; // Should redirect to login, but just in case
+    return null; // Redirecting...
   }
 
   return (
     <div>
-      <Header session={session} />
+      <Header />
       <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
         <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
           <h1 className="text-4xl font-bold">My Events</h1>
@@ -141,4 +132,10 @@ export default function Event() {
       </div>
     </div>
   );
+}
+
+function handleShare(eventId: string) {
+    const inviteLink = `${window.location.origin}/rsvp?event_id=${eventId}`;
+    navigator.clipboard.writeText(inviteLink);
+    alert('Invite link copied to clipboard!');
 }
