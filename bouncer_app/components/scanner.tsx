@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Scanner as QRScanner } from '@yudiel/react-qr-scanner';
 
@@ -14,12 +14,7 @@ const Scanner = ({ onScan, onError }: ScannerProps) => {
     }
   };
 
-  return (
-    <QRScanner
-      onScan={handleScan}
-      onError={onError}
-    />
-  );
+  return <QRScanner onScan={handleScan} onError={onError} />;
 };
 
 export default Scanner;

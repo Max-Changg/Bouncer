@@ -1,25 +1,29 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { createBrowserClient } from "@supabase/ssr";
-import type { Session, User } from "@supabase/supabase-js";
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
+import type { Session, User } from '@supabase/supabase-js';
 
-import type { Database } from "@/lib/database.types";
+import type { Database } from '@/lib/database.types';
 
 export default function Rsvp() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("Attending");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('Attending');
   const router = useRouter();
   const searchParams = useSearchParams();
   const [eventId, setEventId] = useState<string | null>(null);
-  const supabase = createBrowserClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookieOptions: { name: 'sb-auth-token' } });
+  const supabase = createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        name: 'sb-auth-token',
+      },
+    }
+  );
   const [session, setSession] = useState<User | null>(null);
-
-
-
-
 
   useEffect(() => {
     const {
@@ -64,18 +68,18 @@ export default function Rsvp() {
     e.preventDefault();
 
     if (!eventId) {
-      console.error("Event ID not found in URL.");
+      console.error('Event ID not found in URL.');
       return;
     }
 
     if (!session) {
-      console.error("User not authenticated.");
+      console.error('User not authenticated.');
       router.push('/login');
       return;
     }
 
     const { data, error } = await supabase
-      .from("rsvps")
+      .from('rsvps')
       .insert([
         {
           name,
@@ -90,7 +94,7 @@ export default function Rsvp() {
     if (error) {
       console.log(error);
     } else {
-      router.push("/event");
+      router.push('/event');
     }
   };
 
@@ -99,12 +103,12 @@ export default function Rsvp() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center py-2">
+      <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
         <h1 className="text-6xl font-bold">RSVP</h1>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="-space-y-px rounded-md shadow-sm">
             <div>
               <label htmlFor="name" className="sr-only">
                 Name
@@ -114,9 +118,9 @@ export default function Rsvp() {
                 name="name"
                 type="text"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
                 placeholder="Name"
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => setName(e.target.value)}
               />
             </div>
             <div>
@@ -129,11 +133,11 @@ export default function Rsvp() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="relative block w-full appearance-none rounded-none border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
                 placeholder="Email address"
                 value={email}
                 readOnly={!!session.email} // Make read-only if session exists
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div>
@@ -144,8 +148,8 @@ export default function Rsvp() {
                 id="status"
                 name="status"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                onChange={(e) => setStatus(e.target.value)}
+                className="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                onChange={e => setStatus(e.target.value)}
               >
                 <option>Attending</option>
                 <option>Maybe</option>

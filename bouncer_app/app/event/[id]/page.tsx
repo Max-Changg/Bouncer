@@ -11,13 +11,25 @@ import { columns } from './columns';
 
 export default function EventDetails() {
   const [session, setSession] = useState<User | null>(null);
-  const [event, setEvent] = useState<Database['public']['Tables']['Events']['Row'] | null>(null);
-  const [rsvps, setRsvps] = useState<Database['public']['Tables']['rsvps']['Row'][]>([]);
+  const [event, setEvent] = useState<
+    Database['public']['Tables']['Events']['Row'] | null
+  >(null);
+  const [rsvps, setRsvps] = useState<
+    Database['public']['Tables']['rsvps']['Row'][]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const params = useParams();
-  const supabase = createBrowserClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { cookieOptions: { name: 'sb-auth-token' } });
+  const supabase = createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        name: 'sb-auth-token',
+      },
+    }
+  );
   const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const fetchEventDetails = useCallback(async () => {
@@ -29,7 +41,12 @@ export default function EventDetails() {
       .single();
 
     if (error) {
-      console.error('Error fetching event details:', error.message, error.details, error.hint);
+      console.error(
+        'Error fetching event details:',
+        error.message,
+        error.details,
+        error.hint
+      );
       setError(error.message);
       setEvent(null); // Ensure event is null on error
     } else if (data) {
@@ -48,7 +65,12 @@ export default function EventDetails() {
       .eq('event_id', eventId);
 
     if (error) {
-      console.error('Error fetching RSVPs:', error.message, error.details, error.hint);
+      console.error(
+        'Error fetching RSVPs:',
+        error.message,
+        error.details,
+        error.hint
+      );
       setError(error.message);
       setRsvps([]); // Ensure rsvps is empty array on error
     } else if (data) {
@@ -102,7 +124,11 @@ export default function EventDetails() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+    if (
+      window.confirm(
+        'Are you sure you want to delete this event? This action cannot be undone.'
+      )
+    ) {
       // First, delete all RSVPs associated with the event
       const { error: rsvpError } = await supabase
         .from('rsvps')
@@ -130,7 +156,9 @@ export default function EventDetails() {
     }
   };
 
-  const handleSave = async (updatedRsvps: Database['public']['Tables']['rsvps']['Row'][]) => {
+  const handleSave = async (
+    updatedRsvps: Database['public']['Tables']['rsvps']['Row'][]
+  ) => {
     const { error } = await supabase
       .from('rsvps')
       .upsert(updatedRsvps, { onConflict: 'id' });
@@ -159,45 +187,54 @@ export default function EventDetails() {
   return (
     <div>
       <Header session={session} />
-      <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-        <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start w-full">
-          <div className="flex justify-between w-full items-center">
+      <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
+        <main className="row-start-2 flex w-full flex-col items-center gap-[32px] sm:items-start">
+          <div className="flex w-full items-center justify-between">
             <h1 className="text-4xl font-bold">{event.name}</h1>
             <div>
               <button
                 onClick={handleEdit}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                className="inline-flex justify-center rounded-md border border-transparent bg-yellow-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:outline-none"
               >
                 Edit
               </button>
               <button
                 onClick={handleDelete}
-                className="ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                className="ml-4 inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
               >
                 Delete
               </button>
               <button
                 onClick={() => handleShare(event.id.toString())}
-                className="ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                className="ml-4 inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
               >
                 Get Invite Link
               </button>
               <button
                 onClick={() => router.push(`/event/${eventId}/scan`)}
-                className="ml-4 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="ml-4 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
               >
                 Scan QR Code
               </button>
             </div>
           </div>
-          <div className="p-6 border rounded-lg shadow-md w-full">
-            <p className="text-gray-600"><strong>Theme:</strong> {event.theme}</p>
-            <p className="text-gray-600"><strong>Start:</strong> {new Date(event.start_date).toLocaleString()}</p>
-            <p className="text-gray-600"><strong>End:</strong> {new Date(event.end_date).toLocaleString()}</p>
-            <p className="text-gray-600"><strong>Additional Info:</strong> {event.additional_info}</p>
+          <div className="w-full rounded-lg border p-6 shadow-md">
+            <p className="text-gray-600">
+              <strong>Theme:</strong> {event.theme}
+            </p>
+            <p className="text-gray-600">
+              <strong>Start:</strong>{' '}
+              {new Date(event.start_date).toLocaleString()}
+            </p>
+            <p className="text-gray-600">
+              <strong>End:</strong> {new Date(event.end_date).toLocaleString()}
+            </p>
+            <p className="text-gray-600">
+              <strong>Additional Info:</strong> {event.additional_info}
+            </p>
           </div>
 
-          <h2 className="text-2xl font-bold mt-8">RSVPs</h2>
+          <h2 className="mt-8 text-2xl font-bold">RSVPs</h2>
           <DataTable columns={columns} data={rsvps} onSave={handleSave} />
         </main>
       </div>

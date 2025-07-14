@@ -17,14 +17,17 @@ export default function Form() {
   return (
     <div>
       <Header session={null} />
-      <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-        <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+      <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
+        <main className="row-start-2 flex flex-col items-center gap-[32px] sm:items-start">
           <h1 className="text-4xl font-bold">RSVP</h1>
-          <form onSubmit={handleSubmit} className="space-y-4 block text-sm font-medium text-white-800">
+          <form
+            onSubmit={handleSubmit}
+            className="text-white-800 block space-y-4 text-sm font-medium"
+          >
             <p>The customizable form will be displayed here.</p>
             <button
               type="submit"
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
             >
               Submit
             </button>

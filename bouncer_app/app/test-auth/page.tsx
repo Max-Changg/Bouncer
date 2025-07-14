@@ -16,10 +16,13 @@ export default function TestAuth() {
   const testConnection = async () => {
     try {
       setStatus('Testing connection...');
-      
+
       // Test basic connection
-      const { data, error } = await supabase.from('Events').select('count').limit(1);
-      
+      const { data, error } = await supabase
+        .from('Events')
+        .select('count')
+        .limit(1);
+
       if (error) {
         setStatus(`Connection error: ${error.message}`);
       } else {
@@ -32,7 +35,9 @@ export default function TestAuth() {
 
   const checkUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
       setStatus(user ? 'User logged in!' : 'No user found');
     } catch (err) {
@@ -48,34 +53,42 @@ export default function TestAuth() {
 
   return (
     <div className="min-h-screen p-8">
-      <h1 className="text-2xl font-bold mb-4">Supabase Auth Test</h1>
-      
+      <h1 className="mb-4 text-2xl font-bold">Supabase Auth Test</h1>
+
       <div className="space-y-4">
         <div>
-          <p><strong>Status:</strong> {status}</p>
-          <p><strong>Supabase URL:</strong> {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing'}</p>
-          <p><strong>Supabase Key:</strong> {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'}</p>
+          <p>
+            <strong>Status:</strong> {status}
+          </p>
+          <p>
+            <strong>Supabase URL:</strong>{' '}
+            {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing'}
+          </p>
+          <p>
+            <strong>Supabase Key:</strong>{' '}
+            {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'}
+          </p>
         </div>
 
         <div className="space-x-4">
-          <button 
+          <button
             onClick={testConnection}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
+            className="rounded bg-blue-500 px-4 py-2 text-white"
           >
             Test Connection
           </button>
-          
-          <button 
+
+          <button
             onClick={checkUser}
-            className="px-4 py-2 bg-green-500 text-white rounded"
+            className="rounded bg-green-500 px-4 py-2 text-white"
           >
             Check User
           </button>
-          
+
           {user && (
-            <button 
+            <button
               onClick={signOut}
-              className="px-4 py-2 bg-red-500 text-white rounded"
+              className="rounded bg-red-500 px-4 py-2 text-white"
             >
               Sign Out
             </button>
@@ -83,7 +96,7 @@ export default function TestAuth() {
         </div>
 
         {user && (
-          <div className="bg-gray-100 p-4 rounded">
+          <div className="rounded bg-gray-100 p-4">
             <h3 className="font-bold">Current User:</h3>
             <pre className="text-sm">{JSON.stringify(user, null, 2)}</pre>
           </div>
@@ -91,4 +104,4 @@ export default function TestAuth() {
       </div>
     </div>
   );
-} 
+}

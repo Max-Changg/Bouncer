@@ -14,39 +14,54 @@ export default function QRCodePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createBrowserClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-  const fetchQRCodeData = useCallback(async (userId: string) => {
-    setLoading(true);
-    setError(null);
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('qr_code_data')
-      .eq('id', userId)
-      .single();
-
-    if (profileError && profileError.code !== 'PGRST116') { // Ignore no rows found error
-      console.error('Error fetching profile:', profileError);
-      setError(profileError.message);
-    } else if (profileData && profileData.qr_code_data) {
-      setQrCodeData(profileData.qr_code_data);
-    } else {
-      const newQrCodeData = userId;
-      setQrCodeData(newQrCodeData);
-      const { error: upsertError } = await supabase
+  const fetchQRCodeData = useCallback(
+    async (userId: string) => {
+      setLoading(true);
+      setError(null);
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .upsert({ id: userId, qr_code_data: newQrCodeData }, { onConflict: 'id' });
+        .select('qr_code_data')
+        .eq('id', userId)
+        .single();
 
-      if (upsertError) {
-        console.error('Error upserting QR code data:', upsertError);
-        setError(upsertError.message);
+      if (profileError && profileError.code !== 'PGRST116') {
+        // Ignore no rows found error
+        console.error('Error fetching profile:', profileError);
+        setError(profileError.message);
+      } else if (profileData && profileData.qr_code_data) {
+        setQrCodeData(profileData.qr_code_data);
+      } else {
+        const newQrCodeData = userId;
+        setQrCodeData(newQrCodeData);
+        const { error: upsertError } = await supabase.from('profiles').upsert(
+          {
+            id: userId,
+            qr_code_data: newQrCodeData,
+          },
+          {
+            onConflict: 'id',
+          }
+        );
+
+        if (upsertError) {
+          console.error('Error upserting QR code data:', upsertError);
+          setError(upsertError.message);
+        }
       }
-    }
-    setLoading(false);
-  }, [supabase]);
+      setLoading(false);
+    },
+    [supabase]
+  );
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session?.user ?? null);
       if (!session) {
         router.push('/login');
@@ -85,13 +100,20 @@ export default function QRCodePage() {
   return (
     <div>
       <Header />
-      <div className="flex flex-col items-center justify-center min-h-screen py-2">
-        <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center py-2">
+        <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
           <h1 className="text-6xl font-bold">Your QR Code</h1>
           {qrCodeData ? (
             <div className="mt-8">
-              <QRCode value={qrCodeData} size={256} level="H" title="Event QR Code" />
-              <p className="mt-4 text-lg">Scan this code at the event entrance.</p>
+              <QRCode
+                value={qrCodeData}
+                size={256}
+                level="H"
+                title="Event QR Code"
+              />
+              <p className="mt-4 text-lg">
+                Scan this code at the event entrance.
+              </p>
             </div>
           ) : (
             <p className="mt-8 text-lg">No QR code available.</p>

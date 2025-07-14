@@ -7,7 +7,9 @@ import type { Database } from '@/lib/database.types';
 
 export default function ClientHome() {
   const [session, setSession] = useState<any>(null);
-  const [events, setEvents] = useState<Database['public']['Tables']['Events']['Row'][] | null>(null);
+  const [events, setEvents] = useState<
+    Database['public']['Tables']['Events']['Row'][] | null
+  >(null);
   const [loading, setLoading] = useState(true);
 
   const supabase = createBrowserClient<Database>(
@@ -18,14 +20,14 @@ export default function ClientHome() {
         get(name: string) {
           return document.cookie
             .split('; ')
-            .find((row) => row.startsWith(`${name}=`))
-            ?.split('=')[1]
+            .find(row => row.startsWith(`${name}=`))
+            ?.split('=')[1];
         },
         set(name: string, value: string, options: any) {
-          document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}`
+          document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}`;
         },
         remove(name: string, options: any) {
-          document.cookie = `${name}=; path=/; max-age=0`
+          document.cookie = `${name}=; path=/; max-age=0`;
         },
       },
     }
@@ -33,8 +35,10 @@ export default function ClientHome() {
 
   useEffect(() => {
     checkSession();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (session) {
         fetchEvents(session.user.id);
@@ -49,9 +53,11 @@ export default function ClientHome() {
 
   const checkSession = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setSession(session);
-      
+
       if (session) {
         await fetchEvents(session.user.id);
       }
@@ -65,17 +71,19 @@ export default function ClientHome() {
   const fetchEvents = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("Events")
-        .select("*")
-        .eq("user_id", userId);
-      
+        .from('Events')
+        .select('*')
+        .eq('user_id', userId);
+
       if (error) {
-        console.error("Error fetching events:", error);
+        console.error('Error fetching events:', error);
       } else {
-        setEvents(data as unknown as Database['public']['Tables']['Events']['Row'][]);
+        setEvents(
+          data as unknown as Database['public']['Tables']['Events']['Row'][]
+        );
       }
     } catch (error) {
-      console.error("Error fetching events:", error);
+      console.error('Error fetching events:', error);
     }
   };
 
@@ -84,46 +92,45 @@ export default function ClientHome() {
   }
 
   return (
-    <div className="flex flex-col gap-[32px] items-center sm:items-start">
-      <h1 className="text-4xl font-bold">Bouncer</h1>
-      <p className="text-lg">The easiest way to manage your events.</p>
-      
+    <div className="flex flex-col items-center gap-[32px] sm:items-start">
       {session ? (
         <div className="flex gap-4">
           <Link href="/create-event">
-            <button className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none">
               Create Event
             </button>
           </Link>
           <Link href="/event">
-            <button className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none">
               My Events
             </button>
           </Link>
           <Link href="/qr-code">
-            <button className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none">
               My QR Code
             </button>
           </Link>
         </div>
       ) : (
         <Link href="/login">
-          <button className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+          <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none">
             Login to Create Events
           </button>
         </Link>
       )}
-      
+
       {session && events && events.length > 0 && (
         <div>
-          <h2 className="text-2xl font-bold mt-8">Your Events</h2>
+          <h2 className="mt-8 text-2xl font-bold">Your Events</h2>
           <ul>
-            {events.map((event: Database['public']['Tables']['Events']['Row']) => (
-              <li key={event.id}>{event.name}</li>
-            ))}
+            {events.map(
+              (event: Database['public']['Tables']['Events']['Row']) => (
+                <li key={event.id}>{event.name}</li>
+              )
+            )}
           </ul>
         </div>
       )}
     </div>
   );
-} 
+}

@@ -16,14 +16,14 @@ export default function TestGoogle() {
         get(name: string) {
           return document.cookie
             .split('; ')
-            .find((row) => row.startsWith(`${name}=`))
-            ?.split('=')[1]
+            .find(row => row.startsWith(`${name}=`))
+            ?.split('=')[1];
         },
         set(name: string, value: string, options: any) {
-          document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}`
+          document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}`;
         },
         remove(name: string, options: any) {
-          document.cookie = `${name}=; path=/; max-age=0`
+          document.cookie = `${name}=; path=/; max-age=0`;
         },
       },
     }
@@ -37,11 +37,11 @@ export default function TestGoogle() {
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
-            prompt: 'select_account'
-          }
-        }
+            prompt: 'select_account',
+          },
+        },
       });
-      
+
       if (error) {
         setStatus(`Error: ${error.message}`);
       } else {
@@ -55,7 +55,9 @@ export default function TestGoogle() {
 
   const checkUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUser(user);
       setStatus(user ? `Logged in as: ${user.email}` : 'Not logged in');
     } catch (error) {
@@ -71,32 +73,34 @@ export default function TestGoogle() {
 
   return (
     <div className="min-h-screen p-8">
-      <h1 className="text-2xl font-bold mb-4">Google OAuth Test</h1>
-      
+      <h1 className="mb-4 text-2xl font-bold">Google OAuth Test</h1>
+
       <div className="space-y-4">
         <div>
-          <p><strong>Status:</strong> {status}</p>
+          <p>
+            <strong>Status:</strong> {status}
+          </p>
         </div>
 
         <div className="space-x-4">
-          <button 
+          <button
             onClick={signInWithGoogle}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
+            className="rounded bg-blue-500 px-4 py-2 text-white"
           >
             Sign In with Google
           </button>
-          
-          <button 
+
+          <button
             onClick={checkUser}
-            className="px-4 py-2 bg-green-500 text-white rounded"
+            className="rounded bg-green-500 px-4 py-2 text-white"
           >
             Check User
           </button>
-          
+
           {user && (
-            <button 
+            <button
               onClick={signOut}
-              className="px-4 py-2 bg-red-500 text-white rounded"
+              className="rounded bg-red-500 px-4 py-2 text-white"
             >
               Sign Out
             </button>
@@ -104,7 +108,7 @@ export default function TestGoogle() {
         </div>
 
         {user && (
-          <div className="bg-gray-100 p-4 rounded">
+          <div className="rounded bg-gray-100 p-4">
             <h3 className="font-bold">Current User:</h3>
             <pre className="text-sm">{JSON.stringify(user, null, 2)}</pre>
           </div>
@@ -112,7 +116,7 @@ export default function TestGoogle() {
 
         <div>
           <h3 className="font-bold">Instructions:</h3>
-          <ol className="list-decimal list-inside space-y-1">
+          <ol className="list-inside list-decimal space-y-1">
             <li>Click "Sign In with Google"</li>
             <li>You should be redirected to Google's OAuth page</li>
             <li>Choose your account or sign in</li>
@@ -123,4 +127,4 @@ export default function TestGoogle() {
       </div>
     </div>
   );
-} 
+}
