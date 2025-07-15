@@ -8,6 +8,7 @@ const protectedRoutes = [
   '/qr-code',
   '/test-auth',
   '/test-google',
+  '/rsvp',
 ];
 const publicRoutes = ['/login', '/auth/callback', '/'];
 
@@ -68,14 +69,36 @@ export async function middleware(request: NextRequest) {
 
   // If the user is not logged in and is trying to access a protected route, redirect to login
   if (!session && protectedRoutes.some(route => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    // Preserve the current URL as the next parameter for RSVP routes
+    if (pathname.startsWith('/rsvp')) {
+      loginUrl.searchParams.set('next', pathname + request.nextUrl.search);
+      console.log('Middleware - redirecting to login with next:', pathname + request.nextUrl.search);
+    }
+    return NextResponse.redirect(loginUrl);
   }
 
-  // If the user is logged in and tries to access the login page, redirect to the events page
+  // Only redirect away from /login if the session is valid and not expired
   if (session && pathname === '/login') {
-    return NextResponse.redirect(new URL('/event', request.url));
+    // Check if session is expired
+    // Supabase session.expires_at is in seconds since epoch
+    if (session.expires_at && session.expires_at * 1000 < Date.now()) {
+      // Session is expired, allow access to /login
+      return response;
+    }
+    // Session is valid
+    const next = request.nextUrl.searchParams.get('next');
+    console.log('Middleware - authenticated user on login page, next:', next);
+    if (next) {
+      console.log('Middleware - redirecting to next:', next);
+      return NextResponse.redirect(new URL(next, request.url));
+    } else {
+      console.log('Middleware - redirecting to /event');
+      return NextResponse.redirect(new URL('/event', request.url));
+    }
   }
 
+  // Allow access to /login if session is missing or expired
   return response;
 }
 

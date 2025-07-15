@@ -9,6 +9,9 @@ import type { Database } from '@/lib/database.types';
 export default function Login() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
+  const next = searchParams.get('next') || '/event';
+
+  console.log('Login page - next parameter:', next);
 
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -52,6 +55,7 @@ export default function Login() {
           queryParams={{
             prompt: 'select_account',
           }}
+          redirectTo={`${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`}
         />
       </div>
     </div>

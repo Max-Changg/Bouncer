@@ -1,7 +1,7 @@
 'use client';
 
 import { createBrowserClient } from '@supabase/ssr';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import type { Database } from '@/lib/database.types';
 import type { Session, User } from '@supabase/supabase-js';
@@ -13,6 +13,8 @@ export default function Header() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     checkSession();
@@ -40,7 +42,7 @@ export default function Header() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
-    router.push('/login'); // Redirect to login page after sign out
+    router.push('/login'); // Always redirect to login page after sign out
   };
 
   return (

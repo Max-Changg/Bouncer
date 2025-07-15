@@ -12,6 +12,9 @@ export async function GET(request: NextRequest) {
   // if "next" is in param, use it as the redirect URL
   const next = searchParams.get('next') ?? '/';
 
+  console.log('Auth callback - next parameter:', next);
+  console.log('Auth callback - redirecting to:', `${origin}${next}`);
+
   if (error) {
     console.error('OAuth error:', error, errorDescription);
     return NextResponse.redirect(
@@ -20,7 +23,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (code) {
-    let response = NextResponse.redirect(origin);
+    let response = NextResponse.redirect(`${origin}${next}`);
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,6 +65,7 @@ export async function GET(request: NextRequest) {
       await supabase.auth.exchangeCodeForSession(code);
 
     if (!exchangeError) {
+      console.log('Auth callback - successful exchange, redirecting to:', `${origin}${next}`);
       return response;
     } else {
       console.error('Code exchange error:', exchangeError);
