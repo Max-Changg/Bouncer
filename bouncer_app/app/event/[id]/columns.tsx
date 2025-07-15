@@ -38,4 +38,13 @@ export const columns: ColumnDef<
     accessorKey: 'status',
     header: 'Status',
   },
+  {
+    accessorKey: 'payment_status',
+    header: 'Payment Status',
+  },
+  {
+    accessorKey: 'amount_paid',
+    header: 'Amount Paid',
+    cell: ({ row }) => row.original.amount_paid != null ? `$${row.original.amount_paid.toFixed(2)}` : '-',
+  },
 ];

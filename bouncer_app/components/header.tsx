@@ -26,7 +26,7 @@ export default function Header() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session?.user || null);
       if (session?.user) {
-        // No longer fetching profile or upserting avatar_url
+        fetchProfile(session.user);
       } else setProfile(null);
     });
     return () => subscription.unsubscribe();
@@ -46,6 +46,24 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [dropdownOpen]);
 
+  const fetchProfile = async (user: User) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      if (data && data.full_name) {
+        setProfile({ full_name: data.full_name });
+      } else {
+        // fallback to user_metadata if available
+        setProfile({ full_name: user.user_metadata?.full_name || 'User' });
+      }
+    } catch (error) {
+      setProfile({ full_name: user.user_metadata?.full_name || 'User' });
+    }
+  };
+
   const checkSession = async () => {
     try {
       const {
@@ -53,7 +71,7 @@ export default function Header() {
       } = await supabase.auth.getSession();
       setSession(session?.user || null);
       if (session?.user) {
-        // No longer fetching profile or upserting avatar_url
+        fetchProfile(session.user);
       } else setProfile(null);
     } catch (error) {
       console.error('Error checking session:', error);
@@ -158,7 +176,7 @@ export default function Header() {
                           />
                         </svg>
                         <div>
-                          <div className="font-semibold">Welcome, {profile.full_name}</div>
+                          <div className="font-semibold">Welcome, {profile?.full_name || 'User'}</div>
                           <div className="text-xs text-gray-500">{session.email}</div>
                         </div>
                       </div>

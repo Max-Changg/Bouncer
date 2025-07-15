@@ -19,6 +19,9 @@ export default function EventDetails() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [zelleData, setZelleData] = useState<Array<{name: string, amount: number}>>([]);
+  const [venmoData, setVenmoData] = useState<Array<{name: string, amount: number}>>([]);
+  const [processingPayments, setProcessingPayments] = useState(false);
   const router = useRouter();
   const params = useParams();
   const supabase = createBrowserClient<Database>(
@@ -172,6 +175,140 @@ export default function EventDetails() {
     }
   };
 
+  const parseZelleFile = async (file: File) => {
+    const text = await file.text();
+    const lines = text.split('\n');
+    const zellePayments: Array<{name: string, amount: number}> = [];
+    
+    // Regex pattern from KASA system: "BofA: (name) sent you $amount"
+    const pattern = /BofA: (.*?) sent you \$([0-9]+\.\d{2})(?: for.*)?/i;
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      const match = pattern.exec(trimmedLine);
+      if (match) {
+        const name = match[1].trim().toLowerCase().replace(/\s+/g, ' ');
+        const amount = parseFloat(match[2]);
+        zellePayments.push({ name, amount });
+      }
+    }
+    
+    setZelleData(zellePayments);
+    return zellePayments;
+  };
+
+  const parseVenmoFile = async (file: File) => {
+    const text = await file.text();
+    const lines = text.split('\n');
+    const venmoPayments: Array<{name: string, amount: number}> = [];
+    
+    // Skip header rows (first 3 lines based on the CSV format)
+    for (let i = 3; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const columns = line.split(',');
+      if (columns.length >= 9) {
+        const from = columns[6]?.trim().toLowerCase().replace(/\s+/g, ' ');
+        const amountStr = columns[8]?.trim().replace(/[^\d.-]/g, '');
+        const amount = parseFloat(amountStr);
+        
+        // Only include incoming payments (positive amounts)
+        if (from && amount > 0 && !isNaN(amount)) {
+          venmoPayments.push({ name: from, amount });
+        }
+      }
+    }
+    
+    setVenmoData(venmoPayments);
+    return venmoPayments;
+  };
+
+  const crossCheckPayments = async () => {
+    if (!rsvps.length) return;
+    
+    setProcessingPayments(true);
+    const updatedRsvps = [...rsvps];
+    
+    for (const rsvp of updatedRsvps) {
+      const rsvpName = rsvp.name.toLowerCase().trim().replace(/\s+/g, ' ');
+      let totalPaid = 0;
+      let paymentMethod = '';
+      
+      // Check Zelle payments
+      const zelleMatches = zelleData.filter(payment => 
+        payment.name === rsvpName
+      );
+      if (zelleMatches.length > 0) {
+        totalPaid += zelleMatches.reduce((sum, payment) => sum + payment.amount, 0);
+        paymentMethod = 'zelle';
+      }
+      
+      // Check Venmo payments
+      const venmoMatches = venmoData.filter(payment => 
+        payment.name === rsvpName
+      );
+      if (venmoMatches.length > 0) {
+        totalPaid += venmoMatches.reduce((sum, payment) => sum + payment.amount, 0);
+        paymentMethod = paymentMethod ? 'multiple' : 'venmo';
+      }
+      
+      // Determine payment status
+      let paymentStatus = 'unpaid';
+      if (totalPaid > 0) {
+        // For now, mark as paid if any payment is received
+        // TODO: Add expected amount logic when ticketing is implemented
+        paymentStatus = totalPaid > 0 ? 'paid' : 'unpaid';
+      }
+      
+      // Update RSVP with payment info
+      rsvp.payment_status = paymentStatus;
+      rsvp.amount_paid = totalPaid;
+      rsvp.payment_method = paymentMethod;
+    }
+    
+    // Update database
+    const { error } = await supabase
+      .from('rsvps')
+      .upsert(updatedRsvps, { onConflict: 'id' });
+    
+    if (error) {
+      console.error('Error updating payment status:', error);
+      setError('Failed to update payment status');
+    } else {
+      setRsvps(updatedRsvps);
+      alert('Payment verification completed!');
+    }
+    
+    setProcessingPayments(false);
+  };
+
+  const handleZelleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      await parseZelleFile(file);
+      await crossCheckPayments();
+    } catch (error) {
+      console.error('Error processing Zelle file:', error);
+      setError('Failed to process Zelle file');
+    }
+  };
+
+  const handleVenmoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      await parseVenmoFile(file);
+      await crossCheckPayments();
+    } catch (error) {
+      console.error('Error processing Venmo file:', error);
+      setError('Failed to process Venmo file');
+    }
+  };
+
   if (loading) {
     return <div>Loading event details...</div>;
   }
@@ -233,6 +370,34 @@ export default function EventDetails() {
               <strong>Additional Info:</strong> {event.additional_info}
             </p>
           </div>
+
+          {/* Admin-only payment upload UI */}
+          {session && event && session.id === event.user_id && (
+            <div className="w-full mb-8 p-4 border rounded bg-gray-50">
+              <h3 className="text-lg font-semibold mb-2">Upload Payment Statements</h3>
+              <div className="flex flex-col gap-4 sm:flex-row sm:gap-8">
+                <div>
+                  <label className="block mb-1 font-medium">Zelle Statement (.txt)</label>
+                  <input
+                    type="file"
+                    accept=".txt"
+                    onChange={e => handleZelleUpload(e)}
+                    className="block w-full border rounded p-1"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 font-medium">Venmo Statement (.csv)</label>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={e => handleVenmoUpload(e)}
+                    className="block w-full border rounded p-1"
+                  />
+                </div>
+              </div>
+              {/* Optionally show upload status or errors here */}
+            </div>
+          )}
 
           <h2 className="mt-8 text-2xl font-bold">RSVPs</h2>
           <DataTable columns={columns} data={rsvps} onSave={handleSave} />

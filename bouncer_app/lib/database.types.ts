@@ -49,6 +49,8 @@ export interface Database {
           created_at: string;
           is_approved: boolean;
           user_id: string /* Corrected: uuid maps to string */;
+          payment_status?: string; // 'paid', 'unpaid', 'overpaid'
+          amount_paid?: number;
         };
         Insert: {
           event_id: number;
@@ -57,12 +59,16 @@ export interface Database {
           status: string;
           is_approved?: boolean;
           user_id: string;
+          payment_status?: string;
+          amount_paid?: number;
         };
         Update: {
           name?: string;
           email?: string;
           status?: string;
           is_approved?: boolean;
+          payment_status?: string;
+          amount_paid?: number;
         };
       };
       profiles: {
