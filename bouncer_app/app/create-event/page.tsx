@@ -42,6 +42,15 @@ export default function CreateEvent() {
   );
   const [session, setSession] = useState<User | null>(null);
   const [eventId, setEventId] = useState<number | null>(null);
+  const [tickets, setTickets] = useState<Array<{
+    id?: string;
+    name: string;
+    price: number;
+    quantity_available: number;
+    purchase_deadline: Date | null;
+  }>>([]);
+  const [selectedTicketIndex, setSelectedTicketIndex] = useState<number | null>(null);
+  const [showTicketSidebar, setShowTicketSidebar] = useState(false);
 
   useEffect(() => {
     const {
@@ -82,6 +91,22 @@ export default function CreateEvent() {
         setEndDate(new Date(data.end_date));
         setTimeZone(data.time_zone);
         setAdditionalInfo(data.additional_info);
+      }
+      
+      // Load existing tickets for this event
+      const { data: ticketsData, error: ticketsError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('event_id', id);
+      
+      if (!ticketsError && ticketsData) {
+        setTickets(ticketsData.map(ticket => ({
+          id: ticket.id,
+          name: ticket.name,
+          price: ticket.price,
+          quantity_available: ticket.quantity_available,
+          purchase_deadline: ticket.purchase_deadline ? new Date(ticket.purchase_deadline) : null,
+        })));
       }
     };
 
@@ -179,6 +204,37 @@ export default function CreateEvent() {
           `Error: ${error.message}. Please check the database permissions.`
         );
       } else {
+        // Save tickets if any were modified
+        if (tickets.length > 0) {
+          try {
+            // Delete existing tickets for this event
+            await supabase.from('tickets').delete().eq('event_id', eventId);
+            
+            // Insert updated tickets
+            const ticketsToInsert = tickets.map(ticket => ({
+              event_id: eventId,
+              name: ticket.name,
+              price: ticket.price,
+              quantity_available: ticket.quantity_available,
+              purchase_deadline: ticket.purchase_deadline?.toISOString(),
+            }));
+            
+            const { error: ticketsError } = await supabase.from('tickets').insert(ticketsToInsert);
+            if (ticketsError) {
+              console.error('Error saving tickets:', ticketsError);
+              setError('Event updated but failed to save tickets.');
+              return;
+            }
+          } catch (error) {
+            console.error('Error saving tickets:', error);
+            setError('Event updated but failed to save tickets.');
+            return;
+          }
+        } else {
+          // If no tickets, delete all existing tickets for this event
+          await supabase.from('tickets').delete().eq('event_id', eventId);
+        }
+        
         router.push('/event');
       }
     } else {
@@ -219,14 +275,98 @@ export default function CreateEvent() {
         console.log('Event created successfully:', data);
         if (data && data.length > 0) {
           const newEventId = data[0].id;
-          setInviteLink(
-            `${window.location.origin}/rsvp?event_id=${newEventId}`
-          );
-          setStep(5); // Move to the next step to display the invite link
+          setEventId(newEventId);
+          // Save tickets if any were created
+          if (tickets.length > 0) {
+            try {
+              const ticketsToInsert = tickets.map(ticket => ({
+                event_id: newEventId,
+                name: ticket.name,
+                price: ticket.price,
+                quantity_available: ticket.quantity_available,
+                purchase_deadline: ticket.purchase_deadline?.toISOString(),
+              }));
+              
+              const { error: ticketsError } = await supabase.from('tickets').insert(ticketsToInsert);
+              if (ticketsError) {
+                console.error('Error saving tickets:', ticketsError);
+                setError('Event created but failed to save tickets.');
+                return;
+              }
+            } catch (error) {
+              console.error('Error saving tickets:', error);
+              setError('Event created but failed to save tickets.');
+              return;
+            }
+          }
+          // Generate invite link and move to success step
+          setInviteLink(`${window.location.origin}/rsvp?event_id=${newEventId}`);
+          setStep(6);
         } else {
           setError('Event created but no data returned.');
         }
       }
+    }
+  };
+
+  const addTicket = () => {
+    if (tickets.length >= 5) return;
+    const newTicket = {
+      name: '',
+      price: 0,
+      quantity_available: 1,
+      purchase_deadline: null,
+    };
+    setTickets([...tickets, newTicket]);
+    setSelectedTicketIndex(tickets.length);
+    setShowTicketSidebar(true);
+  };
+
+  const updateTicket = (index: number, updates: Partial<typeof tickets[0]>) => {
+    const updatedTickets = [...tickets];
+    updatedTickets[index] = { ...updatedTickets[index], ...updates };
+    setTickets(updatedTickets);
+  };
+
+  const removeTicket = (index: number) => {
+    setTickets(tickets.filter((_, i) => i !== index));
+    if (selectedTicketIndex === index) {
+      setSelectedTicketIndex(null);
+      setShowTicketSidebar(false);
+    }
+  };
+
+  const saveTickets = async () => {
+    if (!eventId) {
+      // If no eventId, we need to create the event first
+      await handleSubmit(new Event('submit') as any);
+      return;
+    }
+    
+    try {
+      // Delete existing tickets for this event
+      await supabase.from('tickets').delete().eq('event_id', eventId);
+      
+      // Insert new tickets
+      if (tickets.length > 0) {
+        const ticketsToInsert = tickets.map(ticket => ({
+          event_id: eventId,
+          name: ticket.name,
+          price: ticket.price,
+          quantity_available: ticket.quantity_available,
+          purchase_deadline: ticket.purchase_deadline?.toISOString(),
+        }));
+        
+        const { error } = await supabase.from('tickets').insert(ticketsToInsert);
+        if (error) throw error;
+      }
+      
+      // Generate invite link and move to success step
+      setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
+      setStep(6);
+    } catch (error) {
+      console.error('Error saving tickets:', error);
+      setError('Failed to save tickets');
     }
   };
 
@@ -410,6 +550,80 @@ export default function CreateEvent() {
                     className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
                   />
                 </div>
+                
+                {/* Ticket Management Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>
+                    Event Tickets
+                  </h3>
+                  <div className="mb-6">
+                    <p className="text-gray-600 mb-4">
+                      Manage up to 5 different ticket types for your event. Each ticket type can have its own price, quantity, and purchase deadline.
+                    </p>
+                    
+                    {tickets.length === 0 ? (
+                      <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                        <p className="text-gray-500 mb-4">No tickets created yet</p>
+                        <button
+                          type="button"
+                          onClick={addTicket}
+                          className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+                        >
+                          Create Your First Ticket
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {tickets.map((ticket, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-4 border rounded-lg bg-white"
+                          >
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{ticket.name || 'Untitled Ticket'}</h3>
+                              <p className="text-sm text-gray-600">
+                                ${ticket.price} • {ticket.quantity_available} available
+                                {ticket.purchase_deadline && (
+                                  <span> • Until {ticket.purchase_deadline.toLocaleDateString()}</span>
+                                )}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTicketIndex(index);
+                                  setShowTicketSidebar(true);
+                                }}
+                                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeTicket(index)}
+                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {tickets.length < 5 && (
+                          <button
+                            type="button"
+                            onClick={addTicket}
+                            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600"
+                          >
+                            + Add Another Ticket Type
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
                 <div className="flex justify-between">
                   <button
                     type="button"
@@ -418,14 +632,97 @@ export default function CreateEvent() {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
-                  >
-                    Update Event
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={saveTickets}
+                      className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
+                    >
+                      Save Tickets
+                    </button>
+                    <button
+                      type="submit"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+                    >
+                      Update Event
+                    </button>
+                  </div>
                 </div>
               </form>
+              
+              {/* Ticket Sidebar for Edit Form */}
+              {showTicketSidebar && selectedTicketIndex !== null && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                    <h3 className="text-lg font-semibold mb-4">
+                      {tickets[selectedTicketIndex].id ? 'Edit' : 'Create'} Ticket
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Ticket Name</label>
+                        <input
+                          type="text"
+                          value={tickets[selectedTicketIndex].name}
+                          onChange={(e) => updateTicket(selectedTicketIndex, { name: e.target.value })}
+                          className="w-full border rounded px-3 py-2"
+                          placeholder="e.g., Early Bird, VIP, General"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Price ($)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={tickets[selectedTicketIndex].price}
+                          onChange={(e) => updateTicket(selectedTicketIndex, { price: parseFloat(e.target.value) || 0 })}
+                          className="w-full border rounded px-3 py-2"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Quantity Available</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={tickets[selectedTicketIndex].quantity_available}
+                          onChange={(e) => updateTicket(selectedTicketIndex, { quantity_available: parseInt(e.target.value) || 1 })}
+                          className="w-full border rounded px-3 py-2"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Purchase Deadline (Optional)</label>
+                        <input
+                          type="datetime-local"
+                          value={tickets[selectedTicketIndex].purchase_deadline?.toISOString().slice(0, 16) || ''}
+                          onChange={(e) => updateTicket(selectedTicketIndex, { 
+                            purchase_deadline: e.target.value ? new Date(e.target.value) : null 
+                          })}
+                          className="w-full border rounded px-3 py-2"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-6">
+                      <button
+                        onClick={() => setShowTicketSidebar(false)}
+                        className="flex-1 px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => setShowTicketSidebar(false)}
+                        className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             // Original multi-step form for creating events
@@ -689,6 +986,164 @@ export default function CreateEvent() {
               )}
 
               {step === 4 && (
+                <div className="w-full max-w-4xl">
+                  <h1 className="text-4xl font-bold mb-8">Create Tickets</h1>
+                  
+                  <div className="mb-6">
+                    <p className="text-gray-600 mb-4">
+                      Create up to 5 different ticket types for your event. Each ticket type can have its own price, quantity, and purchase deadline.
+                    </p>
+                    
+                    {tickets.length === 0 ? (
+                      <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                        <p className="text-gray-500 mb-4">No tickets created yet</p>
+                        <button
+                          onClick={addTicket}
+                          className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+                        >
+                          Create Your First Ticket
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {tickets.map((ticket, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-4 border rounded-lg bg-white"
+                          >
+                            <div className="flex-1">
+                              <h3 className="font-semibold">{ticket.name || 'Untitled Ticket'}</h3>
+                              <p className="text-sm text-gray-600">
+                                ${ticket.price} • {ticket.quantity_available} available
+                                {ticket.purchase_deadline && (
+                                  <span> • Until {ticket.purchase_deadline.toLocaleDateString()}</span>
+                                )}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedTicketIndex(index);
+                                  setShowTicketSidebar(true);
+                                }}
+                                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => removeTicket(index)}
+                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {tickets.length < 5 && (
+                          <button
+                            onClick={addTicket}
+                            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600"
+                          >
+                            + Add Another Ticket Type
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <button
+                      onClick={prevStep}
+                      className="inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={() => nextStep()}
+                      className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+                    >
+                      Next
+                    </button>
+                  </div>
+                  
+                  {/* Ticket Sidebar */}
+                  {showTicketSidebar && selectedTicketIndex !== null && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                        <h3 className="text-lg font-semibold mb-4">
+                          {tickets[selectedTicketIndex].id ? 'Edit' : 'Create'} Ticket
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Ticket Name</label>
+                            <input
+                              type="text"
+                              value={tickets[selectedTicketIndex].name}
+                              onChange={(e) => updateTicket(selectedTicketIndex, { name: e.target.value })}
+                              className="w-full border rounded px-3 py-2"
+                              placeholder="e.g., Early Bird, VIP, General"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Price ($)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={tickets[selectedTicketIndex].price}
+                              onChange={(e) => updateTicket(selectedTicketIndex, { price: parseFloat(e.target.value) || 0 })}
+                              className="w-full border rounded px-3 py-2"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Quantity Available</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={tickets[selectedTicketIndex].quantity_available}
+                              onChange={(e) => updateTicket(selectedTicketIndex, { quantity_available: parseInt(e.target.value) || 1 })}
+                              className="w-full border rounded px-3 py-2"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Purchase Deadline (Optional)</label>
+                            <input
+                              type="datetime-local"
+                              value={tickets[selectedTicketIndex].purchase_deadline?.toISOString().slice(0, 16) || ''}
+                              onChange={(e) => updateTicket(selectedTicketIndex, { 
+                                purchase_deadline: e.target.value ? new Date(e.target.value) : null 
+                              })}
+                              className="w-full border rounded px-3 py-2"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 mt-6">
+                          <button
+                            onClick={() => setShowTicketSidebar(false)}
+                            className="flex-1 px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => setShowTicketSidebar(false)}
+                            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {step === 5 && (
                 <div>
                   <h1
                     className="text-4xl font-bold"
@@ -739,7 +1194,7 @@ export default function CreateEvent() {
                 </div>
               )}
 
-              {step === 5 && (
+              {step === 6 && (
                 <div>
                   <h1
                     className="text-4xl font-bold"
@@ -747,43 +1202,32 @@ export default function CreateEvent() {
                       color: 'var(--foreground)',
                     }}
                   >
-                    {eventId ? 'Event Updated!' : 'Event Created!'}
-                  </h1>
-                  {eventId ? (
-                    <p
-                      className="mt-4 text-lg"
-                      style={{
-                        color: 'var(--foreground)',
-                      }}
-                    >
-                      Your event has been successfully updated.
-                    </p>
-                  ) : (
-                    <div>
-                      <p
-                        className="mt-4 text-lg"
-                        style={{
-                          color: 'var(--foreground)',
-                        }}
-                      >
-                        Share this link with your guests:
-                      </p>
-                      <input
-                        type="text"
-                        value={inviteLink}
-                        readOnly
-                        className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                      />
-                      <button
-                        onClick={() =>
-                          navigator.clipboard.writeText(inviteLink)
-                        }
-                        className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
-                      >
-                        Copy Invite Link
-                      </button>
-                    </div>
-                  )}
+                                      Event Created!
+                </h1>
+                <div>
+                  <p
+                    className="mt-4 text-lg"
+                    style={{
+                      color: 'var(--foreground)',
+                    }}
+                  >
+                    Share this link with your guests:
+                  </p>
+                  <input
+                    type="text"
+                    value={inviteLink}
+                    readOnly
+                    className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                  />
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(inviteLink)
+                    }
+                    className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+                  >
+                    Copy Invite Link
+                  </button>
+                </div>
                   <button
                     onClick={() => router.push('/event')}
                     className="mt-4 ml-4 inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"

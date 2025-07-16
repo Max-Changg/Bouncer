@@ -39,6 +39,30 @@ export interface Database {
           additional_info?: string;
         };
       };
+      tickets: {
+        Row: {
+          id: string;
+          event_id: number;
+          name: string;
+          price: number;
+          quantity_available: number;
+          purchase_deadline: string | null;
+          created_at: string;
+        };
+        Insert: {
+          event_id: number;
+          name: string;
+          price: number;
+          quantity_available: number;
+          purchase_deadline?: string | null;
+        };
+        Update: {
+          name?: string;
+          price?: number;
+          quantity_available?: number;
+          purchase_deadline?: string | null;
+        };
+      };
       rsvps: {
         Row: {
           id: string /* Corrected: uuid maps to string */;
@@ -51,6 +75,9 @@ export interface Database {
           user_id: string /* Corrected: uuid maps to string */;
           payment_status?: string; // 'paid', 'unpaid', 'overpaid'
           amount_paid?: number;
+          payment_method?: string;
+          ticket_id?: string;
+          amount_owed?: number;
         };
         Insert: {
           event_id: number;
@@ -61,6 +88,9 @@ export interface Database {
           user_id: string;
           payment_status?: string;
           amount_paid?: number;
+          payment_method?: string;
+          ticket_id?: string;
+          amount_owed?: number;
         };
         Update: {
           name?: string;
@@ -69,6 +99,9 @@ export interface Database {
           is_approved?: boolean;
           payment_status?: string;
           amount_paid?: number;
+          payment_method?: string;
+          ticket_id?: string;
+          amount_owed?: number;
         };
       };
       profiles: {
