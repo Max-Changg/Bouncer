@@ -3,6 +3,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { useState } from 'react';
 import type { Database } from '@/lib/database.types';
+import { Button } from '@/components/ui/button';
 
 export default function TestAuth() {
   const [status, setStatus] = useState<string>('Testing...');
@@ -71,27 +72,14 @@ export default function TestAuth() {
         </div>
 
         <div className="space-x-4">
-          <button
-            onClick={testConnection}
-            className="rounded bg-blue-500 px-4 py-2 text-white"
-          >
-            Test Connection
-          </button>
+          <Button onClick={testConnection}>Test Connection</Button>
 
-          <button
-            onClick={checkUser}
-            className="rounded bg-green-500 px-4 py-2 text-white"
-          >
-            Check User
-          </button>
+          <Button onClick={checkUser}>Check User</Button>
 
           {user && (
-            <button
-              onClick={signOut}
-              className="rounded bg-red-500 px-4 py-2 text-white"
-            >
+            <Button onClick={signOut} variant="destructive">
               Sign Out
-            </button>
+            </Button>
           )}
         </div>
 

@@ -438,7 +438,7 @@ export default function CreateEvent() {
                     </Label>
                     <div className="flex gap-2">
                       <Popover>
-                        <PopoverTrigger asChild>
+                        <PopoverTrigger>
                           <Button
                             variant="outline"
                             id="start-date-picker"
@@ -476,7 +476,7 @@ export default function CreateEvent() {
                     </Label>
                     <div className="flex gap-2">
                       <Popover>
-                        <PopoverTrigger asChild>
+                        <PopoverTrigger>
                           <Button
                             variant="outline"
                             id="end-date-picker"
@@ -564,13 +564,12 @@ export default function CreateEvent() {
                     {tickets.length === 0 ? (
                       <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                         <p className="text-gray-500 mb-4">No tickets created yet</p>
-                        <button
-                          type="button"
+                        <Button
                           onClick={addTicket}
                           className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                         >
                           Create Your First Ticket
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -589,8 +588,7 @@ export default function CreateEvent() {
                               </p>
                             </div>
                             <div className="flex gap-2">
-                              <button
-                                type="button"
+                              <Button
                                 onClick={() => {
                                   setSelectedTicketIndex(index);
                                   setShowTicketSidebar(true);
@@ -598,26 +596,24 @@ export default function CreateEvent() {
                                 className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                               >
                                 Edit
-                              </button>
-                              <button
-                                type="button"
+                              </Button>
+                              <Button
                                 onClick={() => removeTicket(index)}
                                 className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
                               >
                                 Remove
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         ))}
                         
                         {tickets.length < 5 && (
-                          <button
-                            type="button"
+                          <Button
                             onClick={addTicket}
                             className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600"
                           >
                             + Add Another Ticket Type
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
@@ -625,27 +621,25 @@ export default function CreateEvent() {
                 </div>
                 
                 <div className="flex justify-between">
-                  <button
-                    type="button"
+                  <Button
                     onClick={() => router.push('/event')}
                     className="inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
                   >
                     Cancel
-                  </button>
+                  </Button>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
+                    <Button
                       onClick={saveTickets}
                       className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
                     >
                       Save Tickets
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
                       className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                     >
                       Update Event
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </form>
@@ -707,18 +701,18 @@ export default function CreateEvent() {
                     </div>
                     
                     <div className="flex gap-2 mt-6">
-                      <button
+                      <Button
                         onClick={() => setShowTicketSidebar(false)}
                         className="flex-1 px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
                       >
                         Cancel
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setShowTicketSidebar(false)}
                         className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                       >
                         Save
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -768,12 +762,12 @@ export default function CreateEvent() {
                         className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
                       />
                     </div>
-                    <button
+                    <Button
                       type="submit"
                       className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                     >
                       Next
-                    </button>
+                    </Button>
                   </form>
                 </div>
               )}
@@ -820,19 +814,18 @@ export default function CreateEvent() {
                       />
                     </div>
                     <div className="flex justify-between">
-                      <button
-                        type="button"
+                      <Button
                         onClick={prevStep}
                         className="inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
                       >
                         Back
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="submit"
                         className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                       >
                         Next
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 </div>
@@ -868,7 +861,7 @@ export default function CreateEvent() {
                         </Label>
                         <div className="flex gap-2">
                           <Popover>
-                            <PopoverTrigger asChild>
+                            <PopoverTrigger>
                               <Button
                                 variant="outline"
                                 id="start-date-picker"
@@ -906,7 +899,7 @@ export default function CreateEvent() {
                         </Label>
                         <div className="flex gap-2">
                           <Popover>
-                            <PopoverTrigger asChild>
+                            <PopoverTrigger>
                               <Button
                                 variant="outline"
                                 id="end-date-picker"
@@ -967,19 +960,18 @@ export default function CreateEvent() {
                       </select>
                     </div>
                     <div className="flex justify-between">
-                      <button
-                        type="button"
+                      <Button
                         onClick={prevStep}
                         className="inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
                       >
                         Back
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="submit"
                         className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                       >
                         Next
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 </div>
@@ -997,12 +989,12 @@ export default function CreateEvent() {
                     {tickets.length === 0 ? (
                       <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                         <p className="text-gray-500 mb-4">No tickets created yet</p>
-                        <button
+                        <Button
                           onClick={addTicket}
                           className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                         >
                           Create Your First Ticket
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1021,7 +1013,7 @@ export default function CreateEvent() {
                               </p>
                             </div>
                             <div className="flex gap-2">
-                              <button
+                              <Button
                                 onClick={() => {
                                   setSelectedTicketIndex(index);
                                   setShowTicketSidebar(true);
@@ -1029,42 +1021,42 @@ export default function CreateEvent() {
                                 className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                               >
                                 Edit
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 onClick={() => removeTicket(index)}
                                 className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
                               >
                                 Remove
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         ))}
                         
                         {tickets.length < 5 && (
-                          <button
+                          <Button
                             onClick={addTicket}
                             className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600"
                           >
                             + Add Another Ticket Type
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
                   </div>
                   
                   <div className="flex justify-between">
-                    <button
+                    <Button
                       onClick={prevStep}
                       className="inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
                     >
                       Back
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => nextStep()}
                       className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                     >
                       Next
-                    </button>
+                    </Button>
                   </div>
                   
                   {/* Ticket Sidebar */}
@@ -1124,18 +1116,18 @@ export default function CreateEvent() {
                         </div>
                         
                         <div className="flex gap-2 mt-6">
-                          <button
+                          <Button
                             onClick={() => setShowTicketSidebar(false)}
                             className="flex-1 px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
                           >
                             Cancel
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => setShowTicketSidebar(false)}
                             className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
                           >
                             Save
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1176,19 +1168,18 @@ export default function CreateEvent() {
                       />
                     </div>
                     <div className="flex justify-between">
-                      <button
-                        type="button"
+                      <Button
                         onClick={prevStep}
                         className="inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
                       >
                         Back
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="submit"
                         className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                       >
                         {eventId ? 'Update Event' : 'Create Event'}
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 </div>
@@ -1219,21 +1210,21 @@ export default function CreateEvent() {
                     readOnly
                     className="mt-2 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
                   />
-                  <button
+                  <Button
                     onClick={() =>
                       navigator.clipboard.writeText(inviteLink)
                     }
                     className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                   >
                     Copy Invite Link
-                  </button>
+                  </Button>
                 </div>
-                  <button
+                  <Button
                     onClick={() => router.push('/event')}
                     className="mt-4 ml-4 inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
                   >
                     Go to My Events
-                  </button>
+                  </Button>
                 </div>
               )}
             </>

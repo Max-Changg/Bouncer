@@ -97,7 +97,6 @@ export default function ClientHome() {
       {session ? (
         <div className="flex gap-4">
           <Button
-            asChild
             style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
             className="hover:bg-[#8e3fff]"
             variant="default"
@@ -107,7 +106,6 @@ export default function ClientHome() {
             </Link>
           </Button>
           <Button
-            asChild
             style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
             className="hover:bg-[#8e3fff]"
             variant="default"
@@ -117,7 +115,6 @@ export default function ClientHome() {
             </Link>
           </Button>
           <Button
-            asChild
             style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
             className="hover:bg-[#8e3fff]"
             variant="default"
@@ -129,7 +126,6 @@ export default function ClientHome() {
         </div>
       ) : (
         <Button
-          asChild
           style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
           className="hover:bg-[#8e3fff]"
           variant="default"

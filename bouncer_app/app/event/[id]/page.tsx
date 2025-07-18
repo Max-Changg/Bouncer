@@ -8,6 +8,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { DataTable } from '@/components/data-table';
 import { columns } from './columns';
+import { Button } from '@/components/ui/button';
 
 export default function EventDetails() {
   const [session, setSession] = useState<User | null>(null);
@@ -322,37 +323,22 @@ export default function EventDetails() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-black text-gray-300">
       <Header session={session} />
       <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
         <main className="row-start-2 flex w-full flex-col items-center gap-[32px] sm:items-start">
           <div className="flex w-full items-center justify-between">
             <h1 className="text-4xl font-bold">{event.name}</h1>
             <div>
-              <button
-                onClick={handleEdit}
-                className="inline-flex justify-center rounded-md border border-transparent bg-yellow-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:outline-none"
-              >
-                Edit
-              </button>
-              <button
-                onClick={handleDelete}
-                className="ml-4 inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => handleShare(event.id.toString())}
-                className="ml-4 inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
-              >
-                Get Invite Link
-              </button>
-              <button
+              <Button onClick={handleEdit} variant="outline">Edit</Button>
+              <Button onClick={handleDelete} variant="destructive" className="ml-4">Delete</Button>
+              <Button onClick={() => handleShare(event.id.toString())} className="ml-4">Get Invite Link</Button>
+              <Button
                 onClick={() => router.push(`/event/${eventId}/scan`)}
                 className="ml-4 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
               >
                 Scan QR Code
-              </button>
+              </Button>
             </div>
           </div>
           <div className="w-full rounded-lg border p-6 shadow-md">

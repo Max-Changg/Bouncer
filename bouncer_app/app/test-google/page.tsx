@@ -3,6 +3,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { useState } from 'react';
 import type { Database } from '@/lib/database.types';
+import { Button } from '@/components/ui/button';
 
 export default function TestGoogle() {
   const [status, setStatus] = useState<string>('Ready');
@@ -83,27 +84,18 @@ export default function TestGoogle() {
         </div>
 
         <div className="space-x-4">
-          <button
-            onClick={signInWithGoogle}
-            className="rounded bg-blue-500 px-4 py-2 text-white"
-          >
+          <Button onClick={signInWithGoogle}>
             Sign In with Google
-          </button>
+          </Button>
 
-          <button
-            onClick={checkUser}
-            className="rounded bg-green-500 px-4 py-2 text-white"
-          >
+          <Button onClick={checkUser}>
             Check User
-          </button>
+          </Button>
 
           {user && (
-            <button
-              onClick={signOut}
-              className="rounded bg-red-500 px-4 py-2 text-white"
-            >
+            <Button onClick={signOut} variant="destructive">
               Sign Out
-            </button>
+            </Button>
           )}
         </div>
 

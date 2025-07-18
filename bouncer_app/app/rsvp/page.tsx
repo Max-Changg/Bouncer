@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 import Header from '@/components/header';
+import { Button } from '@/components/ui/button';
 
 import type { Database } from '@/lib/database.types';
 import { formatISO, isAfter } from 'date-fns';
@@ -225,7 +226,7 @@ export default function Rsvp() {
             <p className="text-sm text-gray-500 mt-2">Debug: No session found</p>
             {/* Debug buttons */}
             <div className="mt-4 space-y-2">
-              <button
+              <Button
                 onClick={() => {
                   const eventIdForRedirect = eventIdParam || eventId || '';
                   const currentUrl = `/rsvp?event_id=${eventIdForRedirect}`;
@@ -235,7 +236,7 @@ export default function Rsvp() {
                 className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
               >
                 Sign In
-              </button>
+              </Button>
               <a
                 href={`/login?next=${encodeURIComponent(`/rsvp?event_id=${eventIdParam || eventId || ''}`)}`}
                 className="ml-4 text-blue-600 underline"
@@ -273,12 +274,12 @@ export default function Rsvp() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4 text-red-600">Error</h1>
             <p className="text-red-500">{error}</p>
-            <button
+            <Button
               onClick={() => router.push('/event')}
               className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
             >
               Go to Events
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -293,12 +294,12 @@ export default function Rsvp() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Event Not Found</h1>
             <p>The event you're looking for doesn't exist or you don't have permission to view it.</p>
-            <button
+            <Button
               onClick={() => router.push('/event')}
               className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
             >
               Go to Events
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -306,23 +307,23 @@ export default function Rsvp() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-black text-gray-300">
       <Header />
       <div className="flex min-h-screen flex-col items-center justify-center py-2">
         <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
           <h1 className="text-6xl font-bold">RSVP</h1>
           
-          <div className="mt-4 mb-8 p-4 bg-gray-100 rounded-lg">
+          <div className="mt-4 mb-8 p-4 bg-[#18181b] rounded-lg">
             <h2 className="text-2xl font-semibold">{event?.name}</h2>
-            <p className="text-gray-600">Theme: {event?.theme}</p>
-            <p className="text-gray-600">
+            <p className="text-gray-400">Theme: {event?.theme}</p>
+            <p className="text-gray-400">
               Start: {event ? new Date(event.start_date).toLocaleString() : ''}
             </p>
-            <p className="text-gray-600">
+            <p className="text-gray-400">
               End: {event ? new Date(event.end_date).toLocaleString() : ''}
             </p>
             {event?.additional_info && (
-              <p className="text-gray-600">Additional Info: {event.additional_info}</p>
+              <p className="text-gray-400">Additional Info: {event.additional_info}</p>
             )}
           </div>
 
@@ -407,16 +408,16 @@ export default function Rsvp() {
             </div>
             
             <div>
-              <button
+              <Button
                 type="submit"
                 className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               >
                 Submit RSVP
-              </button>
+              </Button>
             </div>
           </form>
           {/* Sign in with a different account button */}
-          <button
+          <Button
             onClick={async () => {
               await supabase.auth.signOut();
               const currentUrl = `/rsvp?event_id=${eventId || ''}`;
@@ -425,7 +426,7 @@ export default function Rsvp() {
             className="mt-6 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
           >
             Sign in with a different account
-          </button>
+          </Button>
         </main>
       </div>
     </div>

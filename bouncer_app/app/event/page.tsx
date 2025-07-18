@@ -6,6 +6,7 @@ import Header from '@/components/header';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
+import { Button } from '@/components/ui/button';
 
 export default function Event() {
   const [session, setSession] = useState<User | null>(null);
@@ -140,18 +141,18 @@ export default function Event() {
                   <p className="text-gray-600">
                     Additional Info: {event.additional_info}
                   </p>
-                  <button
+                  <Button
                     onClick={() => router.push(`/event/${event.id}`)}
                     className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
                   >
                     View
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleShare(event.id.toString())}
                     className="mt-4 ml-4 inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
                   >
                     Get Invite Link
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
