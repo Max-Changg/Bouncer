@@ -3,6 +3,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import type { Database } from '@/lib/database.types';
 
 export default function ClientHome() {
@@ -95,28 +96,48 @@ export default function ClientHome() {
     <div className="flex flex-col items-center gap-[32px] sm:items-start">
       {session ? (
         <div className="flex gap-4">
-          <Link href="/create-event">
-            <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none">
+          <Button
+            asChild
+            style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
+            className="hover:bg-[#8e3fff]"
+            variant="default"
+          >
+            <Link href="/create-event">
               Create Event
-            </button>
-          </Link>
-          <Link href="/event">
-            <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none">
+            </Link>
+          </Button>
+          <Button
+            asChild
+            style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
+            className="hover:bg-[#8e3fff]"
+            variant="default"
+          >
+            <Link href="/event">
               My Events
-            </button>
-          </Link>
-          <Link href="/qr-code">
-            <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none">
+            </Link>
+          </Button>
+          <Button
+            asChild
+            style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
+            className="hover:bg-[#8e3fff]"
+            variant="default"
+          >
+            <Link href="/qr-code">
               My QR Code
-            </button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       ) : (
-        <Link href="/login">
-          <button className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none">
+        <Button
+          asChild
+          style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
+          className="hover:bg-[#8e3fff]"
+          variant="default"
+        >
+          <Link href="/login">
             Login to Create Events
-          </button>
-        </Link>
+          </Link>
+        </Button>
       )}
 
       {session && events && events.length > 0 && (

@@ -7,6 +7,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import Header from '@/components/header';
 
 import type { Database } from '@/lib/database.types';
+import { formatISO, isAfter } from 'date-fns';
 
 export default function Rsvp() {
   const [name, setName] = useState('');
@@ -24,6 +25,8 @@ export default function Rsvp() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const [session, setSession] = useState<User | null>(null);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
 
   // Debug: Log current state
   console.log('RSVP Page State:', {
@@ -71,6 +74,14 @@ export default function Rsvp() {
     } else if (data) {
       console.log('Event found:', data);
       setEvent(data);
+      // Fetch tickets for this event
+      const { data: ticketData, error: ticketError } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('event_id', parseInt(id, 10));
+      if (!ticketError && ticketData) {
+        setTickets(ticketData);
+      }
     } else {
       setError('Event not found.');
       setEvent(null);
@@ -143,6 +154,26 @@ export default function Rsvp() {
       return;
     }
 
+    if (!selectedTicketId) {
+      setError('Please select a ticket type.');
+      return;
+    }
+    // Check if ticket is still available
+    const ticket = tickets.find(t => t.id === selectedTicketId);
+    if (!ticket || ticket.quantity_available <= 0 || (ticket.purchase_deadline && isAfter(new Date(), new Date(ticket.purchase_deadline)))) {
+      setError('Selected ticket is no longer available.');
+      return;
+    }
+    // Decrement ticket quantity
+    const { error: ticketUpdateError } = await supabase
+      .from('tickets')
+      .update({ quantity_available: ticket.quantity_available - 1 })
+      .eq('id', selectedTicketId);
+    if (ticketUpdateError) {
+      setError('Failed to reserve ticket. Please try again.');
+      return;
+    }
+
     const { data, error } = await supabase
       .from('rsvps')
       .insert([
@@ -151,7 +182,8 @@ export default function Rsvp() {
           email,
           status,
           event_id: Number(eventId),
-          user_id: session.id, // Associate RSVP with the logged-in user
+          user_id: session.id,
+          ticket_id: selectedTicketId,
         },
       ])
       .select();
@@ -342,6 +374,35 @@ export default function Rsvp() {
                   <option>Maybe</option>
                   <option>Not Attending</option>
                 </select>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-left font-medium mb-2">Select Ticket Type</label>
+              <div className="space-y-2">
+                {tickets.length === 0 && <div className="text-gray-500">No tickets available for this event.</div>}
+                {tickets.map(ticket => {
+                  const soldOut = ticket.quantity_available <= 0 || (ticket.purchase_deadline && isAfter(new Date(), new Date(ticket.purchase_deadline)));
+                  return (
+                    <label key={ticket.id} className={`flex items-center gap-2 p-2 rounded border ${soldOut ? 'bg-gray-100 text-gray-400' : 'bg-white'}`}> 
+                      <input
+                        type="radio"
+                        name="ticket"
+                        value={ticket.id}
+                        disabled={soldOut}
+                        checked={selectedTicketId === ticket.id}
+                        onChange={() => setSelectedTicketId(ticket.id)}
+                      />
+                      <span className="font-semibold">{ticket.name}</span>
+                      <span className="ml-2">${ticket.price}</span>
+                      <span className="ml-2">{ticket.quantity_available} left</span>
+                      {ticket.purchase_deadline && (
+                        <span className="ml-2">until {new Date(ticket.purchase_deadline).toLocaleString()}</span>
+                      )}
+                      {soldOut && <span className="ml-2 text-red-500 font-bold">Sold Out</span>}
+                    </label>
+                  );
+                })}
               </div>
             </div>
             

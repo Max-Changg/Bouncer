@@ -104,8 +104,8 @@ export default function Header() {
   };
 
   return (
-    <div>
-      <header className="flex items-center justify-between bg-gray-800 p-4 text-white">
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      <header className="flex items-center justify-between bg-black/70 backdrop-blur-sm p-4 text-white">
         <a href="/" className="text-xl font-bold hover:underline">
           Bouncer
         </a>
