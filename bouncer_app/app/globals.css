@@ -154,3 +154,52 @@
   opacity: 0;
   transform: translateY(30px);
 }
+
+/* Smooth scroll-triggered transitions using CSS custom properties */
+.opacity-0.transform.translate-y-8 {
+  --scroll-opacity: 0;
+  --scroll-transform: translateY(32px);
+  opacity: var(--scroll-opacity);
+  transform: var(--scroll-transform);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+/* Oscillating button animation */
+@keyframes oscillate {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.oscillate-button {
+  animation: oscillate 2s ease-in-out infinite;
+}
+
+/* Scroll-triggered animation class */
+.animate {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Ensure orange background beams are completely static */
+.bg-gradient-to-b.from-orange-500\/50,
+.bg-gradient-to-b.from-orange-600\/40,
+.bg-gradient-to-b.from-orange-400\/35,
+.bg-gradient-to-b.from-orange-500\/30 {
+  animation: none !important;
+  transition: none !important;
+  transform-style: preserve-3d;
+  will-change: auto;
+}
+
+/* Static beam class to prevent any movement */
+.static-beam {
+  animation: none !important;
+  transition: none !important;
+  transform-style: preserve-3d;
+  will-change: auto;
+  position: absolute !important;
+}
