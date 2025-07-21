@@ -19,16 +19,23 @@ export default function ClientHome() {
     {
       cookies: {
         get(name: string) {
-          return document.cookie
-            .split('; ')
-            .find(row => row.startsWith(`${name}=`))
-            ?.split('=')[1];
+          if (typeof document !== 'undefined') {
+            return document.cookie
+              .split('; ')
+              .find(row => row.startsWith(`${name}=`))
+              ?.split('=')[1];
+          }
+          return undefined;
         },
         set(name: string, value: string, options: any) {
-          document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}`;
+          if (typeof document !== 'undefined') {
+            document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}`;
+          }
         },
         remove(name: string, options: any) {
-          document.cookie = `${name}=; path=/; max-age=0`;
+          if (typeof document !== 'undefined') {
+            document.cookie = `${name}=; path=/; max-age=0`;
+          }
         },
       },
     }
@@ -97,42 +104,46 @@ export default function ClientHome() {
       {session ? (
         <div className="flex gap-4">
           <Button
-            style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
+            style={{
+              backgroundColor: '#A259FF',
+              color: 'white',
+            }}
             className="hover:bg-[#8e3fff]"
             variant="default"
           >
-            <Link href="/create-event">
-              Create Event
-            </Link>
+            <Link href="/create-event">Create Event</Link>
           </Button>
           <Button
-            style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
+            style={{
+              backgroundColor: '#A259FF',
+              color: 'white',
+            }}
             className="hover:bg-[#8e3fff]"
             variant="default"
           >
-            <Link href="/event">
-              My Events
-            </Link>
+            <Link href="/event">My Events</Link>
           </Button>
           <Button
-            style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
+            style={{
+              backgroundColor: '#A259FF',
+              color: 'white',
+            }}
             className="hover:bg-[#8e3fff]"
             variant="default"
           >
-            <Link href="/qr-code">
-              My QR Code
-            </Link>
+            <Link href="/qr-code">My QR Code</Link>
           </Button>
         </div>
       ) : (
         <Button
-          style={{ backgroundColor: '#A259FF', color: 'white', fontFamily: 'Newsreader, serif' }}
+          style={{
+            backgroundColor: '#A259FF',
+            color: 'white',
+          }}
           className="hover:bg-[#8e3fff]"
           variant="default"
         >
-          <Link href="/login">
-            Login to Create Events
-          </Link>
+          <Link href="/login">Login to Create Events</Link>
         </Button>
       )}
 

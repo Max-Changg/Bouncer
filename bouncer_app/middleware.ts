@@ -13,6 +13,19 @@ const protectedRoutes = [
 const publicRoutes = ['/login', '/auth/callback', '/'];
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Allow static files and Next.js internals to bypass middleware
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    pathname.startsWith('/public') ||
+    pathname === '/favicon.ico' ||
+    pathname.match(/\.[a-zA-Z0-9]+$/) // allow all files with an extension (e.g., .jpg, .png, .css, .js)
+  ) {
+    return NextResponse.next();
+  }
+
   const response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -64,8 +77,6 @@ export async function middleware(request: NextRequest) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-
-  const { pathname } = request.nextUrl;
 
   // If the user is not logged in and is trying to access a protected route, redirect to login
   if (!session && protectedRoutes.some(route => pathname.startsWith(route))) {

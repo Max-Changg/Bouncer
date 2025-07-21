@@ -17,6 +17,7 @@ export default function Event() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const router = useRouter();
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -45,6 +46,28 @@ export default function Event() {
     },
     [supabase, sortBy, sortOrder]
   );
+
+  // Add deleteAllEvents function
+  const deleteAllEvents = async () => {
+    if (!session) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const { error } = await supabase
+        .from('Events')
+        .delete()
+        .eq('user_id', session.id);
+      if (error) {
+        setError('Failed to delete events: ' + error.message);
+      } else {
+        setEvents([]);
+      }
+    } catch (err) {
+      setError('Failed to delete events.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const {
@@ -124,6 +147,16 @@ export default function Event() {
               <option value="desc">Descending</option>
             </select>
           </div>
+          {/* Delete All Events Button */}
+          {events.length > 0 && (
+            <Button
+              onClick={deleteAllEvents}
+              className="mb-6 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded disabled:opacity-50"
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete All Events'}
+            </Button>
+          )}
           {events.length === 0 ? (
             <p>No events created yet. Create one from the home page!</p>
           ) : (

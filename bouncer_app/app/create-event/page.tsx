@@ -41,15 +41,20 @@ export default function CreateEvent() {
   );
   const [session, setSession] = useState<User | null>(null);
   const [eventId, setEventId] = useState<number | null>(null);
-  const [tickets, setTickets] = useState<Array<{
-    id?: string;
-    name: string;
-    price: number;
-    quantity_available: number;
-    purchase_deadline: Date | null;
-  }>>([]);
-  const [selectedTicketIndex, setSelectedTicketIndex] = useState<number | null>(null);
+  const [tickets, setTickets] = useState<
+    Array<{
+      id?: string;
+      name: string;
+      price: number;
+      quantity_available: number;
+      purchase_deadline: Date | null;
+    }>
+  >([]);
+  const [selectedTicketIndex, setSelectedTicketIndex] = useState<number | null>(
+    null
+  );
   const [showTicketSidebar, setShowTicketSidebar] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const {
@@ -91,21 +96,25 @@ export default function CreateEvent() {
         setTimeZone(data.time_zone);
         setAdditionalInfo(data.additional_info);
       }
-      
+
       // Load existing tickets for this event
       const { data: ticketsData, error: ticketsError } = await supabase
         .from('tickets')
         .select('*')
         .eq('event_id', id);
-      
+
       if (!ticketsError && ticketsData) {
-        setTickets(ticketsData.map(ticket => ({
-          id: ticket.id,
-          name: ticket.name,
-          price: ticket.price,
-          quantity_available: ticket.quantity_available,
-          purchase_deadline: ticket.purchase_deadline ? new Date(ticket.purchase_deadline) : null,
-        })));
+        setTickets(
+          ticketsData.map(ticket => ({
+            id: ticket.id,
+            name: ticket.name,
+            price: ticket.price,
+            quantity_available: ticket.quantity_available,
+            purchase_deadline: ticket.purchase_deadline
+              ? new Date(ticket.purchase_deadline)
+              : null,
+          }))
+        );
       }
     };
 
@@ -124,127 +133,139 @@ export default function CreateEvent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!eventName.trim()) {
-      setError('Event name is required.');
-      return;
-    }
-    if (!eventTheme.trim()) {
-      setError('Event theme is required.');
-      return;
-    }
-    if (!startDate || !endDate) {
-      setError('Start and end dates are required.');
-      return;
-    }
-    if (!additionalInfo.trim()) {
-      setError('Additional information is required.');
-      return;
-    }
-    setError('');
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (!eventName.trim()) {
+        setError('Event name is required.');
+        setLoading(false);
+        return;
+      }
+      if (!eventTheme.trim()) {
+        setError('Event theme is required.');
+        setLoading(false);
+        return;
+      }
+      if (!startDate || !endDate) {
+        setError('Start and end dates are required.');
+        setLoading(false);
+        return;
+      }
+      if (!additionalInfo.trim()) {
+        setError('Additional information is required.');
+        setLoading(false);
+        return;
+      }
+      setError('');
 
-    if (!session) {
-      setError(
-        'You must be logged in to create an event. Redirecting to login...'
-      );
-      setTimeout(() => router.push('/login'), 3000);
-      return;
-    }
-
-    const formatInTimeZone = (date: Date, fmt: string, tz: string) => {
-      return format(toZonedTime(date, tz), fmt, {
-        timeZone: tz,
-      });
-    };
-
-    // Combine date and time
-    const createDateTime = (date: Date | null, time: string) => {
-      if (!date) return null;
-      const [hours, minutes] = time.split(':').map(Number);
-      const combinedDate = new Date(date);
-      combinedDate.setHours(hours, minutes, 0, 0);
-      return combinedDate;
-    };
-
-    const startDateTime = createDateTime(startDate, startTime);
-    const endDateTime = createDateTime(endDate, endTime);
-
-    if (eventId) {
-      // Update existing event
-      const { error } = await supabase
-        .from('Events')
-        .update({
-          name: eventName,
-          theme: eventTheme,
-          start_date: startDateTime
-            ? formatInTimeZone(
-                startDateTime,
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                timeZone
-              )
-            : null,
-          end_date: endDateTime
-            ? formatInTimeZone(
-                endDateTime,
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                timeZone
-              )
-            : null,
-          additional_info: additionalInfo,
-          time_zone: timeZone,
-        })
-        .eq('id', eventId);
-
-      if (error) {
-        console.error('Error updating event:', error);
-        setError(error.message);
+      if (!session) {
+        setError(
+          'You must be logged in to create an event. Redirecting to login...'
+        );
+        setTimeout(() => router.push('/login'), 3000);
+        setLoading(false);
         return;
       }
 
-      // Save tickets
-      await saveTickets();
+      const formatInTimeZone = (date: Date, fmt: string, tz: string) => {
+        return format(toZonedTime(date, tz), fmt, {
+          timeZone: tz,
+        });
+      };
 
-      setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
-    } else {
-      // Create new event
-      const { data, error } = await supabase
-        .from('Events')
-        .insert({
-          name: eventName,
-          theme: eventTheme,
-          start_date: startDateTime
-            ? formatInTimeZone(
-                startDateTime,
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                timeZone
-              )
-            : null,
-          end_date: endDateTime
-            ? formatInTimeZone(
-                endDateTime,
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                timeZone
-              )
-            : null,
-          additional_info: additionalInfo,
-          time_zone: timeZone,
-          user_id: session.id,
-        })
-        .select()
-        .single();
+      // Combine date and time
+      const createDateTime = (date: Date | null, time: string) => {
+        if (!date) return null;
+        const [hours, minutes] = time.split(':').map(Number);
+        const combinedDate = new Date(date);
+        combinedDate.setHours(hours, minutes, 0, 0);
+        return combinedDate;
+      };
 
-      if (error) {
-        console.error('Error creating event:', error);
-        setError(error.message);
-        return;
+      const startDateTime = createDateTime(startDate, startTime);
+      const endDateTime = createDateTime(endDate, endTime);
+
+      if (eventId) {
+        // Update existing event
+        const { error } = await supabase
+          .from('Events')
+          .update({
+            name: eventName,
+            theme: eventTheme,
+            start_date: startDateTime
+              ? formatInTimeZone(
+                  startDateTime,
+                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                  timeZone
+                )
+              : null,
+            end_date: endDateTime
+              ? formatInTimeZone(
+                  endDateTime,
+                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                  timeZone
+                )
+              : null,
+            additional_info: additionalInfo,
+            time_zone: timeZone,
+          })
+          .eq('id', eventId);
+
+        if (error) {
+          console.error('Error updating event:', error);
+          setError(error.message);
+          setLoading(false);
+          return;
+        }
+
+        // Save tickets
+        await saveTickets(eventId);
+
+        setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
+      } else {
+        // Create new event
+        const { data, error } = await supabase
+          .from('Events')
+          .insert({
+            name: eventName,
+            theme: eventTheme,
+            start_date: startDateTime
+              ? formatInTimeZone(
+                  startDateTime,
+                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                  timeZone
+                )
+              : null,
+            end_date: endDateTime
+              ? formatInTimeZone(
+                  endDateTime,
+                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                  timeZone
+                )
+              : null,
+            additional_info: additionalInfo,
+            time_zone: timeZone,
+            user_id: session.id,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating event:', error);
+          setError(error.message);
+          setLoading(false);
+          return;
+        }
+
+        if (data) {
+          setEventId(data.id);
+          setInviteLink(`${window.location.origin}/rsvp?event_id=${data.id}`);
+          // Save tickets for the new event
+          await saveTickets(data.id);
+        }
       }
-
-      if (data) {
-        setEventId(data.id);
-        setInviteLink(`${window.location.origin}/rsvp?event_id=${data.id}`);
-        
-        // Save tickets for the new event
-        await saveTickets();
-      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -261,7 +282,10 @@ export default function CreateEvent() {
     setShowTicketSidebar(true);
   };
 
-  const updateTicket = (index: number, updates: Partial<typeof tickets[0]>) => {
+  const updateTicket = (
+    index: number,
+    updates: Partial<(typeof tickets)[0]>
+  ) => {
     const updatedTickets = [...tickets];
     updatedTickets[index] = { ...updatedTickets[index], ...updates };
     setTickets(updatedTickets);
@@ -275,34 +299,29 @@ export default function CreateEvent() {
     }
   };
 
-  const saveTickets = async () => {
-    if (!eventId) {
-      // If no eventId, we need to create the event first
-      await handleSubmit(new Event('submit') as any);
+  const saveTickets = async (eventIdToUse: number | null = eventId) => {
+    if (!eventIdToUse) {
+      setError('Event must be created before saving tickets.');
       return;
     }
-    
     try {
       // Delete existing tickets for this event
-      await supabase.from('tickets').delete().eq('event_id', eventId);
-      
+      await supabase.from('tickets').delete().eq('event_id', eventIdToUse);
       // Insert new tickets
       if (tickets.length > 0) {
         const ticketsToInsert = tickets.map(ticket => ({
-          event_id: eventId,
+          event_id: eventIdToUse,
           name: ticket.name,
           price: ticket.price,
           quantity_available: ticket.quantity_available,
           purchase_deadline: ticket.purchase_deadline?.toISOString(),
         }));
-        
-        const { error } = await supabase.from('tickets').insert(ticketsToInsert);
+        const { error } = await supabase
+          .from('tickets')
+          .insert(ticketsToInsert);
         if (error) throw error;
       }
-      
-      // Generate invite link and move to success step
-      setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
-      // setStep(6); // This line is removed as per the edit hint
+      setInviteLink(`${window.location.origin}/rsvp?event_id=${eventIdToUse}`);
     } catch (error) {
       console.error('Error saving tickets:', error);
       setError('Failed to save tickets');
@@ -418,9 +437,7 @@ export default function CreateEvent() {
                         id="end-date-picker"
                         className="w-40 justify-between font-normal"
                       >
-                        {endDate
-                          ? endDate.toLocaleDateString()
-                          : 'Select date'}
+                        {endDate ? endDate.toLocaleDateString() : 'Select date'}
                         <ChevronDownIcon />
                       </Button>
                     </PopoverTrigger>
@@ -486,17 +503,22 @@ export default function CreateEvent() {
                 className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
               />
             </div>
-            
+
             {/* Ticket Management Section */}
             <div>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--foreground)' }}>
+              <h3
+                className="text-lg font-semibold mb-4"
+                style={{ color: 'var(--foreground)' }}
+              >
                 Event Tickets
               </h3>
               <div className="mb-6">
                 <p className="text-gray-600 mb-4">
-                  Manage up to 5 different ticket types for your event. Each ticket type can have its own price, quantity, and purchase deadline.
+                  Manage up to 5 different ticket types for your event. Each
+                  ticket type can have its own price, quantity, and purchase
+                  deadline.
                 </p>
-                
+
                 {tickets.length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                     <p className="text-gray-500 mb-4">No tickets created yet</p>
@@ -515,11 +537,18 @@ export default function CreateEvent() {
                         className="flex items-center justify-between p-4 border rounded-lg bg-white"
                       >
                         <div className="flex-1">
-                          <h3 className="font-semibold">{ticket.name || 'Untitled Ticket'}</h3>
+                          <h3 className="font-semibold">
+                            {ticket.name || 'Untitled Ticket'}
+                          </h3>
                           <p className="text-sm text-gray-600">
-                            ${ticket.price} • {ticket.quantity_available} available
+                            ${ticket.price} • {ticket.quantity_available}{' '}
+                            available
                             {ticket.purchase_deadline && (
-                              <span> • Until {ticket.purchase_deadline.toLocaleDateString()}</span>
+                              <span>
+                                {' '}
+                                • Until{' '}
+                                {ticket.purchase_deadline.toLocaleDateString()}
+                              </span>
                             )}
                           </p>
                         </div>
@@ -542,7 +571,7 @@ export default function CreateEvent() {
                         </div>
                       </div>
                     ))}
-                    
+
                     {tickets.length < 5 && (
                       <Button
                         onClick={addTicket}
@@ -555,7 +584,7 @@ export default function CreateEvent() {
                 )}
               </div>
             </div>
-            
+
             <div className="flex justify-between">
               <Button
                 onClick={() => router.push('/event')}
@@ -565,21 +594,23 @@ export default function CreateEvent() {
               </Button>
               <div className="flex gap-2">
                 <Button
-                  onClick={saveTickets}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
+                  onClick={() => saveTickets()}
+                  className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none font-mono"
+                  disabled={loading}
                 >
                   Save Tickets
                 </Button>
                 <Button
                   type="submit"
-                  className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+                  className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none font-mono"
+                  disabled={loading}
                 >
                   {eventId ? 'Update Event' : 'Create Event'}
                 </Button>
               </div>
             </div>
           </form>
-          
+
           {/* Success Section - Show invite link after event creation */}
           {inviteLink && (
             <div className="mt-8 p-6 border border-green-200 rounded-lg bg-green-50">
@@ -611,7 +642,7 @@ export default function CreateEvent() {
               </div>
             </div>
           )}
-          
+
           {/* Ticket Sidebar for Edit Form */}
           {showTicketSidebar && selectedTicketIndex !== null && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -619,55 +650,83 @@ export default function CreateEvent() {
                 <h3 className="text-lg font-semibold mb-4">
                   {tickets[selectedTicketIndex].id ? 'Edit' : 'Create'} Ticket
                 </h3>
-                
+
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Ticket Name</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Ticket Name
+                    </label>
                     <input
                       type="text"
                       value={tickets[selectedTicketIndex].name}
-                      onChange={(e) => updateTicket(selectedTicketIndex, { name: e.target.value })}
+                      onChange={e =>
+                        updateTicket(selectedTicketIndex, {
+                          name: e.target.value,
+                        })
+                      }
                       className="w-full border rounded px-3 py-2"
                       placeholder="e.g., Early Bird, VIP, General"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium mb-1">Price ($)</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Price ($)
+                    </label>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={tickets[selectedTicketIndex].price}
-                      onChange={(e) => updateTicket(selectedTicketIndex, { price: parseFloat(e.target.value) || 0 })}
+                      onChange={e =>
+                        updateTicket(selectedTicketIndex, {
+                          price: parseFloat(e.target.value) || 0,
+                        })
+                      }
                       className="w-full border rounded px-3 py-2"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium mb-1">Quantity Available</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Quantity Available
+                    </label>
                     <input
                       type="number"
                       min="1"
                       value={tickets[selectedTicketIndex].quantity_available}
-                      onChange={(e) => updateTicket(selectedTicketIndex, { quantity_available: parseInt(e.target.value) || 1 })}
+                      onChange={e =>
+                        updateTicket(selectedTicketIndex, {
+                          quantity_available: parseInt(e.target.value) || 1,
+                        })
+                      }
                       className="w-full border rounded px-3 py-2"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-medium mb-1">Purchase Deadline (Optional)</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Purchase Deadline (Optional)
+                    </label>
                     <input
                       type="datetime-local"
-                      value={tickets[selectedTicketIndex].purchase_deadline?.toISOString().slice(0, 16) || ''}
-                      onChange={(e) => updateTicket(selectedTicketIndex, { 
-                        purchase_deadline: e.target.value ? new Date(e.target.value) : null 
-                      })}
+                      value={
+                        tickets[selectedTicketIndex].purchase_deadline
+                          ?.toISOString()
+                          .slice(0, 16) || ''
+                      }
+                      onChange={e =>
+                        updateTicket(selectedTicketIndex, {
+                          purchase_deadline: e.target.value
+                            ? new Date(e.target.value)
+                            : null,
+                        })
+                      }
                       className="w-full border rounded px-3 py-2"
                     />
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2 mt-6">
                   <Button
                     onClick={() => setShowTicketSidebar(false)}

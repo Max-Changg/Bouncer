@@ -72,7 +72,7 @@ export default function MyRsvps() {
         ) : (
           <div className="w-full max-w-2xl">
             <table className="min-w-full border rounded-lg overflow-hidden">
-              <thead className="bg-gray-100">
+              <thead className="bg-gray-100 text-black">
                 <tr>
                   <th className="px-4 py-2 text-left">Event Name</th>
                   <th className="px-4 py-2 text-left">Event Date & Time</th>
