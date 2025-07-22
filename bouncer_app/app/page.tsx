@@ -498,7 +498,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Bouncing scroll-down button, only show if above"a Why Bouncer section */}
+      {/* Bouncing scroll-down button, only show if above Why Bouncer section */}
       {showScrollButton && (
         <button
           onClick={() => {

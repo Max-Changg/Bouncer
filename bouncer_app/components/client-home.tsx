@@ -41,6 +41,16 @@ export default function ClientHome() {
     }
   );
 
+  // Debug Supabase connection
+  useEffect(() => {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      console.error('Missing Supabase environment variables');
+    }
+  }, []);
+
   useEffect(() => {
     checkSession();
 
@@ -63,7 +73,14 @@ export default function ClientHome() {
     try {
       const {
         data: { session },
+        error: sessionError,
       } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        return;
+      }
+
       setSession(session);
 
       if (session) {
@@ -78,6 +95,13 @@ export default function ClientHome() {
 
   const fetchEvents = async (userId: string) => {
     try {
+      if (!userId) {
+        console.error('No user ID provided to fetchEvents');
+        return;
+      }
+
+      console.log('Fetching events for user:', userId);
+
       const { data, error } = await supabase
         .from('Events')
         .select('*')
@@ -85,13 +109,26 @@ export default function ClientHome() {
 
       if (error) {
         console.error('Error fetching events:', error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
       } else {
+        console.log(
+          'Events fetched successfully:',
+          data?.length || 0,
+          'events'
+        );
         setEvents(
           data as unknown as Database['public']['Tables']['Events']['Row'][]
         );
       }
     } catch (error) {
       console.error('Error fetching events:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error stringified:', JSON.stringify(error, null, 2));
     }
   };
 
