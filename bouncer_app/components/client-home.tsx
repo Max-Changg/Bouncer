@@ -95,12 +95,8 @@ export default function ClientHome() {
     }
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   return (
-    <div className="flex flex-col items-center gap-[32px] sm:items-start">
+    <div className="flex flex-col items-center justify-items-center gap-[32px] sm:items-start">
       {session ? (
         <div className="flex gap-4">
           <Button
@@ -108,7 +104,7 @@ export default function ClientHome() {
               backgroundColor: '#A259FF',
               color: 'white',
             }}
-            className="hover:bg-[#8e3fff] font-mono hover:animate-wiggle"
+            className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
             variant="default"
           >
             <Link href="/create-event">Create Event</Link>
@@ -118,7 +114,7 @@ export default function ClientHome() {
               backgroundColor: '#A259FF',
               color: 'white',
             }}
-            className="hover:bg-[#8e3fff] font-mono hover:animate-wiggle"
+            className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
             variant="default"
           >
             <Link href="/event">My Events</Link>
@@ -128,7 +124,7 @@ export default function ClientHome() {
               backgroundColor: '#A259FF',
               color: 'white',
             }}
-            className="hover:bg-[#8e3fff] font-mono hover:animate-wiggle"
+            className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
             variant="default"
           >
             <Link href="/qr-code">My QR Code</Link>
@@ -140,7 +136,7 @@ export default function ClientHome() {
             backgroundColor: '#A259FF',
             color: 'white',
           }}
-          className="hover:bg-[#8e3fff] font-mono hover:animate-wiggle"
+          className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
           variant="default"
         >
           <Link href="/login">Login to Create Events</Link>
@@ -148,14 +144,35 @@ export default function ClientHome() {
       )}
 
       {session && events && events.length > 0 && (
-        <div>
-          <h2 className="mt-8 text-2xl font-bold">Your Events</h2>
-          <ul>
-            {events.map(
-              (event: Database['public']['Tables']['Events']['Row']) => (
-                <li key={event.id}>{event.name}</li>
+        <div className="text-center">
+          <h2 className="mt-8 text-2xl font-bold text-white">Your Upcoming Events:</h2>
+          <ul className="mt-4 space-y-2">
+            {events
+              .filter(
+                (event: Database['public']['Tables']['Events']['Row']) => {
+                  // Filter out events that have already ended
+                  const now = new Date();
+                  const eventEnd = new Date(event.end_date);
+                  return eventEnd > now;
+                }
               )
-            )}
+              .sort(
+                (
+                  a: Database['public']['Tables']['Events']['Row'],
+                  b: Database['public']['Tables']['Events']['Row']
+                ) => {
+                  // Sort by start date (most recent first)
+                  const dateA = new Date(a.start_date);
+                  const dateB = new Date(b.start_date);
+                  return dateA.getTime() - dateB.getTime();
+                }
+              )
+              .slice(0, 3) // Take only top 3
+              .map((event: Database['public']['Tables']['Events']['Row']) => (
+                <li key={event.id} className="text-gray-300">
+                  {event.name}
+                </li>
+              ))}
           </ul>
         </div>
       )}

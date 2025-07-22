@@ -104,9 +104,9 @@ export default function Header() {
   };
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif' }}>
-      <header className="flex items-center justify-between p-4 text-white">
-        <a href="/" className="text-xl font-bold hover:underline">
+    <div>
+      <header className="text-xl flex items-center justify-between p-4 text-white">
+        <a href="/" className="font-bold hover:underline">
           Bouncer
         </a>
         <nav>

@@ -116,39 +116,38 @@ export default function Home() {
       <div className="absolute inset-0 pointer-events-none">
         {/* Tilted spotlight beams - using center-anchored positioning */}
         <div
-          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b from-purple-500/50 via-purple-500/25 to-transparent transform -translate-x-[200px] -skew-x-12"
+          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b from-purple-400/50 via-purple-500/25 to-transparent transform -translate-x-[200px] "
+          style={{ clipPath: 'polygon(60% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
+        ></div>
+        <div
+          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b from-orange-400/50 via-orange-500/25 to-transparent transform -skew-x-12 static-beam"
           style={{ clipPath: 'polygon(70% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
         ></div>
         <div
-          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b from-orange-500/50 via-orange-500/25 to-transparent transform translate-x-[200px] skew-x-12 static-beam"
-          style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
+          className="absolute top-0 left-1/2 w-80 h-full bg-gradient-to-b from-purple-600/40 via-purple-600/20 to-transparent transform -translate-x-[400px] skew-x-22"
+          style={{ clipPath: 'polygon(50% 0%, 80% 0%, 100% 100%, 0% 80%)' }}
         ></div>
-        <div
-          className="absolute top-0 left-1/2 w-80 h-full bg-gradient-to-b from-purple-600/40 via-purple-600/20 to-transparent transform -translate-x-[400px] -skew-x-6"
-          style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
-        ></div>
-        <div
+        {/* <div
           className="absolute top-0 left-1/2 w-72 h-full bg-gradient-to-b from-orange-600/40 via-orange-600/20 to-transparent transform translate-x-[400px] skew-x-6 static-beam"
           style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
-        ></div>
+        ></div> */}
 
-        {/* Additional tilted beams - using center-anchored positioning */}
-        <div
+        {/* <div
           className="absolute top-0 left-1/2 w-64 h-full bg-gradient-to-b from-purple-400/35 via-purple-400/18 to-transparent transform -translate-x-[600px] -skew-x-8"
           style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
-        ></div>
-        <div
+        ></div> */}
+        {/* <div
           className="absolute top-0 left-1/2 w-64 h-full bg-gradient-to-b from-orange-400/35 via-orange-400/18 to-transparent transform translate-x-[600px] skew-x-8 static-beam"
           style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
-        ></div>
-        <div
+        ></div> */}
+        {/* <div
           className="absolute top-0 left-1/2 w-56 h-full bg-gradient-to-b from-purple-500/30 via-purple-500/15 to-transparent transform -translate-x-[800px] -skew-x-4"
           style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
-        ></div>
-        <div
+        ></div> */}
+        {/* <div
           className="absolute top-0 left-1/2 w-48 h-full bg-gradient-to-b from-orange-500/30 via-orange-500/15 to-transparent transform translate-x-[800px] skew-x-4 static-beam"
           style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
-        ></div>
+        ></div> */}
       </div>
 
       {/* Header with transparency and higher z-index */}
@@ -157,21 +156,24 @@ export default function Home() {
       </div>
 
       <div className="grid min-h-screen grid-rows-[0px_1fr_20px] items-start justify-items-center gap-16 p-8 pb-20 sm:p-20 relative z-10">
-        <main className="row-start-1 w-full max-w-7xl flex flex-col items-center justify-center min-h-screen -mt-16">
+        <main className="row-start-1 w-full max-w-7xl flex flex-col items-center justify-center mt-40">
           <div className="flex flex-col items-center text-center gap-8 w-full">
             {/* Left side - Text content */}
             <div className="text-gray-200 text-center w-full">
               <h1
                 ref={headingRef}
                 className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold mb-8 opacity-0 animate-fade-in-only leading-tight moving-gradient-text"
+                style={{ animationDelay: '0.5s' }}
               >
-                <span className="block sm:inline">Optimize </span>
-                <span className="block sm:inline">Check-Ins</span>
+                <span className="block lg:inline">Optimize </span>
+                <span className="block lg:inline whitespace-nowrap">
+                  Check-Ins
+                </span>
               </h1>
               <div className="max-w-[800px] mx-auto">
                 <p
                   ref={descRef}
-                  className="text-lg mb-8 opacity-0 animate-fade-in-only"
+                  className="text-2xl mb-8 opacity-0 animate-fade-in-only"
                 >
                   Streamline your event management with our comprehensive
                   check-in solution designed for modern parties and events.

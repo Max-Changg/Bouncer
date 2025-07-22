@@ -226,6 +226,13 @@
 .hover\:animate-wiggle:hover {
   animation: wiggleWithPause 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
+.hover\:animate-grow {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover\:animate-grow:hover {
+  transform: scale(1.1);
+}
 
 @keyframes movingGradient {
   0% { background-position: 0% 50%; }
@@ -236,7 +243,7 @@
 .moving-gradient-text {
   background: linear-gradient(90deg, #A259FF, #FF6B35, #A259FF, #FF6B35);
   background-size: 300% 100%;
-  animation: movingGradient 3s ease-in-out infinite;
+  animation: movingGradient 7s ease-in-out infinite;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
