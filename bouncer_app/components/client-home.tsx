@@ -97,40 +97,7 @@ export default function ClientHome() {
 
   return (
     <div className="flex flex-col items-center justify-items-center gap-[32px] sm:items-start">
-      {session ? (
-        <div className="flex gap-4">
-          <Button
-            style={{
-              backgroundColor: '#A259FF',
-              color: 'white',
-            }}
-            className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
-            variant="default"
-          >
-            <Link href="/create-event">Create Event</Link>
-          </Button>
-          <Button
-            style={{
-              backgroundColor: '#A259FF',
-              color: 'white',
-            }}
-            className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
-            variant="default"
-          >
-            <Link href="/event">My Events</Link>
-          </Button>
-          <Button
-            style={{
-              backgroundColor: '#A259FF',
-              color: 'white',
-            }}
-            className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
-            variant="default"
-          >
-            <Link href="/qr-code">My QR Code</Link>
-          </Button>
-        </div>
-      ) : (
+      <div className="flex gap-4">
         <Button
           style={{
             backgroundColor: '#A259FF',
@@ -139,13 +106,35 @@ export default function ClientHome() {
           className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
           variant="default"
         >
-          <Link href="/login">Login to Create Events</Link>
+          <Link href="/create-event">Create Event</Link>
         </Button>
-      )}
+        <Button
+          style={{
+            backgroundColor: '#A259FF',
+            color: 'white',
+          }}
+          className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
+          variant="default"
+        >
+          <Link href="/event">My Events</Link>
+        </Button>
+        <Button
+          style={{
+            backgroundColor: '#A259FF',
+            color: 'white',
+          }}
+          className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
+          variant="default"
+        >
+          <Link href="/qr-code">My QR Code</Link>
+        </Button>
+      </div>
 
       {session && events && events.length > 0 && (
         <div className="text-center">
-          <h2 className="mt-8 text-2xl font-bold text-white">Your Upcoming Events:</h2>
+          <h2 className="mt-8 text-2xl font-bold text-white">
+            Your Upcoming Events:
+          </h2>
           <ul className="mt-4 space-y-2">
             {events
               .filter(

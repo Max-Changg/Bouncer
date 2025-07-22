@@ -34,7 +34,10 @@ export default function Header() {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     }
@@ -98,7 +101,9 @@ export default function Header() {
     if (typeof window !== 'undefined') {
       currentUrl = window.location.pathname + window.location.search;
     } else if (searchParams) {
-      currentUrl = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
+      currentUrl =
+        pathname +
+        (searchParams.toString() ? `?${searchParams.toString()}` : '');
     }
     router.push(`/login?next=${encodeURIComponent(currentUrl)}`);
   };
@@ -121,23 +126,19 @@ export default function Header() {
                 Contact
               </a>
             </li>
-            {session && (
-              <li>
-                <a href="/event" className="hover:underline">
-                  My Events
-                </a>
-              </li>
-            )}
-            {session && (
-              <li>
-                <a href="/my-rsvps" className="hover:underline">
-                  My RSVPs
-                </a>
-              </li>
-            )}
+            <li>
+              <a href="/event" className="hover:underline">
+                My Events
+              </a>
+            </li>
+            <li>
+              <a href="/my-rsvps" className="hover:underline">
+                My RSVPs
+              </a>
+            </li>
             <li className="relative">
               <button
-                onClick={() => setDropdownOpen((open) => !open)}
+                onClick={() => setDropdownOpen(open => !open)}
                 className="flex items-center focus:outline-none"
                 aria-label="Profile menu"
               >
@@ -157,7 +158,10 @@ export default function Header() {
                 </svg>
               </button>
               {dropdownOpen && (
-                <div ref={dropdownRef} className="absolute right-0 mt-2 w-64 bg-white text-black rounded-md shadow-lg z-50">
+                <div
+                  ref={dropdownRef}
+                  className="absolute right-0 mt-2 w-64 bg-white text-black rounded-md shadow-lg z-50"
+                >
                   {session ? (
                     <>
                       <div className="px-4 py-3 border-b flex items-center gap-3">
@@ -176,8 +180,12 @@ export default function Header() {
                           />
                         </svg>
                         <div>
-                          <div className="font-semibold">Welcome, {profile?.full_name || 'User'}</div>
-                          <div className="text-xs text-gray-500">{session.email}</div>
+                          <div className="font-semibold">
+                            Welcome, {profile?.full_name || 'User'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {session.email}
+                          </div>
                         </div>
                       </div>
                       <button

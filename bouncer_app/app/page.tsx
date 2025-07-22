@@ -162,12 +162,14 @@ export default function Home() {
             <div className="text-gray-200 text-center w-full">
               <h1
                 ref={headingRef}
-                className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold mb-8 opacity-0 animate-fade-in-only leading-tight moving-gradient-text"
+                className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold mb-8 opacity-0 animate-fade-in-only leading-tight"
                 style={{ animationDelay: '0.5s' }}
               >
-                <span className="block lg:inline">Optimize </span>
-                <span className="block lg:inline whitespace-nowrap">
-                  Check-Ins
+                <span className="moving-gradient-text">
+                  <span className="block lg:inline">Optimize </span>
+                  <span className="block lg:inline whitespace-nowrap">
+                    Check-Ins
+                  </span>
                 </span>
               </h1>
               <div className="max-w-[800px] mx-auto">
