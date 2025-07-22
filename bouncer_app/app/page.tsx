@@ -168,14 +168,12 @@ export default function Home() {
             <div className="text-gray-200 text-center w-full">
               <h1
                 ref={headingRef}
-                className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-bold mb-8 opacity-0 animate-fade-in-only leading-tight"
+                className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-8 opacity-0 animate-fade-in-only leading-tight"
                 style={{ animationDelay: '0.5s' }}
               >
                 <span className="moving-gradient-text">
-                  <span className="block lg:inline">Optimize </span>
-                  <span className="block lg:inline whitespace-nowrap">
-                    Check-Ins
-                  </span>
+                  <span className="inline">Optimize </span>
+                  <span className="inline whitespace-nowrap">Check-Ins</span>
                 </span>
               </h1>
               <div className="max-w-[800px] mx-auto">
@@ -183,8 +181,8 @@ export default function Home() {
                   ref={descRef}
                   className="text-2xl mb-8 opacity-0 animate-fade-in-only"
                 >
-                  Streamline your event management with our comprehensive
-                  check-in solution designed for modern parties and events.
+                  Streamline your event management with our check-in solution
+                  designed for modern parties and events.
                 </p>
               </div>
               <div
