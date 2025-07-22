@@ -108,7 +108,7 @@ export default function ClientHome() {
               backgroundColor: '#A259FF',
               color: 'white',
             }}
-            className="hover:bg-[#8e3fff]"
+            className="hover:bg-[#8e3fff] font-mono hover:animate-wiggle"
             variant="default"
           >
             <Link href="/create-event">Create Event</Link>
@@ -118,7 +118,7 @@ export default function ClientHome() {
               backgroundColor: '#A259FF',
               color: 'white',
             }}
-            className="hover:bg-[#8e3fff]"
+            className="hover:bg-[#8e3fff] font-mono hover:animate-wiggle"
             variant="default"
           >
             <Link href="/event">My Events</Link>
@@ -128,7 +128,7 @@ export default function ClientHome() {
               backgroundColor: '#A259FF',
               color: 'white',
             }}
-            className="hover:bg-[#8e3fff]"
+            className="hover:bg-[#8e3fff] font-mono hover:animate-wiggle"
             variant="default"
           >
             <Link href="/qr-code">My QR Code</Link>
@@ -140,7 +140,7 @@ export default function ClientHome() {
             backgroundColor: '#A259FF',
             color: 'white',
           }}
-          className="hover:bg-[#8e3fff]"
+          className="hover:bg-[#8e3fff] font-mono hover:animate-wiggle"
           variant="default"
         >
           <Link href="/login">Login to Create Events</Link>

@@ -7,6 +7,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
+import { format, toZonedTime } from 'date-fns-tz';
 
 export default function Event() {
   const [session, setSession] = useState<User | null>(null);
@@ -161,33 +162,47 @@ export default function Event() {
             <p>No events created yet. Create one from the home page!</p>
           ) : (
             <div className="space-y-8">
-              {events.map(event => (
-                <div key={event.id} className="rounded-lg border p-6 shadow-md">
-                  <h2 className="text-2xl font-semibold">{event.name}</h2>
-                  <p className="text-gray-600">Theme: {event.theme}</p>
-                  <p className="text-gray-600">
-                    Start: {new Date(event.start_date).toLocaleString()}
-                  </p>
-                  <p className="text-gray-600">
-                    End: {new Date(event.end_date).toLocaleString()}
-                  </p>
-                  <p className="text-gray-600">
-                    Additional Info: {event.additional_info}
-                  </p>
-                  <Button
-                    onClick={() => router.push(`/event/${event.id}`)}
-                    className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+              {events.map(event => {
+                const eventTimeZone = event.time_zone || 'America/Los_Angeles';
+                const zonedStart = toZonedTime(event.start_date, eventTimeZone);
+                const formattedStart = format(
+                  zonedStart,
+                  'M/d/yyyy h:mm aaaa zzz',
+                  { timeZone: eventTimeZone }
+                );
+                const zonedEnd = toZonedTime(event.end_date, eventTimeZone);
+                const formattedEnd = format(
+                  zonedEnd,
+                  'M/d/yyyy h:mm aaaa zzz',
+                  { timeZone: eventTimeZone }
+                );
+                return (
+                  <div
+                    key={event.id}
+                    className="rounded-lg border p-6 shadow-md"
                   >
-                    View
-                  </Button>
-                  <Button
-                    onClick={() => handleShare(event.id.toString())}
-                    className="mt-4 ml-4 inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
-                  >
-                    Get Invite Link
-                  </Button>
-                </div>
-              ))}
+                    <h2 className="text-2xl font-semibold">{event.name}</h2>
+                    <p className="text-gray-600">Theme: {event.theme}</p>
+                    <p className="text-gray-600">Start: {formattedStart}</p>
+                    <p className="text-gray-600">End: {formattedEnd}</p>
+                    <p className="text-gray-600">
+                      Additional Info: {event.additional_info}
+                    </p>
+                    <Button
+                      onClick={() => router.push(`/event/${event.id}`)}
+                      className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+                    >
+                      View
+                    </Button>
+                    <Button
+                      onClick={() => handleShare(event.id.toString())}
+                      className="mt-4 ml-4 inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
+                    >
+                      Get Invite Link
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </main>

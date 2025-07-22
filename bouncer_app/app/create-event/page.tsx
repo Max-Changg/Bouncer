@@ -7,6 +7,15 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 
 import { format, toZonedTime } from 'date-fns-tz';
+
+// Polyfill for zonedTimeToUtc if not available
+function zonedTimeToUtc(date: Date, timeZone: string): Date {
+  // Get the timestamp for the equivalent UTC time
+  const invdate = new Date(date.toLocaleString('en-US', { timeZone }));
+  const diff = date.getTime() - invdate.getTime();
+  return new Date(date.getTime() + diff);
+}
+
 import { ChevronDownIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -173,17 +182,25 @@ export default function CreateEvent() {
         });
       };
 
-      // Combine date and time
-      const createDateTime = (date: Date | null, time: string) => {
+      // Combine date and time, then convert to UTC for storage
+      const createUtcDateTime = (
+        date: Date | null,
+        time: string,
+        tz: string
+      ) => {
         if (!date) return null;
         const [hours, minutes] = time.split(':').map(Number);
-        const combinedDate = new Date(date);
-        combinedDate.setHours(hours, minutes, 0, 0);
-        return combinedDate;
+        const localDate = new Date(date);
+        localDate.setHours(hours, minutes, 0, 0);
+        return zonedTimeToUtc(localDate, tz);
       };
 
-      const startDateTime = createDateTime(startDate, startTime);
-      const endDateTime = createDateTime(endDate, endTime);
+      const startUtcDateTime = createUtcDateTime(
+        startDate,
+        startTime,
+        timeZone
+      );
+      const endUtcDateTime = createUtcDateTime(endDate, endTime, timeZone);
 
       if (eventId) {
         // Update existing event
@@ -192,20 +209,10 @@ export default function CreateEvent() {
           .update({
             name: eventName,
             theme: eventTheme,
-            start_date: startDateTime
-              ? formatInTimeZone(
-                  startDateTime,
-                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                  timeZone
-                )
+            start_date: startUtcDateTime
+              ? startUtcDateTime.toISOString()
               : null,
-            end_date: endDateTime
-              ? formatInTimeZone(
-                  endDateTime,
-                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                  timeZone
-                )
-              : null,
+            end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
             additional_info: additionalInfo,
             time_zone: timeZone,
           })
@@ -229,20 +236,10 @@ export default function CreateEvent() {
           .insert({
             name: eventName,
             theme: eventTheme,
-            start_date: startDateTime
-              ? formatInTimeZone(
-                  startDateTime,
-                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                  timeZone
-                )
+            start_date: startUtcDateTime
+              ? startUtcDateTime.toISOString()
               : null,
-            end_date: endDateTime
-              ? formatInTimeZone(
-                  endDateTime,
-                  "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                  timeZone
-                )
-              : null,
+            end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
             additional_info: additionalInfo,
             time_zone: timeZone,
             user_id: session.id,

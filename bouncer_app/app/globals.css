@@ -203,3 +203,41 @@
   will-change: auto;
   position: absolute !important;
 }
+
+@keyframes fadeInOnly {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in-only {
+  animation: fadeInOnly 2s ease-out forwards;
+}
+
+@keyframes wiggleWithPause {
+  0%   { transform: rotate(0deg); }
+  8%   { transform: rotate(-2deg); }
+  16%  { transform: rotate(2deg); }
+  24%  { transform: rotate(-2deg); }
+  32%  { transform: rotate(2deg); }
+  40%  { transform: rotate(0deg); }
+  100% { transform: none; }
+}
+
+.hover\:animate-wiggle:hover {
+  animation: wiggleWithPause 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes movingGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.moving-gradient-text {
+  background: linear-gradient(90deg, #A259FF, #FF6B35, #A259FF, #FF6B35);
+  background-size: 300% 100%;
+  animation: movingGradient 3s ease-in-out infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
