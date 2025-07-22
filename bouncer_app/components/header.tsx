@@ -117,9 +117,9 @@ export default function Header() {
         <nav>
           <ul className="flex space-x-4 items-center">
             <li>
-              <a href="/about" className="hover:underline">
+              {/* <a href="/about" className="hover:underline">
                 About
-              </a>
+              </a> */}
             </li>
             <li>
               <a href="/contact" className="hover:underline">

@@ -1,8 +1,10 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import Header from '@/components/header';
 import ClientHome from '@/components/client-home';
+import FlipCard from '@/components/flip-card';
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 
@@ -14,6 +16,7 @@ export default function Home() {
   const costAdvantageRef = useRef<HTMLDivElement>(null);
   const clientHomeRef = useRef<HTMLDivElement>(null);
   const whyBouncerSectionRef = useRef<HTMLDivElement>(null);
+  const firstSectionRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(true);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const descRef = useRef<HTMLParagraphElement>(null);
@@ -92,15 +95,15 @@ export default function Home() {
       });
     }, 1000);
 
-    // Observer for Why Bouncer section
+    // Observer for first section to show/hide scroll button
     const sectionObserver = new window.IntersectionObserver(
       ([entry]) => {
-        setShowScrollButton(!entry.isIntersecting);
+        setShowScrollButton(entry.isIntersecting);
       },
       { threshold: 0.1 }
     );
-    if (whyBouncerSectionRef.current) {
-      sectionObserver.observe(whyBouncerSectionRef.current);
+    if (firstSectionRef.current) {
+      sectionObserver.observe(firstSectionRef.current);
     }
     return () => {
       sectionObserver.disconnect();
@@ -155,7 +158,10 @@ export default function Home() {
         <Header />
       </div>
 
-      <div className="grid min-h-screen grid-rows-[0px_1fr_20px] items-start justify-items-center gap-16 p-8 pb-20 sm:p-20 relative z-10">
+      <div
+        ref={firstSectionRef}
+        className="grid min-h-screen grid-rows-[0px_1fr_20px] items-start justify-items-center gap-16 p-8 pb-20 sm:p-20 relative z-10"
+      >
         <main className="row-start-1 w-full max-w-7xl flex flex-col items-center justify-center mt-40">
           <div className="flex flex-col items-center text-center gap-8 w-full">
             {/* Left side - Text content */}
@@ -363,17 +369,147 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Bouncing scroll-down button, only show if not at Why Bouncer section */}
+      {/* How to Use Bouncer Section */}
+      <section className="relative z-10 py-16 px-8 sm:px-20 bg-black/20">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 opacity-0 transform translate-y-8 transition-all duration-800 ease-out">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
+              How to Use Bouncer
+            </h2>
+            <p className="text-lg text-gray-300 max-w-3xl mx-auto">
+              Get started with Bouncer in just a few simple steps. From creating
+              your first event to managing check-ins, we've made it effortless.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            <FlipCard
+              stepNumber={1}
+              title="Create Your Event"
+              description="Input your event details including name, date, time, location, and ticket pricing."
+              features={[
+                'Event name and description',
+                'Date, time, and timezone',
+                'Venue and address',
+                'Ticket types and pricing',
+              ]}
+              color="purple"
+            />
+
+            <FlipCard
+              stepNumber={2}
+              title="Send Invites"
+              description="Generate unique QR codes for each ticket type and share them with your guests. Each QR code contains all the necessary event information."
+              features={[
+                'Unique QR codes per ticket',
+                'Easy sharing via email/SMS',
+                'Mobile-friendly format',
+                'Real-time updates',
+              ]}
+              color="orange"
+            />
+
+            <FlipCard
+              stepNumber={3}
+              title="Verify RSVPs"
+              description="Upload your Venmo and Zelle statements to automatically verify payments. Our system cross-references payment data with guest information."
+              features={[
+                'Upload payment statements',
+                'Automatic payment matching',
+                'No transaction fees',
+                'Secure verification',
+              ]}
+              color="purple"
+            />
+
+            <FlipCard
+              stepNumber={4}
+              title="Check-In Guests"
+              description="Use the mobile scanner to quickly scan guest QR codes. Get instant verification of payment status and guest eligibility."
+              features={[
+                'Mobile QR scanner',
+                'Instant verification',
+                'Payment status check',
+                'Guest list management',
+              ]}
+              color="orange"
+            />
+
+            <FlipCard
+              stepNumber={5}
+              title="Track Analytics"
+              description="Monitor your event's performance with real-time analytics. Track attendance, revenue, and guest engagement throughout your event."
+              features={[
+                'Real-time attendance',
+                'Revenue tracking',
+                'Guest analytics',
+                'Performance insights',
+              ]}
+              color="purple"
+            />
+
+            <FlipCard
+              stepNumber={6}
+              title="Manage RSVPs"
+              description="Keep track of all your RSVPs in one place. View guest responses, manage waitlists, and send updates to your attendees."
+              features={[
+                'RSVP tracking',
+                'Waitlist management',
+                'Guest communications',
+                'Response analytics',
+              ]}
+              color="orange"
+            />
+          </div>
+
+          {/* Call to Action */}
+          <div className="text-center opacity-0 transform translate-y-8 transition-all duration-800 ease-out">
+            <h3 className="text-2xl font-bold text-white mb-6">
+              Ready to Streamline Your Events?
+            </h3>
+            {/* <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
+              Join thousands of event organizers who trust Bouncer to make their
+              events run smoothly. Start creating your first event today.
+            </p> */}
+            <div className="flex justify-center gap-4">
+              <Button
+                style={{
+                  backgroundColor: '#A259FF',
+                  color: 'white',
+                }}
+                className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
+                variant="default"
+              >
+                <Link href="/create-event">Create Your First Event</Link>
+              </Button>
+              <Button
+                style={{
+                  backgroundColor: 'transparent',
+                  color: 'white',
+                  border: '1px solid #A259FF',
+                }}
+                className="hover:bg-[#A259FF]/10 font-mono hover:animate-grow"
+                variant="outline"
+              >
+                <Link href="/event">View Demo Events</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bouncing scroll-down button, only show if above"a Why Bouncer section */}
       {showScrollButton && (
         <button
           onClick={() => {
-            window.scrollTo({
-              top: document.body.scrollHeight,
-              behavior: 'smooth',
-            });
+            if (whyBouncerSectionRef.current) {
+              whyBouncerSectionRef.current.scrollIntoView({
+                behavior: 'smooth',
+              });
+            }
           }}
           className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-black/70 rounded-full p-3 shadow-lg animate-bounce hover:bg-black/90 transition-colors"
-          aria-label="Scroll to bottom"
+          aria-label="Scroll to Why Bouncer section"
         >
           <svg
             className="size-8 text-white"
