@@ -119,16 +119,16 @@ export default function Home() {
       <div className="absolute inset-0 pointer-events-none">
         {/* Tilted spotlight beams - using center-anchored positioning */}
         <div
-          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b from-purple-400/50 via-purple-500/25 to-transparent transform -translate-x-[200px] "
-          style={{ clipPath: 'polygon(60% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
+          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b from-purple-600/40 via-purple-600/20 to-transparent transform -translate-x-[460px] skew-x-16"
+          style={{ clipPath: 'polygon(40% 0%, 60% 0%, 100% 100%, 0% 100%)' }}
         ></div>
         <div
-          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b from-orange-400/50 via-orange-500/25 to-transparent transform -skew-x-12 static-beam"
-          style={{ clipPath: 'polygon(70% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
+          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b from-orange-400/50 via-orange-500/25 to-transparent transform -translate-x-[200px] "
+          style={{ clipPath: 'polygon(40% 0%, 60% 0%, 100% 100%, 0% 100%)' }}
         ></div>
         <div
-          className="absolute top-0 left-1/2 w-80 h-full bg-gradient-to-b from-purple-600/40 via-purple-600/20 to-transparent transform -translate-x-[400px] skew-x-22"
-          style={{ clipPath: 'polygon(50% 0%, 80% 0%, 100% 100%, 0% 80%)' }}
+          className="absolute top-0 left-1/2 w-96 h-full bg-gradient-to-b  from-purple-400/50 via-purple-500/25 to-transparent transform -skew-x-16 translate-x-[60px]"
+          style={{ clipPath: 'polygon(40% 0%, 60% 0%, 100% 100%, 0% 100%)' }}
         ></div>
         {/* <div
           className="absolute top-0 left-1/2 w-72 h-full bg-gradient-to-b from-orange-600/40 via-orange-600/20 to-transparent transform translate-x-[400px] skew-x-6 static-beam"

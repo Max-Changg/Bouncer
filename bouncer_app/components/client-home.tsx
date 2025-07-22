@@ -167,7 +167,7 @@ export default function ClientHome() {
         </Button>
       </div>
 
-      {session && events && events.length > 0 && (
+      {/* {session && events && events.length > 0 && (
         <div className="text-center">
           <h2 className="mt-8 text-2xl font-bold text-white">
             Your Upcoming Events:
@@ -201,7 +201,7 @@ export default function ClientHome() {
               ))}
           </ul>
         </div>
-      )}
-    </div>
+      )} */}
+    </div> 
   );
 }
