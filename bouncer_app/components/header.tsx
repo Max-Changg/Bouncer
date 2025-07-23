@@ -108,6 +108,13 @@ export default function Header() {
     router.push(`/login?next=${encodeURIComponent(currentUrl)}`);
   };
 
+  const getInitials = (fullName: string) => {
+    if (!fullName) return 'U';
+    const names = fullName.trim().split(' ');
+    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+  };
+
   return (
     <div>
       <header className="text-xl flex items-center justify-between p-4 text-white">
@@ -139,69 +146,66 @@ export default function Header() {
             <li className="relative">
               <button
                 onClick={() => setDropdownOpen(open => !open)}
-                className="flex items-center focus:outline-none"
+                className="w-10 h-10 rounded-full cursor-pointer flex items-center justify-center focus:outline-none"
                 aria-label="Profile menu"
               >
-                <svg
-                  className="w-8 h-8 rounded-full bg-gray-600 text-white p-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
+                {session ? (
+                  <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                    {getInitials(profile?.full_name || session.email || 'User')}
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-sm">
+                    ?
+                  </div>
+                )}
               </button>
+              
               {dropdownOpen && (
                 <div
                   ref={dropdownRef}
-                  className="absolute right-0 mt-2 w-64 bg-white text-black rounded-md shadow-lg z-50"
+                  className="absolute right-0 mt-2 z-10 bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600"
                 >
                   {session ? (
                     <>
-                      <div className="px-4 py-3 border-b flex items-center gap-3">
-                        <svg
-                          className="w-10 h-10 rounded-full bg-gray-600 text-white p-1"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        <div>
-                          <div className="font-semibold">
-                            Welcome, {profile?.full_name || 'User'}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {session.email}
-                          </div>
-                        </div>
+                      <div className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                        <div className="font-medium">{profile?.full_name || 'User'}</div>
+                        <div className="truncate text-gray-500 dark:text-gray-400">{session.email}</div>
                       </div>
-                      <button
-                        onClick={handleSignInDifferent}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                      >
-                        Sign in with a different account
-                      </button>
+                      <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
+                        <li>
+                          <a href="/event" className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">My Events</a>
+                        </li>
+                        <li>
+                          <a href="/my-rsvps" className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">My RSVPs</a>
+                        </li>
+                        <li>
+                          <a href="/create-event" className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Create Event</a>
+                        </li>
+                      </ul>
+                      <div className="py-1">
+                        <button
+                          onClick={handleSignInDifferent}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                        >
+                          Switch Account
+                        </button>
+                        <button
+                          onClick={handleSignOut}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                        >
+                          Sign out
+                        </button>
+                      </div>
                     </>
                   ) : (
-                    <button
-                      onClick={handleSignIn}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                    >
-                      Sign in with Google
-                    </button>
+                    <div className="py-1">
+                      <button
+                        onClick={handleSignIn}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                      >
+                        Sign in with Google
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
