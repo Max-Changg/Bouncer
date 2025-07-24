@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+// Extend the Window interface to include google
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
+import type { Database } from '@/lib/database.types';
 
 import { format, toZonedTime } from 'date-fns-tz';
 
@@ -35,20 +43,33 @@ export default function CreateEvent() {
   const [startTime, setStartTime] = useState('10:00');
   const [endTime, setEndTime] = useState('11:00');
   const [timeZone, setTimeZone] = useState('America/Los_Angeles');
+  const [location, setLocation] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [inviteLink, setInviteLink] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  const supabase = createBrowserClient(
+  const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookieOptions: {
-        name: 'sb-auth-token',
+      cookies: {
+        get(name: string) {
+          return document.cookie
+            .split('; ')
+            .find(row => row.startsWith(`${name}=`))
+            ?.split('=')[1];
+        },
+        set(name: string, value: string, options: any) {
+          document.cookie = `${name}=${value}; path=/; max-age=${options.maxAge || 31536000}`;
+        },
+        remove(name: string, options: any) {
+          document.cookie = `${name}=; path=/; max-age=0`;
+        },
       },
     }
   );
   const [session, setSession] = useState<User | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [eventId, setEventId] = useState<number | null>(null);
   const [tickets, setTickets] = useState<
     Array<{
@@ -64,28 +85,105 @@ export default function CreateEvent() {
   );
   const [showTicketSidebar, setShowTicketSidebar] = useState(false);
   const [loading, setLoading] = useState(false);
+  const locationInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    let mounted = true;
+    let redirectTimeout: NodeJS.Timeout | null = null;
+    
+    // Set up auth state listener first
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
+      console.log('Auth state changed:', event, session?.user?.email || 'no user');
+      
+      // Clear any pending redirect
+      if (redirectTimeout) {
+        clearTimeout(redirectTimeout);
+        redirectTimeout = null;
+      }
+      
+      setSessionLoading(false);
+      if (session?.user) {
+        console.log('Session found from auth change:', session.user.email);
         setSession(session.user);
       } else {
-        setSession(null); // Clear session on logout
-        router.push('/login');
+        console.log('No session from auth state change');
+        setSession(null);
+        // Only redirect on explicit sign out, not initial load
+        if (event === 'SIGNED_OUT') {
+          console.log('User signed out, redirecting to login');
+          router.push('/login');
+        } else if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+          // For initial session or token refresh, if no user, set a delay before redirect
+          console.log('No user after initial session check, setting redirect timeout');
+                     redirectTimeout = setTimeout(() => {
+             if (mounted) {
+               // Check current session state before redirecting
+               supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+                 if (!currentSession?.user && mounted) {
+                   console.log('No session found after timeout, redirecting to login');
+                   router.push('/login');
+                 }
+               });
+             }
+           }, 2000);
+        }
       }
     });
 
-    // Initial session check
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setSession(user);
-      } else {
-        setSession(null); // Clear session on logout
-        router.push('/login');
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Initial session error:', error);
+          setSessionLoading(false);
+          setSession(null);
+          return;
+        }
+        
+               console.log('Initial session check:', session?.user?.email || 'no session');
+       setSessionLoading(false);
+       
+       if (session?.user) {
+         console.log('Setting session for user:', session.user.email);
+         setSession(session.user);
+       } else {
+         console.log('No session found, will set redirect timeout');
+         setSession(null);
+         // Set a timeout to redirect if no session is established
+         redirectTimeout = setTimeout(() => {
+           if (mounted) {
+             console.log('Timeout reached, checking session one more time...');
+             // Double-check session state before redirecting
+             supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+               if (!currentSession?.user && mounted) {
+                 console.log('Confirmed no session, redirecting to login');
+                 router.push('/login');
+               } else if (currentSession?.user) {
+                 console.log('Session found during timeout check, not redirecting');
+               }
+             });
+           }
+         }, 2000); // Reduced to 2 seconds
+       }
+      } catch (error) {
+        console.error('Failed to get initial session:', error);
+        if (mounted) {
+          setSessionLoading(false);
+          setSession(null);
+          router.push('/login');
+        }
       }
-    });
+    };
+
+    getInitialSession();
 
     const fetchEventData = async (id: number) => {
       const { data, error } = await supabase
@@ -103,6 +201,7 @@ export default function CreateEvent() {
         setStartDate(new Date(data.start_date));
         setEndDate(new Date(data.end_date));
         setTimeZone(data.time_zone);
+        setLocation(data.location || '');
         setAdditionalInfo(data.additional_info);
       }
 
@@ -136,9 +235,49 @@ export default function CreateEvent() {
     }
 
     return () => {
+      mounted = false;
+      if (redirectTimeout) {
+        clearTimeout(redirectTimeout);
+      }
       subscription.unsubscribe();
     };
   }, [supabase.auth, router, supabase]);
+
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+    const initAutocomplete = () => {
+      if (locationInputRef.current && window.google) {
+        const autocomplete = new window.google.maps.places.Autocomplete(
+          locationInputRef.current,
+          {
+            types: ['establishment', 'geocode'],
+            fields: ['formatted_address', 'geometry', 'name']
+          }
+        );
+
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place.formatted_address) {
+            setLocation(place.formatted_address);
+          }
+        });
+      }
+    };
+
+    if (window.google) {
+      initAutocomplete();
+    } else {
+      // Load Google Maps API if not already loaded
+      if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = initAutocomplete;
+        document.head.appendChild(script);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +296,11 @@ export default function CreateEvent() {
       }
       if (!startDate || !endDate) {
         setError('Start and end dates are required.');
+        setLoading(false);
+        return;
+      }
+      if (!location.trim()) {
+        setError('Event location is required.');
         setLoading(false);
         return;
       }
@@ -195,56 +339,58 @@ export default function CreateEvent() {
         return zonedTimeToUtc(localDate, tz);
       };
 
-      const startUtcDateTime = createUtcDateTime(
-        startDate,
-        startTime,
-        timeZone
-      );
-      const endUtcDateTime = createUtcDateTime(endDate, endTime, timeZone);
+                    const startUtcDateTime = createUtcDateTime(
+         startDate,
+         startTime,
+         timeZone
+       );
+       const endUtcDateTime = createUtcDateTime(endDate, endTime, timeZone);
 
-      if (eventId) {
-        // Update existing event
-        const { error } = await supabase
-          .from('Events')
-          .update({
-            name: eventName,
-            theme: eventTheme,
-            start_date: startUtcDateTime
-              ? startUtcDateTime.toISOString()
-              : null,
-            end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
-            additional_info: additionalInfo,
-            time_zone: timeZone,
-          })
-          .eq('id', eventId);
+       if (eventId) {
+         // Update existing event (including auto-created ones)
+         const { error } = await supabase
+           .from('Events')
+           .update({
+             name: eventName,
+             theme: eventTheme,
+             start_date: startUtcDateTime
+               ? startUtcDateTime.toISOString()
+               : null,
+             end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
+             location: location,
+             additional_info: additionalInfo,
+             time_zone: timeZone,
+           })
+           .eq('id', eventId);
 
-        if (error) {
-          console.error('Error updating event:', error);
-          setError(error.message);
-          setLoading(false);
-          return;
-        }
+         if (error) {
+           console.error('Error updating event:', error);
+           setError(error.message);
+           setLoading(false);
+           return;
+         }
 
-        // Save tickets
-        await saveTickets(eventId);
+         // Save tickets after updating event
+         await saveTickets(eventId);
 
-        setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
-      } else {
-        // Create new event
-        const { data, error } = await supabase
-          .from('Events')
-          .insert({
-            name: eventName,
-            theme: eventTheme,
-            start_date: startUtcDateTime
-              ? startUtcDateTime.toISOString()
-              : null,
-            end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
-            additional_info: additionalInfo,
-            time_zone: timeZone,
-            user_id: session.id,
-          })
-          .select()
+         setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
+       } else {
+         // Create new event
+         const { data, error } = await supabase
+           .from('Events')
+           .insert({
+             name: eventName,
+             theme: eventTheme,
+             start_date: startUtcDateTime
+               ? startUtcDateTime.toISOString()
+               : null,
+             end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
+             location: location,
+             additional_info: additionalInfo,
+             time_zone: timeZone,
+             user_id: session.id,
+           })
+           .select()
           .single();
 
         if (error) {
@@ -268,15 +414,24 @@ export default function CreateEvent() {
 
   const addTicket = () => {
     if (tickets.length >= 5) return;
+    
     const newTicket = {
       name: '',
       price: 0,
       quantity_available: 1,
       purchase_deadline: null,
     };
-    setTickets([...tickets, newTicket]);
+    const updatedTickets = [...tickets, newTicket];
+    setTickets(updatedTickets);
     setSelectedTicketIndex(tickets.length);
     setShowTicketSidebar(true);
+    
+    // Auto-save new ticket only if event already exists
+    if (eventId) {
+      setTimeout(() => {
+        saveTickets(eventId);
+      }, 500);
+    }
   };
 
   const updateTicket = (
@@ -286,15 +441,32 @@ export default function CreateEvent() {
     const updatedTickets = [...tickets];
     updatedTickets[index] = { ...updatedTickets[index], ...updates };
     setTickets(updatedTickets);
+    
+    // Auto-save tickets after a short delay
+    if (eventId) {
+      setTimeout(() => {
+        saveTickets(eventId);
+      }, 500);
+    }
   };
 
   const removeTicket = (index: number) => {
-    setTickets(tickets.filter((_, i) => i !== index));
+    const updatedTickets = tickets.filter((_, i) => i !== index);
+    setTickets(updatedTickets);
     if (selectedTicketIndex === index) {
       setSelectedTicketIndex(null);
       setShowTicketSidebar(false);
     }
+    
+    // Auto-save after removing ticket
+    if (eventId) {
+      setTimeout(() => {
+        saveTickets(eventId);
+      }, 500);
+    }
   };
+
+
 
   const saveTickets = async (eventIdToUse: number | null = eventId) => {
     if (!eventIdToUse) {
@@ -325,91 +497,158 @@ export default function CreateEvent() {
     }
   };
 
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!session) {
-    return <div>Loading...</div>; // Or a spinner component
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">Checking authentication...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <Header />
-      <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
-        <main className="row-start-2 flex flex-col items-center gap-[32px] sm:items-start w-full max-w-2xl">
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <h1
-            className="text-4xl font-bold"
-            style={{
-              color: 'var(--foreground)',
-            }}
-          >
-            {eventId ? 'Edit Your Event' : 'Create Your Event'}
-          </h1>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">      
+      {/* Extended Hero Section with Header */}
+      <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
+        {/* Rave Light Beams Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Thin rave-style light beams */}
+          <div
+            className="absolute top-0 left-1/2 w-32 h-full bg-gradient-to-b from-purple-600/50 via-purple-600/25 to-transparent transform -translate-x-[460px] skew-x-16"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-24 h-full bg-gradient-to-b from-orange-400/60 via-orange-500/30 to-transparent transform -translate-x-[200px]"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-28 h-full bg-gradient-to-b from-purple-400/55 via-purple-500/28 to-transparent transform -skew-x-16 translate-x-[60px]"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-20 h-full bg-gradient-to-b from-orange-600/45 via-orange-600/20 to-transparent transform translate-x-[300px] skew-x-12"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-16 h-full bg-gradient-to-b from-purple-500/40 via-purple-500/18 to-transparent transform -translate-x-[600px] -skew-x-8"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-18 h-full bg-gradient-to-b from-orange-400/40 via-orange-400/18 to-transparent transform translate-x-[500px] skew-x-8"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+        </div>
+        
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-800/15 via-transparent to-indigo-800/25"></div>
+        
+        {/* Header integrated into hero */}
+        <div className="relative z-20">
+          <Header />
+        </div>
+        
+        {/* Hero content */}
+        <div className="relative px-6 py-16 sm:px-8 lg:px-12">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+              {eventId ? 'Edit Your Event' : 'Create Your Event'}
+            </h1>
+            <p className="text-xl text-gray-300 max-w-2xl">
+              {eventId ? 'Update your event details and manage tickets' : 'Bring your vision to life. Create an unforgettable experience for your guests.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 py-12 sm:px-8 lg:px-12">
+        {error && (
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-8">
+            <p className="text-red-300 text-sm">{error}</p>
+          </div>
+        )}
+        
+        {/* Main Form Card */}
+        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-white mb-6">Event Details</h2>
           <form
             onSubmit={handleSubmit}
-            className="block space-y-4 text-sm font-medium"
+            className="space-y-6"
           >
-            <div>
-              <label
-                htmlFor="eventName"
-                className="block text-sm font-medium"
-                style={{
-                  color: 'var(--foreground)',
-                }}
-              >
-                Event Name
-              </label>
-              <input
-                type="text"
-                id="eventName"
-                value={eventName}
-                onChange={e => setEventName(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-              />
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  htmlFor="eventName"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Event Name
+                </label>
+                <input
+                  type="text"
+                  id="eventName"
+                  value={eventName}
+                  onChange={e => setEventName(e.target.value)}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                  placeholder="Enter your event name"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="eventTheme"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Event Theme
+                </label>
+                <input
+                  type="text"
+                  id="eventTheme"
+                  value={eventTheme}
+                  onChange={e => setEventTheme(e.target.value)}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                  placeholder="e.g., Birthday Party, Corporate Event"
+                />
+              </div>
             </div>
-            <div>
-              <label
-                htmlFor="eventTheme"
-                className="block text-sm font-medium"
-                style={{
-                  color: 'var(--foreground)',
-                }}
-              >
-                Event Theme
-              </label>
-              <input
-                type="text"
-                id="eventTheme"
-                value={eventTheme}
-                onChange={e => setEventTheme(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-              />
-            </div>
-            <div className="flex gap-4">
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="start-date-picker" className="px-1">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="start-date-picker" className="block text-sm font-medium text-gray-300 mb-2">
                   Start Date and Time
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         id="start-date-picker"
-                        className="w-40 justify-between font-normal"
+                        className="flex-1 justify-between font-normal bg-gray-700/50 border-gray-600 text-white hover:bg-gray-600"
                       >
                         {startDate
                           ? startDate.toLocaleDateString()
                           : 'Select date'}
-                        <ChevronDownIcon />
+                        <ChevronDownIcon className="text-purple-300" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-auto overflow-hidden p-0"
+                      className="w-auto overflow-hidden p-0 bg-gray-800 border-gray-600"
                       align="start"
                     >
                       <Calendar
                         mode="single"
                         selected={startDate || undefined}
                         onSelect={date => setStartDate(date || null)}
+                        className="text-white"
                       />
                     </PopoverContent>
                   </Popover>
@@ -418,34 +657,35 @@ export default function CreateEvent() {
                     value={startTime}
                     onChange={e => setStartTime(e.target.value)}
                     step="60"
-                    className="w-32 bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                    className="w-32 bg-gray-700/50 border-gray-600 text-white focus:border-purple-500 focus:ring-purple-500/20 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                   />
                 </div>
               </div>
-              <div className="flex flex-col gap-3">
-                <Label htmlFor="end-date-picker" className="px-1">
+              <div>
+                <Label htmlFor="end-date-picker" className="block text-sm font-medium text-gray-300 mb-2">
                   End Date and Time
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         id="end-date-picker"
-                        className="w-40 justify-between font-normal"
+                        className="flex-1 justify-between font-normal bg-gray-700/50 border-gray-600 text-white hover:bg-gray-600"
                       >
                         {endDate ? endDate.toLocaleDateString() : 'Select date'}
-                        <ChevronDownIcon />
+                        <ChevronDownIcon className="text-purple-300" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent
-                      className="w-auto overflow-hidden p-0"
+                      className="w-auto overflow-hidden p-0 bg-gray-800 border-gray-600"
                       align="start"
                     >
                       <Calendar
                         mode="single"
                         selected={endDate || undefined}
                         onSelect={date => setEndDate(date || null)}
+                        className="text-white"
                       />
                     </PopoverContent>
                   </Popover>
@@ -454,294 +694,312 @@ export default function CreateEvent() {
                     value={endTime}
                     onChange={e => setEndTime(e.target.value)}
                     step="60"
-                    className="bg-background w-32 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                    className="w-32 bg-gray-700/50 border-gray-600 text-white focus:border-purple-500 focus:ring-purple-500/20 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                   />
                 </div>
               </div>
-            </div>
-            <div>
-              <label
-                htmlFor="timeZone"
-                className="block text-sm font-medium"
-                style={{
-                  color: 'var(--foreground)',
-                }}
-              >
-                Time Zone
-              </label>
-              <select
-                id="timeZone"
-                value={timeZone}
-                onChange={e => setTimeZone(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-              >
-                <option value="America/Los_Angeles">Pacific Time</option>
-                <option value="America/New_York">Eastern Time</option>
-                <option value="America/Chicago">Central Time</option>
-                <option value="America/Denver">Mountain Time</option>
-                <option value="Europe/London">Greenwich Mean Time</option>
-              </select>
-            </div>
+                         </div>
+             <div>
+               <label
+                 htmlFor="timeZone"
+                 className="block text-sm font-medium text-gray-300 mb-2"
+               >
+                 Time Zone
+               </label>
+               <select
+                 id="timeZone"
+                 value={timeZone}
+                 onChange={e => setTimeZone(e.target.value)}
+                 className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+               >
+                 <option value="America/Los_Angeles">Pacific Time</option>
+                 <option value="America/New_York">Eastern Time</option>
+                 <option value="America/Chicago">Central Time</option>
+                 <option value="America/Denver">Mountain Time</option>
+                 <option value="Europe/London">Greenwich Mean Time</option>
+               </select>
+             </div>
+             <div>
+               <label
+                 htmlFor="location"
+                 className="block text-sm font-medium text-gray-300 mb-2"
+               >
+                 Event Location
+               </label>
+               <input
+                 ref={locationInputRef}
+                 type="text"
+                 id="location"
+                 value={location}
+                 onChange={e => setLocation(e.target.value)}
+                 className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                 placeholder="Start typing to search for a location..."
+               />
+             </div>
             <div>
               <label
                 htmlFor="additionalInfo"
-                className="block text-sm font-medium"
-                style={{
-                  color: 'var(--foreground)',
-                }}
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
-                What other information do you want to ask your guests?
+                Description
               </label>
               <textarea
                 id="additionalInfo"
                 value={additionalInfo}
                 onChange={e => setAdditionalInfo(e.target.value)}
                 rows={4}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors resize-none"
+                placeholder="Address, dress code, what to bring, parking info..."
               />
-            </div>
+                         </div>
+          </form>
+        </div>
+        
+        
+        {/* Ticket Management Section */}
+        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
+           <h3 className="text-2xl font-bold text-white mb-6">Event Tickets</h3>
+           <div className="mb-6">
+             <p className="text-gray-300 mb-6">
+               Manage up to 5 different ticket types for your event. Each
+               ticket type can have its own price, quantity, and purchase
+               deadline.{!eventId && (
+                 <span className="block mt-2 text-sm text-orange-300">
+                   💡 Tickets will auto-save after you create the main event
+                 </span>
+               )}
+             </p>
 
-            {/* Ticket Management Section */}
-            <div>
-              <h3
-                className="text-lg font-semibold mb-4"
-                style={{ color: 'var(--foreground)' }}
-              >
-                Event Tickets
-              </h3>
-              <div className="mb-6">
-                <p className="text-gray-600 mb-4">
-                  Manage up to 5 different ticket types for your event. Each
-                  ticket type can have its own price, quantity, and purchase
-                  deadline.
-                </p>
-
-                {tickets.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <p className="text-gray-500 mb-4">No tickets created yet</p>
-                    <Button
-                      onClick={addTicket}
-                      className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
-                    >
-                      Create Your First Ticket
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {tickets.map((ticket, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-4 border rounded-lg bg-white"
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-semibold">
-                            {ticket.name || 'Untitled Ticket'}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            ${ticket.price} • {ticket.quantity_available}{' '}
-                            available
-                            {ticket.purchase_deadline && (
-                              <span>
-                                {' '}
-                                • Until{' '}
-                                {ticket.purchase_deadline.toLocaleDateString()}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => {
-                              setSelectedTicketIndex(index);
-                              setShowTicketSidebar(true);
-                            }}
-                            className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => removeTicket(index)}
-                            className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-
-                    {tickets.length < 5 && (
+             {tickets.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-gray-600/50 rounded-2xl bg-gray-800/30">
+                <div className="w-16 h-16 bg-purple-800/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                  </svg>
+                </div>
+                <p className="text-gray-400 mb-6">No tickets created yet</p>
+                <Button
+                  onClick={addTicket}
+                  className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+                >
+                  Create Your First Ticket
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {tickets.map((ticket, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-6 border border-gray-600/50 rounded-xl bg-gray-700/30 backdrop-blur-sm hover:bg-gray-700/50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-white text-lg">
+                        {ticket.name || 'Untitled Ticket'}
+                      </h3>
+                      <p className="text-sm text-gray-300 mt-1">
+                        ${ticket.price} • {ticket.quantity_available}{' '}
+                        available
+                        {ticket.purchase_deadline && (
+                          <span>
+                            {' '}
+                            • Until{' '}
+                            {ticket.purchase_deadline.toLocaleDateString()}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex gap-3">
                       <Button
-                        onClick={addTicket}
-                        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setSelectedTicketIndex(index);
+                          setShowTicketSidebar(true);
+                        }}
+                        variant="outline"
+                        className="px-4 py-2 text-sm bg-purple-800/20 border-purple-500/50 text-purple-300 hover:bg-purple-800/40 hover:text-white"
                       >
-                        + Add Another Ticket Type
+                        Edit
                       </Button>
-                    )}
+                      <Button
+                        onClick={() => removeTicket(index)}
+                        variant="outline"
+                        className="px-4 py-2 text-sm bg-red-800/20 border-red-500/50 text-red-300 hover:bg-red-800/40 hover:text-white"
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   </div>
+                ))}
+
+                {tickets.length < 5 && (
+                  <Button
+                    onClick={addTicket}
+                    variant="outline"
+                    className="w-full py-4 border-2 border-dashed border-gray-600/50 rounded-xl text-gray-300 hover:border-purple-500/50 hover:text-purple-300 hover:bg-purple-800/10 transition-all"
+                  >
+                    + Add Another Ticket Type
+                  </Button>
                 )}
               </div>
-            </div>
+            )}
+          </div>
+        </div>
 
-            <div className="flex justify-between">
-              <Button
-                onClick={() => router.push('/event')}
-                className="inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
-              >
-                Cancel
-              </Button>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => saveTickets()}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none font-mono"
-                  disabled={loading}
-                >
-                  Save Tickets
-                </Button>
-                <Button
-                  type="submit"
-                  className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none font-mono"
-                  disabled={loading}
-                >
-                  {eventId ? 'Update Event' : 'Create Event'}
-                </Button>
+                 {/* Action Buttons */}
+         <div className="flex flex-col sm:flex-row gap-4 justify-between">
+           <Button
+             onClick={() => router.push('/event')}
+             variant="outline"
+             className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+           >
+             Cancel
+           </Button>
+           <div className="flex gap-3">
+             <Button
+               type="submit"
+               onClick={handleSubmit}
+               className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+               disabled={loading}
+             >
+               {eventId ? 'Update Event' : 'Create Event'}
+             </Button>
+           </div>
+         </div>
+
+                {/* Success Section - Show invite link after event creation */}
+        {inviteLink && (
+          <div className="bg-green-900/20 backdrop-blur-sm rounded-3xl border border-green-500/30 shadow-xl shadow-black/50 p-8 mt-8">
+            <div className="flex items-center mb-4">
+              <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
+                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-            </div>
-          </form>
-
-          {/* Success Section - Show invite link after event creation */}
-          {inviteLink && (
-            <div className="mt-8 p-6 border border-green-200 rounded-lg bg-green-50">
-              <h3 className="text-lg font-semibold text-green-800 mb-4">
+              <h3 className="text-xl font-bold text-green-400">
                 Event {eventId ? 'Updated' : 'Created'} Successfully!
               </h3>
-              <p className="text-green-700 mb-4">
-                Share this link with your guests:
-              </p>
-              <input
-                type="text"
-                value={inviteLink}
-                readOnly
-                className="block w-full rounded-md border border-green-300 bg-white px-3 py-2 text-black shadow-sm focus:border-green-500 focus:ring-green-500 focus:outline-none sm:text-sm"
-              />
-              <div className="flex gap-2 mt-4">
-                <Button
-                  onClick={() => navigator.clipboard.writeText(inviteLink)}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
-                >
-                  Copy Invite Link
-                </Button>
-                <Button
-                  onClick={() => router.push('/event')}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-gray-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none"
-                >
-                  Go to My Events
-                </Button>
-              </div>
             </div>
-          )}
+            <p className="text-green-300 mb-6">
+              Share this link with your guests:
+            </p>
+            <input
+              type="text"
+              value={inviteLink}
+              readOnly
+              className="block w-full rounded-lg border border-green-500/30 bg-green-900/20 px-4 py-3 text-green-100 shadow-sm focus:border-green-400 focus:ring-2 focus:ring-green-400/20 focus:outline-none"
+            />
+            <div className="flex gap-3 mt-6">
+              <Button
+                onClick={() => navigator.clipboard.writeText(inviteLink)}
+                className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200"
+              >
+                Copy Invite Link
+              </Button>
+              <Button
+                onClick={() => router.push('/event')}
+                variant="outline"
+                className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+              >
+                Go to My Events
+              </Button>
+            </div>
+          </div>
+        )}
 
-          {/* Ticket Sidebar for Edit Form */}
-          {showTicketSidebar && selectedTicketIndex !== null && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <h3 className="text-lg font-semibold mb-4">
-                  {tickets[selectedTicketIndex].id ? 'Edit' : 'Create'} Ticket
-                </h3>
+        {/* Ticket Sidebar for Edit Form */}
+        {showTicketSidebar && selectedTicketIndex !== null && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-gray-800/95 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-2xl p-8 w-full max-w-md mx-4">
+              <h3 className="text-xl font-bold text-white mb-6">
+                {tickets[selectedTicketIndex].id ? 'Edit' : 'Create'} Ticket
+              </h3>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Ticket Name
-                    </label>
-                    <input
-                      type="text"
-                      value={tickets[selectedTicketIndex].name}
-                      onChange={e =>
-                        updateTicket(selectedTicketIndex, {
-                          name: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded px-3 py-2"
-                      placeholder="e.g., Early Bird, VIP, General"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Price ($)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={tickets[selectedTicketIndex].price}
-                      onChange={e =>
-                        updateTicket(selectedTicketIndex, {
-                          price: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Quantity Available
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={tickets[selectedTicketIndex].quantity_available}
-                      onChange={e =>
-                        updateTicket(selectedTicketIndex, {
-                          quantity_available: parseInt(e.target.value) || 1,
-                        })
-                      }
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Purchase Deadline (Optional)
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={
-                        tickets[selectedTicketIndex].purchase_deadline
-                          ?.toISOString()
-                          .slice(0, 16) || ''
-                      }
-                      onChange={e =>
-                        updateTicket(selectedTicketIndex, {
-                          purchase_deadline: e.target.value
-                            ? new Date(e.target.value)
-                            : null,
-                        })
-                      }
-                      className="w-full border rounded px-3 py-2"
-                    />
-                  </div>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Ticket Name
+                  </label>
+                  <input
+                    type="text"
+                    value={tickets[selectedTicketIndex].name}
+                    onChange={e =>
+                      updateTicket(selectedTicketIndex, {
+                        name: e.target.value,
+                      })
+                    }
+                    className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                    placeholder="e.g., Early Bird, VIP, General"
+                  />
                 </div>
 
-                <div className="flex gap-2 mt-6">
-                  <Button
-                    onClick={() => setShowTicketSidebar(false)}
-                    className="flex-1 px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => setShowTicketSidebar(false)}
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                  >
-                    Save
-                  </Button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Price ($)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={tickets[selectedTicketIndex].price}
+                    onChange={e =>
+                      updateTicket(selectedTicketIndex, {
+                        price: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Quantity Available
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={tickets[selectedTicketIndex].quantity_available}
+                    onChange={e =>
+                      updateTicket(selectedTicketIndex, {
+                        quantity_available: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Purchase Deadline (Optional)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={
+                      tickets[selectedTicketIndex].purchase_deadline
+                        ?.toISOString()
+                        .slice(0, 16) || ''
+                    }
+                    onChange={e =>
+                      updateTicket(selectedTicketIndex, {
+                        purchase_deadline: e.target.value
+                          ? new Date(e.target.value)
+                          : null,
+                      })
+                    }
+                    className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                  />
                 </div>
               </div>
+
+                             <div className="flex justify-center gap-3 mt-8">
+                 <Button
+                   onClick={() => setShowTicketSidebar(false)}
+                   className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+                 >
+                   Done
+                 </Button>
+               </div>
             </div>
-          )}
-        </main>
+          </div>
+        )}
       </div>
     </div>
   );
