@@ -56,10 +56,8 @@ export default function Home() {
     }, observerOptions);
 
     // Try both refs and direct element selection as fallback
+    // Exclude elements with their own animate-fade-in-only animations
     const elementsToObserve = [
-      headingRef.current,
-      descRef.current,
-      buttonsRef.current,
       benefitsTitleRef.current,
       benefitCard1Ref.current,
       benefitCard2Ref.current,
