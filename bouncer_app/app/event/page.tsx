@@ -7,7 +7,17 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
-import { format, toZonedTime } from 'date-fns-tz';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ChevronDownIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import EventCard from '@/components/event-card';
 
 export default function Event() {
   const [session, setSession] = useState<User | null>(null);
@@ -110,102 +120,167 @@ export default function Event() {
   }
 
   return (
-    <div>
-      <Header />
-      <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
-        <main className="row-start-2 flex flex-col items-center gap-[32px] sm:items-start">
-          <h1 className="text-4xl font-bold">My Events</h1>
-          <div className="mb-4 flex gap-4">
-            <label
-              htmlFor="sortBy"
-              className="text-white-700 block text-sm font-medium"
-            >
-              Sort by:
-            </label>
-            <select
-              id="sortBy"
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value as 'start_date' | 'name')}
-              className="mt-1 block w-full rounded-md border-gray-300 py-2 pr-10 pl-3 text-base text-black focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-            >
-              <option value="start_date">Start Date</option>
-              <option value="name">Event Name</option>
-            </select>
-
-            <label
-              htmlFor="sortOrder"
-              className="text-white-700 block text-sm font-medium"
-            >
-              Order:
-            </label>
-            <select
-              id="sortOrder"
-              value={sortOrder}
-              onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')}
-              className="mt-1 block w-full rounded-md border-gray-300 py-2 pr-10 pl-3 text-base text-black focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-            >
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">      
+      {/* Extended Hero Section with Header */}
+      <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
+        {/* Rave Light Beams Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Thin rave-style light beams */}
+          <div
+            className="absolute top-0 left-1/2 w-32 h-full bg-gradient-to-b from-purple-600/50 via-purple-600/25 to-transparent transform -translate-x-[460px] skew-x-16"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-24 h-full bg-gradient-to-b from-orange-400/60 via-orange-500/30 to-transparent transform -translate-x-[200px]"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-28 h-full bg-gradient-to-b from-purple-400/55 via-purple-500/28 to-transparent transform -skew-x-16 translate-x-[60px]"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-20 h-full bg-gradient-to-b from-orange-600/45 via-orange-600/20 to-transparent transform translate-x-[300px] skew-x-12"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-16 h-full bg-gradient-to-b from-purple-500/40 via-purple-500/18 to-transparent transform -translate-x-[600px] -skew-x-8"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-18 h-full bg-gradient-to-b from-orange-400/40 via-orange-400/18 to-transparent transform translate-x-[500px] skew-x-8"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+        </div>
+        
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-800/15 via-transparent to-indigo-800/25"></div>
+        
+        {/* Header integrated into hero */}
+        <div className="relative z-20">
+          <Header />
+        </div>
+        
+        {/* Hero content */}
+        <div className="relative px-6 py-16 sm:px-8 lg:px-12">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+              My Events
+            </h1>
+            <p className="text-xl text-gray-300 max-w-2xl">
+              Manage and organize your events with style. View, edit, and share your upcoming events.
+            </p>
           </div>
-          {/* Delete All Events Button */}
-          {events.length > 0 && (
-            <Button
-              onClick={deleteAllEvents}
-              className="mb-6 bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded disabled:opacity-50"
-              disabled={deleting}
-            >
-              {deleting ? 'Deleting...' : 'Delete All Events'}
-            </Button>
-          )}
-          {events.length === 0 ? (
-            <p>No events created yet. Create one from the home page!</p>
-          ) : (
-            <div className="space-y-8">
-              {events.map(event => {
-                const eventTimeZone = event.time_zone || 'America/Los_Angeles';
-                const zonedStart = toZonedTime(event.start_date, eventTimeZone);
-                const formattedStart = format(
-                  zonedStart,
-                  'M/d/yyyy h:mm aaaa zzz',
-                  { timeZone: eventTimeZone }
-                );
-                const zonedEnd = toZonedTime(event.end_date, eventTimeZone);
-                const formattedEnd = format(
-                  zonedEnd,
-                  'M/d/yyyy h:mm aaaa zzz',
-                  { timeZone: eventTimeZone }
-                );
-                return (
-                  <div
-                    key={event.id}
-                    className="rounded-lg border p-6 shadow-md"
-                  >
-                    <h2 className="text-2xl font-semibold">{event.name}</h2>
-                    <p className="text-gray-600">Theme: {event.theme}</p>
-                    <p className="text-gray-600">Start: {formattedStart}</p>
-                    <p className="text-gray-600">End: {formattedEnd}</p>
-                    <p className="text-gray-600">
-                      Additional Info: {event.additional_info}
-                    </p>
-                    <Button
-                      onClick={() => router.push(`/event/${event.id}`)}
-                      className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
-                    >
-                      View
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-12 sm:px-8 lg:px-12">
+        {/* Controls Section with elevated dark card */}
+        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            {/* Sort Controls */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <span className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                Filter & Sort
+              </span>
+              
+              <div className="flex items-center gap-3">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="bg-gray-700/90 border-gray-600 text-white hover:bg-gray-600 shadow-sm">
+                      Sort by: {sortBy === 'start_date' ? 'Date' : 'Name'}
+                      <ChevronDownIcon className="w-4 h-4 ml-2" />
                     </Button>
-                    <Button
-                      onClick={() => handleShare(event.id.toString())}
-                      className="mt-4 ml-4 inline-flex justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none"
-                    >
-                      Get Invite Link
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48 bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-xl">
+                    <DropdownMenuLabel className="text-gray-300">Sort Options</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                                         <DropdownMenuItem 
+                       onClick={() => setSortBy('start_date')}
+                       className="cursor-pointer hover:bg-purple-800/30 text-gray-200 hover:text-white"
+                     >
+                       <CalendarIcon className="w-4 h-4 mr-2 text-purple-300" />
+                       Start Date
+                     </DropdownMenuItem>
+                     <DropdownMenuItem 
+                       onClick={() => setSortBy('name')}
+                       className="cursor-pointer hover:bg-purple-800/30 text-gray-200 hover:text-white"
+                     >
+                       Event Name
+                     </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="bg-gray-700/90 border-gray-600 text-white hover:bg-gray-600 shadow-sm">
+                      {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                      <ChevronDownIcon className="w-4 h-4 ml-2" />
                     </Button>
-                  </div>
-                );
-              })}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-40 bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-xl">
+                    <DropdownMenuLabel className="text-gray-300">Order</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                                         <DropdownMenuItem 
+                       onClick={() => setSortOrder('asc')}
+                       className="cursor-pointer hover:bg-purple-800/30 text-gray-200 hover:text-white"
+                     >
+                       Ascending
+                     </DropdownMenuItem>
+                     <DropdownMenuItem 
+                       onClick={() => setSortOrder('desc')}
+                       className="cursor-pointer hover:bg-purple-800/30 text-gray-200 hover:text-white"
+                     >
+                       Descending
+                     </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
-          )}
-        </main>
+
+            {/* Delete All Button */}
+            {events.length > 0 && (
+              <Button
+                onClick={deleteAllEvents}
+                variant="destructive"
+                className="bg-red-600 hover:bg-red-700 shadow-lg hover:shadow-red-900/50 transition-all duration-200"
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete All Events'}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Events Grid */}
+        {events.length === 0 ? (
+          <div className="bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-700/50 shadow-xl p-12 text-center">
+            <div className="max-w-md mx-auto">
+                             <div className="w-20 h-20 bg-purple-800/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                 <CalendarIcon className="w-10 h-10 text-purple-300" />
+               </div>
+               <h3 className="text-2xl font-semibold text-white mb-3">No Events Yet</h3>
+               <p className="text-gray-400 mb-6">
+                 Ready to create your first event? Get started and bring people together!
+               </p>
+               <Button 
+                 onClick={() => router.push('/create-event')}
+                 className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+               >
+                Create Your First Event
+              </Button>
+            </div>
+          </div>
+        ) : (
+                     <div className="flex flex-wrap justify-center gap-8">
+             {events.map(event => (
+               <EventCard
+                 key={event.id}
+                 event={event}
+                 onShare={handleShare}
+               />
+             ))}
+           </div>
+        )}
       </div>
     </div>
   );
