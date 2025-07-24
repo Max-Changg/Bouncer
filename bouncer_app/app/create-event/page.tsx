@@ -246,36 +246,83 @@ export default function CreateEvent() {
   // Initialize Google Places Autocomplete
   useEffect(() => {
     const initAutocomplete = () => {
-      if (locationInputRef.current && window.google) {
-        const autocomplete = new window.google.maps.places.Autocomplete(
-          locationInputRef.current,
-          {
-            types: ['establishment', 'geocode'],
-            fields: ['formatted_address', 'geometry', 'name']
+      if (locationInputRef.current) {
+        console.log('Setting up location autocomplete...');
+        
+        // Create the gmp-place-autocomplete element
+        const autocompleteElement = document.createElement('gmp-place-autocomplete');
+        autocompleteElement.setAttribute('placeholder', 'Start typing to search for a location...');
+        
+        // Copy styles from the original input
+        const originalInput = locationInputRef.current;
+        autocompleteElement.className = originalInput.className;
+        
+        // Set initial value if location state has a value
+        if (location) {
+          autocompleteElement.setAttribute('value', location);
+        }
+        
+        // Replace the original input with the autocomplete element
+        originalInput.parentNode?.replaceChild(autocompleteElement, originalInput);
+        
+        // Update the ref to point to the new element
+        (locationInputRef as any).current = autocompleteElement;
+        
+        // Add event listeners
+        autocompleteElement.addEventListener('gmp-placeselect', (event: any) => {
+          const place = event.place;
+          console.log('=== PLACE SELECTED ===');
+          console.log('Full place object:', place);
+          console.log('formattedAddress:', place.formattedAddress);
+          console.log('displayName:', place.displayName);
+          console.log('======================');
+          
+          if (place.formattedAddress) {
+            const selectedLocation = place.formattedAddress;
+            console.log('Setting location from place selection:', selectedLocation);
+            
+            // Update both the element value and React state
+            autocompleteElement.setAttribute('value', selectedLocation);
+            setLocation(selectedLocation);
           }
-        );
+        });
 
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (place.formatted_address) {
-            setLocation(place.formatted_address);
-          }
+        // Add input event listener
+        autocompleteElement.addEventListener('input', (event: any) => {
+          const value = event.target.value || '';
+          console.log('Input event - updating location state:', value);
+          setLocation(value);
+        });
+
+        // Add change event listener as backup
+        autocompleteElement.addEventListener('change', (event: any) => {
+          const value = event.target.value || '';
+          console.log('Change event - syncing location state:', value);
+          setLocation(value);
+        });
+
+        // Add blur event to ensure final sync
+        autocompleteElement.addEventListener('blur', (event: any) => {
+          const value = event.target.value || '';
+          console.log('Blur event - final location sync:', value);
+          setLocation(value);
         });
       }
     };
 
-    if (window.google) {
-      initAutocomplete();
+    // Load the Google Maps web components library
+    if (!document.querySelector('script[src*="extended-component-library"]')) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=extended-component-library&v=beta`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        console.log('Google Maps web components loaded');
+        setTimeout(initAutocomplete, 100); // Small delay to ensure components are ready
+      };
+      document.head.appendChild(script);
     } else {
-      // Load Google Maps API if not already loaded
-      if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        script.onload = initAutocomplete;
-        document.head.appendChild(script);
-      }
+      initAutocomplete();
     }
   }, []);
 
@@ -730,8 +777,7 @@ export default function CreateEvent() {
                  ref={locationInputRef}
                  type="text"
                  id="location"
-                 value={location}
-                 onChange={e => setLocation(e.target.value)}
+                 defaultValue={location}
                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
                  placeholder="Start typing to search for a location..."
                />
