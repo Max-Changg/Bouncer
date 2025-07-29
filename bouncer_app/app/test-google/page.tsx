@@ -84,13 +84,9 @@ export default function TestGoogle() {
         </div>
 
         <div className="space-x-4">
-          <Button onClick={signInWithGoogle}>
-            Sign In with Google
-          </Button>
+          <Button onClick={signInWithGoogle}>Sign In with Google</Button>
 
-          <Button onClick={checkUser}>
-            Check User
-          </Button>
+          <Button onClick={checkUser}>Check User</Button>
 
           {user && (
             <Button onClick={signOut} variant="destructive">

@@ -87,24 +87,33 @@ export default function CreateEvent() {
   const [loading, setLoading] = useState(false);
   const locationInputRef = useRef<HTMLInputElement>(null);
 
+  // Track location state changes
+  useEffect(() => {
+    console.log('📍 Location state changed to:', location);
+  }, [location]);
+
   useEffect(() => {
     let mounted = true;
     let redirectTimeout: NodeJS.Timeout | null = null;
-    
+
     // Set up auth state listener first
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
-      
-      console.log('Auth state changed:', event, session?.user?.email || 'no user');
-      
+
+      console.log(
+        'Auth state changed:',
+        event,
+        session?.user?.email || 'no user'
+      );
+
       // Clear any pending redirect
       if (redirectTimeout) {
         clearTimeout(redirectTimeout);
         redirectTimeout = null;
       }
-      
+
       setSessionLoading(false);
       if (session?.user) {
         console.log('Session found from auth change:', session.user.email);
@@ -118,18 +127,24 @@ export default function CreateEvent() {
           router.push('/login');
         } else if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           // For initial session or token refresh, if no user, set a delay before redirect
-          console.log('No user after initial session check, setting redirect timeout');
-                     redirectTimeout = setTimeout(() => {
-             if (mounted) {
-               // Check current session state before redirecting
-               supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-                 if (!currentSession?.user && mounted) {
-                   console.log('No session found after timeout, redirecting to login');
-                   router.push('/login');
-                 }
-               });
-             }
-           }, 2000);
+          console.log(
+            'No user after initial session check, setting redirect timeout'
+          );
+          redirectTimeout = setTimeout(() => {
+            if (mounted) {
+              // Check current session state before redirecting
+              supabase.auth
+                .getSession()
+                .then(({ data: { session: currentSession } }) => {
+                  if (!currentSession?.user && mounted) {
+                    console.log(
+                      'No session found after timeout, redirecting to login'
+                    );
+                    router.push('/login');
+                  }
+                });
+            }
+          }, 2000);
         }
       }
     });
@@ -137,42 +152,52 @@ export default function CreateEvent() {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
         if (!mounted) return;
-        
+
         if (error) {
           console.error('Initial session error:', error);
           setSessionLoading(false);
           setSession(null);
           return;
         }
-        
-               console.log('Initial session check:', session?.user?.email || 'no session');
-       setSessionLoading(false);
-       
-       if (session?.user) {
-         console.log('Setting session for user:', session.user.email);
-         setSession(session.user);
-       } else {
-         console.log('No session found, will set redirect timeout');
-         setSession(null);
-         // Set a timeout to redirect if no session is established
-         redirectTimeout = setTimeout(() => {
-           if (mounted) {
-             console.log('Timeout reached, checking session one more time...');
-             // Double-check session state before redirecting
-             supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-               if (!currentSession?.user && mounted) {
-                 console.log('Confirmed no session, redirecting to login');
-                 router.push('/login');
-               } else if (currentSession?.user) {
-                 console.log('Session found during timeout check, not redirecting');
-               }
-             });
-           }
-         }, 2000); // Reduced to 2 seconds
-       }
+
+        console.log(
+          'Initial session check:',
+          session?.user?.email || 'no session'
+        );
+        setSessionLoading(false);
+
+        if (session?.user) {
+          console.log('Setting session for user:', session.user.email);
+          setSession(session.user);
+        } else {
+          console.log('No session found, will set redirect timeout');
+          setSession(null);
+          // Set a timeout to redirect if no session is established
+          redirectTimeout = setTimeout(() => {
+            if (mounted) {
+              console.log('Timeout reached, checking session one more time...');
+              // Double-check session state before redirecting
+              supabase.auth
+                .getSession()
+                .then(({ data: { session: currentSession } }) => {
+                  if (!currentSession?.user && mounted) {
+                    console.log('Confirmed no session, redirecting to login');
+                    router.push('/login');
+                  } else if (currentSession?.user) {
+                    console.log(
+                      'Session found during timeout check, not redirecting'
+                    );
+                  }
+                });
+            }
+          }, 2000); // Reduced to 2 seconds
+        }
       } catch (error) {
         console.error('Failed to get initial session:', error);
         if (mounted) {
@@ -246,35 +271,95 @@ export default function CreateEvent() {
   // Initialize Google Places Autocomplete
   useEffect(() => {
     const initAutocomplete = () => {
-      if (locationInputRef.current && window.google) {
-        const autocomplete = new window.google.maps.places.Autocomplete(
-          locationInputRef.current,
-          {
-            types: ['establishment', 'geocode'],
-            fields: ['formatted_address', 'geometry', 'name']
-          }
-        );
+      console.log('🔍 Initializing Google Places Autocomplete...');
+      console.log('📍 locationInputRef.current:', locationInputRef.current);
+      console.log('🌐 window.google:', window.google);
+      console.log(
+        '🔑 Google Maps API Key:',
+        process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Set' : 'Missing'
+      );
 
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (place.formatted_address) {
-            setLocation(place.formatted_address);
+      if (locationInputRef.current && window.google) {
+        try {
+          console.log('✅ Creating Autocomplete widget...');
+          const autocomplete = new window.google.maps.places.Autocomplete(
+            locationInputRef.current,
+            {
+              types: ['establishment', 'geocode'],
+              fields: ['formatted_address', 'geometry', 'name'],
+            }
+          );
+
+          console.log('✅ Autocomplete widget created successfully');
+          console.log('🎯 Setting up place_changed listener...');
+
+          autocomplete.addListener('place_changed', () => {
+            console.log('🎉 Place selection triggered!');
+            const place = autocomplete.getPlace();
+            console.log('📋 Selected place data:', place);
+
+            if (place.formatted_address) {
+              console.log('📍 Setting location to:', place.formatted_address);
+              setLocation(place.formatted_address);
+              console.log('✅ Location updated successfully');
+            } else {
+              console.log('⚠️ No formatted_address found in place data');
+              console.log('🔍 Available place data:', Object.keys(place));
+            }
+          });
+
+          console.log('✅ Place listener set up successfully');
+        } catch (error) {
+          console.error('❌ Error initializing autocomplete:', error);
+          if (
+            error instanceof Error &&
+            error.message?.includes('InvalidKeyMapError')
+          ) {
+            setError(
+              'Google Maps API key is invalid. Please check your configuration.'
+            );
           }
-        });
+        }
+      } else {
+        console.log('❌ Cannot initialize autocomplete:');
+        console.log(
+          '  - locationInputRef.current:',
+          !!locationInputRef.current
+        );
+        console.log('  - window.google:', !!window.google);
       }
     };
 
     if (window.google) {
+      console.log('🌐 Google Maps API already loaded');
       initAutocomplete();
     } else {
+      console.log('📡 Google Maps API not loaded, loading script...');
       // Load Google Maps API if not already loaded
+      // SECURITY NOTE: This API key is exposed to the frontend.
+      // Make sure to restrict it in Google Cloud Console:
+      // 1. Restrict to your domain (HTTP referrers)
+      // 2. Enable only the APIs you need (Places API, Maps JavaScript API)
+      // 3. Set usage quotas to prevent abuse
       if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
         script.async = true;
         script.defer = true;
-        script.onload = initAutocomplete;
+        script.onload = () => {
+          console.log('✅ Google Maps API script loaded successfully');
+          initAutocomplete();
+        };
+        script.onerror = error => {
+          console.error('❌ Failed to load Google Maps API script:', error);
+          setError(
+            'Failed to load Google Maps API. Please check your API key configuration.'
+          );
+        };
         document.head.appendChild(script);
+        console.log('📡 Google Maps script added to DOM');
+      } else {
+        console.log('📡 Google Maps script already exists in DOM');
       }
     }
   }, []);
@@ -339,58 +424,58 @@ export default function CreateEvent() {
         return zonedTimeToUtc(localDate, tz);
       };
 
-                    const startUtcDateTime = createUtcDateTime(
-         startDate,
-         startTime,
-         timeZone
-       );
-       const endUtcDateTime = createUtcDateTime(endDate, endTime, timeZone);
+      const startUtcDateTime = createUtcDateTime(
+        startDate,
+        startTime,
+        timeZone
+      );
+      const endUtcDateTime = createUtcDateTime(endDate, endTime, timeZone);
 
-       if (eventId) {
-         // Update existing event (including auto-created ones)
-         const { error } = await supabase
-           .from('Events')
-           .update({
-             name: eventName,
-             theme: eventTheme,
-             start_date: startUtcDateTime
-               ? startUtcDateTime.toISOString()
-               : null,
-             end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
-             location: location,
-             additional_info: additionalInfo,
-             time_zone: timeZone,
-           })
-           .eq('id', eventId);
+      if (eventId) {
+        // Update existing event (including auto-created ones)
+        const { error } = await supabase
+          .from('Events')
+          .update({
+            name: eventName,
+            theme: eventTheme,
+            start_date: startUtcDateTime
+              ? startUtcDateTime.toISOString()
+              : null,
+            end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
+            location: location,
+            additional_info: additionalInfo,
+            time_zone: timeZone,
+          })
+          .eq('id', eventId);
 
-         if (error) {
-           console.error('Error updating event:', error);
-           setError(error.message);
-           setLoading(false);
-           return;
-         }
+        if (error) {
+          console.error('Error updating event:', error);
+          setError(error.message);
+          setLoading(false);
+          return;
+        }
 
-         // Save tickets after updating event
-         await saveTickets(eventId);
+        // Save tickets after updating event
+        await saveTickets(eventId);
 
-         setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
-       } else {
-         // Create new event
-         const { data, error } = await supabase
-           .from('Events')
-           .insert({
-             name: eventName,
-             theme: eventTheme,
-             start_date: startUtcDateTime
-               ? startUtcDateTime.toISOString()
-               : null,
-             end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
-             location: location,
-             additional_info: additionalInfo,
-             time_zone: timeZone,
-             user_id: session.id,
-           })
-           .select()
+        setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
+      } else {
+        // Create new event
+        const { data, error } = await supabase
+          .from('Events')
+          .insert({
+            name: eventName,
+            theme: eventTheme,
+            start_date: startUtcDateTime
+              ? startUtcDateTime.toISOString()
+              : null,
+            end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
+            location: location,
+            additional_info: additionalInfo,
+            time_zone: timeZone,
+            user_id: session.id,
+          })
+          .select()
           .single();
 
         if (error) {
@@ -414,7 +499,7 @@ export default function CreateEvent() {
 
   const addTicket = () => {
     if (tickets.length >= 5) return;
-    
+
     const newTicket = {
       name: '',
       price: 0,
@@ -425,7 +510,7 @@ export default function CreateEvent() {
     setTickets(updatedTickets);
     setSelectedTicketIndex(tickets.length);
     setShowTicketSidebar(true);
-    
+
     // Auto-save new ticket only if event already exists
     if (eventId) {
       setTimeout(() => {
@@ -441,7 +526,7 @@ export default function CreateEvent() {
     const updatedTickets = [...tickets];
     updatedTickets[index] = { ...updatedTickets[index], ...updates };
     setTickets(updatedTickets);
-    
+
     // Auto-save tickets after a short delay
     if (eventId) {
       setTimeout(() => {
@@ -457,7 +542,7 @@ export default function CreateEvent() {
       setSelectedTicketIndex(null);
       setShowTicketSidebar(false);
     }
-    
+
     // Auto-save after removing ticket
     if (eventId) {
       setTimeout(() => {
@@ -465,8 +550,6 @@ export default function CreateEvent() {
       }, 500);
     }
   };
-
-
 
   const saveTickets = async (eventIdToUse: number | null = eventId) => {
     if (!eventIdToUse) {
@@ -520,7 +603,7 @@ export default function CreateEvent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">      
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
       {/* Extended Hero Section with Header */}
       <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
         {/* Rave Light Beams Background */}
@@ -551,15 +634,15 @@ export default function CreateEvent() {
             style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
           ></div>
         </div>
-        
+
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-purple-800/15 via-transparent to-indigo-800/25"></div>
-        
+
         {/* Header integrated into hero */}
         <div className="relative z-20">
           <Header />
         </div>
-        
+
         {/* Hero content */}
         <div className="relative px-6 py-16 sm:px-8 lg:px-12">
           <div className="max-w-7xl mx-auto">
@@ -567,7 +650,9 @@ export default function CreateEvent() {
               {eventId ? 'Edit Your Event' : 'Create Your Event'}
             </h1>
             <p className="text-xl text-gray-300 max-w-2xl">
-              {eventId ? 'Update your event details and manage tickets' : 'Bring your vision to life. Create an unforgettable experience for your guests.'}
+              {eventId
+                ? 'Update your event details and manage tickets'
+                : 'Bring your vision to life. Create an unforgettable experience for your guests.'}
             </p>
           </div>
         </div>
@@ -579,14 +664,11 @@ export default function CreateEvent() {
             <p className="text-red-300 text-sm">{error}</p>
           </div>
         )}
-        
+
         {/* Main Form Card */}
         <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
           <h2 className="text-2xl font-bold text-white mb-6">Event Details</h2>
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-6"
-          >
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label
@@ -623,7 +705,10 @@ export default function CreateEvent() {
             </div>
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="start-date-picker" className="block text-sm font-medium text-gray-300 mb-2">
+                <Label
+                  htmlFor="start-date-picker"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
                   Start Date and Time
                 </Label>
                 <div className="flex gap-3">
@@ -662,7 +747,10 @@ export default function CreateEvent() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="end-date-picker" className="block text-sm font-medium text-gray-300 mb-2">
+                <Label
+                  htmlFor="end-date-picker"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
                   End Date and Time
                 </Label>
                 <div className="flex gap-3">
@@ -698,44 +786,47 @@ export default function CreateEvent() {
                   />
                 </div>
               </div>
-                         </div>
-             <div>
-               <label
-                 htmlFor="timeZone"
-                 className="block text-sm font-medium text-gray-300 mb-2"
-               >
-                 Time Zone
-               </label>
-               <select
-                 id="timeZone"
-                 value={timeZone}
-                 onChange={e => setTimeZone(e.target.value)}
-                 className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
-               >
-                 <option value="America/Los_Angeles">Pacific Time</option>
-                 <option value="America/New_York">Eastern Time</option>
-                 <option value="America/Chicago">Central Time</option>
-                 <option value="America/Denver">Mountain Time</option>
-                 <option value="Europe/London">Greenwich Mean Time</option>
-               </select>
-             </div>
-             <div>
-               <label
-                 htmlFor="location"
-                 className="block text-sm font-medium text-gray-300 mb-2"
-               >
-                 Event Location
-               </label>
-               <input
-                 ref={locationInputRef}
-                 type="text"
-                 id="location"
-                 value={location}
-                 onChange={e => setLocation(e.target.value)}
-                 className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
-                 placeholder="Start typing to search for a location..."
-               />
-             </div>
+            </div>
+            <div>
+              <label
+                htmlFor="timeZone"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Time Zone
+              </label>
+              <select
+                id="timeZone"
+                value={timeZone}
+                onChange={e => setTimeZone(e.target.value)}
+                className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+              >
+                <option value="America/Los_Angeles">Pacific Time</option>
+                <option value="America/New_York">Eastern Time</option>
+                <option value="America/Chicago">Central Time</option>
+                <option value="America/Denver">Mountain Time</option>
+                <option value="Europe/London">Greenwich Mean Time</option>
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="location"
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
+                Event Location
+              </label>
+              <input
+                ref={locationInputRef}
+                type="text"
+                id="location"
+                value={location}
+                onChange={e => {
+                  console.log('✏️ Manual location input:', e.target.value);
+                  setLocation(e.target.value);
+                }}
+                className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                placeholder="Start typing to search for a location..."
+              />
+            </div>
             <div>
               <label
                 htmlFor="additionalInfo"
@@ -751,30 +842,39 @@ export default function CreateEvent() {
                 className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors resize-none"
                 placeholder="Address, dress code, what to bring, parking info..."
               />
-                         </div>
+            </div>
           </form>
         </div>
-        
-        
+
         {/* Ticket Management Section */}
         <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
-           <h3 className="text-2xl font-bold text-white mb-6">Event Tickets</h3>
-           <div className="mb-6">
-             <p className="text-gray-300 mb-6">
-               Manage up to 5 different ticket types for your event. Each
-               ticket type can have its own price, quantity, and purchase
-               deadline.{!eventId && (
-                 <span className="block mt-2 text-sm text-orange-300">
-                   💡 Tickets will auto-save after you create the main event
-                 </span>
-               )}
-             </p>
+          <h3 className="text-2xl font-bold text-white mb-6">Event Tickets</h3>
+          <div className="mb-6">
+            <p className="text-gray-300 mb-6">
+              Manage up to 5 different ticket types for your event. Each ticket
+              type can have its own price, quantity, and purchase deadline.
+              {!eventId && (
+                <span className="block mt-2 text-sm text-orange-300">
+                  💡 Tickets will auto-save after you create the main event
+                </span>
+              )}
+            </p>
 
-             {tickets.length === 0 ? (
+            {tickets.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-gray-600/50 rounded-2xl bg-gray-800/30">
                 <div className="w-16 h-16 bg-purple-800/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                  <svg
+                    className="w-8 h-8 text-purple-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+                    />
                   </svg>
                 </div>
                 <p className="text-gray-400 mb-6">No tickets created yet</p>
@@ -797,8 +897,7 @@ export default function CreateEvent() {
                         {ticket.name || 'Untitled Ticket'}
                       </h3>
                       <p className="text-sm text-gray-300 mt-1">
-                        ${ticket.price} • {ticket.quantity_available}{' '}
-                        available
+                        ${ticket.price} • {ticket.quantity_available} available
                         {ticket.purchase_deadline && (
                           <span>
                             {' '}
@@ -844,34 +943,44 @@ export default function CreateEvent() {
           </div>
         </div>
 
-                 {/* Action Buttons */}
-         <div className="flex flex-col sm:flex-row gap-4 justify-between">
-           <Button
-             onClick={() => router.push('/event')}
-             variant="outline"
-             className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
-           >
-             Cancel
-           </Button>
-           <div className="flex gap-3">
-             <Button
-               type="submit"
-               onClick={handleSubmit}
-               className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
-               disabled={loading}
-             >
-               {eventId ? 'Update Event' : 'Create Event'}
-             </Button>
-           </div>
-         </div>
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <Button
+            onClick={() => router.push('/event')}
+            variant="outline"
+            className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+          >
+            Cancel
+          </Button>
+          <div className="flex gap-3">
+            <Button
+              type="submit"
+              onClick={handleSubmit}
+              className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+              disabled={loading}
+            >
+              {eventId ? 'Update Event' : 'Create Event'}
+            </Button>
+          </div>
+        </div>
 
-                {/* Success Section - Show invite link after event creation */}
+        {/* Success Section - Show invite link after event creation */}
         {inviteLink && (
           <div className="bg-green-900/20 backdrop-blur-sm rounded-3xl border border-green-500/30 shadow-xl shadow-black/50 p-8 mt-8">
             <div className="flex items-center mb-4">
               <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-5 h-5 text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-green-400">
@@ -989,14 +1098,14 @@ export default function CreateEvent() {
                 </div>
               </div>
 
-                             <div className="flex justify-center gap-3 mt-8">
-                 <Button
-                   onClick={() => setShowTicketSidebar(false)}
-                   className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
-                 >
-                   Done
-                 </Button>
-               </div>
+              <div className="flex justify-center gap-3 mt-8">
+                <Button
+                  onClick={() => setShowTicketSidebar(false)}
+                  className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+                >
+                  Done
+                </Button>
+              </div>
             </div>
           </div>
         )}
