@@ -9,6 +9,19 @@ import type { Database } from '@/lib/database.types';
 import { DataTable } from '@/components/data-table';
 import { columns } from './columns';
 import { Button } from '@/components/ui/button';
+import { format, toZonedTime } from 'date-fns-tz';
+import {
+  CalendarIcon,
+  ClockIcon,
+  MapPinIcon,
+  UsersIcon,
+  ShareIcon,
+  PencilIcon,
+  TrashIcon,
+  QrCodeIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
+import Scanner from '@/components/scanner';
 
 export default function EventDetails() {
   const [session, setSession] = useState<User | null>(null);
@@ -20,9 +33,19 @@ export default function EventDetails() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [zelleData, setZelleData] = useState<Array<{name: string, amount: number}>>([]);
-  const [venmoData, setVenmoData] = useState<Array<{name: string, amount: number}>>([]);
+  const [zelleData, setZelleData] = useState<
+    Array<{ name: string; amount: number }>
+  >([]);
+  const [venmoData, setVenmoData] = useState<
+    Array<{ name: string; amount: number }>
+  >([]);
   const [processingPayments, setProcessingPayments] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanResult, setScanResult] = useState<string | null>(null);
+  const [guests, setGuests] = useState<string[]>([]);
+  const [verificationStatus, setVerificationStatus] = useState<
+    'Verified' | 'Not Found' | null
+  >(null);
   const router = useRouter();
   const params = useParams();
   const supabase = createBrowserClient<Database>(
@@ -79,10 +102,44 @@ export default function EventDetails() {
       setRsvps([]); // Ensure rsvps is empty array on error
     } else if (data) {
       setRsvps(data);
+      // Extract user_ids for QR verification
+      setGuests(data.map(rsvp => rsvp.user_id));
     } else {
       setRsvps([]);
     }
   }, [supabase, eventId]);
+
+  // QR Scanner handlers
+  const handleScanSuccess = (decodedText: string) => {
+    if (!verificationStatus) {
+      setScanResult(decodedText);
+    }
+  };
+
+  const handleScanFailure = (error: any) => {
+    if (typeof error === 'string' && error.includes('No QR code found')) {
+      return;
+    }
+    console.warn(`QR code scan error:`, error);
+  };
+
+  // Handle scan result verification
+  useEffect(() => {
+    if (scanResult) {
+      if (guests.includes(scanResult)) {
+        setVerificationStatus('Verified');
+      } else {
+        setVerificationStatus('Not Found');
+      }
+
+      const timer = setTimeout(() => {
+        setScanResult(null);
+        setVerificationStatus(null);
+      }, 3000); // 3-second delay
+
+      return () => clearTimeout(timer);
+    }
+  }, [scanResult, guests]);
 
   useEffect(() => {
     const {
@@ -179,11 +236,11 @@ export default function EventDetails() {
   const parseZelleFile = async (file: File) => {
     const text = await file.text();
     const lines = text.split('\n');
-    const zellePayments: Array<{name: string, amount: number}> = [];
-    
+    const zellePayments: Array<{ name: string; amount: number }> = [];
+
     // Regex pattern from KASA system: "BofA: (name) sent you $amount"
     const pattern = /BofA: (.*?) sent you \$([0-9]+\.\d{2})(?: for.*)?/i;
-    
+
     for (const line of lines) {
       const trimmedLine = line.trim();
       const match = pattern.exec(trimmedLine);
@@ -193,7 +250,7 @@ export default function EventDetails() {
         zellePayments.push({ name, amount });
       }
     }
-    
+
     setZelleData(zellePayments);
     return zellePayments;
   };
@@ -201,59 +258,65 @@ export default function EventDetails() {
   const parseVenmoFile = async (file: File) => {
     const text = await file.text();
     const lines = text.split('\n');
-    const venmoPayments: Array<{name: string, amount: number}> = [];
-    
+    const venmoPayments: Array<{ name: string; amount: number }> = [];
+
     // Skip header rows (first 3 lines based on the CSV format)
     for (let i = 3; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
-      
+
       const columns = line.split(',');
       if (columns.length >= 9) {
         const from = columns[6]?.trim().toLowerCase().replace(/\s+/g, ' ');
         const amountStr = columns[8]?.trim().replace(/[^\d.-]/g, '');
         const amount = parseFloat(amountStr);
-        
+
         // Only include incoming payments (positive amounts)
         if (from && amount > 0 && !isNaN(amount)) {
           venmoPayments.push({ name: from, amount });
         }
       }
     }
-    
+
     setVenmoData(venmoPayments);
     return venmoPayments;
   };
 
   const crossCheckPayments = async () => {
     if (!rsvps.length) return;
-    
+
     setProcessingPayments(true);
     const updatedRsvps = [...rsvps];
-    
+
     for (const rsvp of updatedRsvps) {
       const rsvpName = rsvp.name.toLowerCase().trim().replace(/\s+/g, ' ');
       let totalPaid = 0;
       let paymentMethod = '';
-      
+
       // Check Zelle payments
-      const zelleMatches = zelleData.filter(payment => 
-        payment.name === rsvpName
+      const zelleMatches = zelleData.filter(
+        payment => payment.name === rsvpName
       );
       if (zelleMatches.length > 0) {
-        totalPaid += zelleMatches.reduce((sum, payment) => sum + payment.amount, 0);
+        totalPaid += zelleMatches.reduce(
+          (sum, payment) => sum + payment.amount,
+          0
+        );
         paymentMethod = 'zelle';
       }
-      
+
       // Check Venmo payments
-      const venmoMatches = venmoData.filter(payment => 
-        payment.name === rsvpName
+      const venmoMatches = venmoData.filter(
+        payment => payment.name === rsvpName
       );
       if (venmoMatches.length > 0) {
-        totalPaid += venmoMatches.reduce((sum, payment) => sum + payment.amount, 0);
+        totalPaid += venmoMatches.reduce(
+          (sum, payment) => sum + payment.amount,
+          0
+        );
         paymentMethod = paymentMethod ? 'multiple' : 'venmo';
       }
-      
+
       // Determine payment status
       let paymentStatus = 'unpaid';
       if (totalPaid > 0) {
@@ -261,18 +324,18 @@ export default function EventDetails() {
         // TODO: Add expected amount logic when ticketing is implemented
         paymentStatus = totalPaid > 0 ? 'paid' : 'unpaid';
       }
-      
+
       // Update RSVP with payment info
       rsvp.payment_status = paymentStatus;
       rsvp.amount_paid = totalPaid;
       rsvp.payment_method = paymentMethod;
     }
-    
+
     // Update database
     const { error } = await supabase
       .from('rsvps')
       .upsert(updatedRsvps, { onConflict: 'id' });
-    
+
     if (error) {
       console.error('Error updating payment status:', error);
       setError('Failed to update payment status');
@@ -280,14 +343,14 @@ export default function EventDetails() {
       setRsvps(updatedRsvps);
       alert('Payment verification completed!');
     }
-    
+
     setProcessingPayments(false);
   };
 
   const handleZelleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     try {
       await parseZelleFile(file);
       await crossCheckPayments();
@@ -300,7 +363,7 @@ export default function EventDetails() {
   const handleVenmoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     try {
       await parseVenmoFile(file);
       await crossCheckPayments();
@@ -311,84 +374,301 @@ export default function EventDetails() {
   };
 
   if (loading) {
-    return <div>Loading event details...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading event details...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </div>
+          <p className="text-red-300 text-lg">Error: {error}</p>
+        </div>
+      </div>
+    );
   }
 
   if (!session || !event) {
     return null;
   }
 
+  // Format event dates
+  const eventTimeZone = event.time_zone || 'America/Los_Angeles';
+  const zonedStart = toZonedTime(event.start_date, eventTimeZone);
+  const zonedEnd = toZonedTime(event.end_date, eventTimeZone);
+  const formattedStart = format(zonedStart, 'MMM d, yyyy', {
+    timeZone: eventTimeZone,
+  });
+  const formattedStartTime = format(zonedStart, 'h:mm aaaa', {
+    timeZone: eventTimeZone,
+  });
+  const formattedEnd = format(zonedEnd, 'MMM d, yyyy', {
+    timeZone: eventTimeZone,
+  });
+  const formattedEndTime = format(zonedEnd, 'h:mm aaaa', {
+    timeZone: eventTimeZone,
+  });
+
   return (
-    <div className="min-h-screen bg-black text-gray-300">
-      <Header session={session} />
-      <div className="grid min-h-screen grid-rows-[20px_1fr_20px] items-center justify-items-center gap-16 p-8 pb-20 font-[family-name:var(--font-geist-sans)] sm:p-20">
-        <main className="row-start-2 flex w-full flex-col items-center gap-[32px] sm:items-start">
-          <div className="flex w-full items-center justify-between">
-            <h1 className="text-4xl font-bold">{event.name}</h1>
-            <div>
-              <Button onClick={handleEdit} variant="outline">Edit</Button>
-              <Button onClick={handleDelete} variant="destructive" className="ml-4">Delete</Button>
-              <Button onClick={() => handleShare(event.id.toString())} className="ml-4">Get Invite Link</Button>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+      {/* Extended Hero Section with Header */}
+      <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
+        {/* Rave Light Beams Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Thin rave-style light beams */}
+          <div
+            className="absolute top-0 left-1/2 w-32 h-full bg-gradient-to-b from-purple-600/50 via-purple-600/25 to-transparent transform -translate-x-[460px] skew-x-16"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-24 h-full bg-gradient-to-b from-orange-400/60 via-orange-500/30 to-transparent transform -translate-x-[200px]"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+          <div
+            className="absolute top-0 left-1/2 w-28 h-full bg-gradient-to-b from-purple-400/55 via-purple-500/28 to-transparent transform -skew-x-16 translate-x-[60px]"
+            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
+          ></div>
+        </div>
+
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-800/15 via-transparent to-indigo-800/25"></div>
+
+        {/* Header integrated into hero */}
+        <div className="relative z-20">
+          <Header />
+        </div>
+
+        {/* Hero content */}
+        <div className="relative px-6 py-16 sm:px-8 lg:px-12">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+                {event.name}
+              </h1>
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleEdit}
+                  variant="outline"
+                  className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+                >
+                  <PencilIcon className="w-4 h-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  variant="outline"
+                  className="bg-red-800/20 border-red-500/50 text-red-300 hover:bg-red-800/40 hover:text-white"
+                >
+                  <TrashIcon className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+                <Button
+                  onClick={() => handleShare(event.id.toString())}
+                  className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200"
+                >
+                  <ShareIcon className="w-4 h-4 mr-2" />
+                  Share Link
+                </Button>
+                <Button
+                  onClick={() => setShowScanner(true)}
+                  className="bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 shadow-lg hover:shadow-blue-800/50 transition-all duration-200"
+                >
+                  <QrCodeIcon className="w-4 h-4 mr-2" />
+                  Scan QR
+                </Button>
+              </div>
+            </div>
+            <p className="text-xl text-gray-300 max-w-2xl">
+              Manage your event details, track RSVPs, and verify payments
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-12 sm:px-8 lg:px-12">
+        {error && (
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-8">
+            <p className="text-red-300 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Event Details Card */}
+        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-white mb-6">Event Details</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center text-gray-300">
+                <CalendarIcon className="w-5 h-5 mr-3 text-purple-300 flex-shrink-0" />
+                <div>
+                  <span className="font-medium">Start:</span> {formattedStart}{' '}
+                  at {formattedStartTime}
+                </div>
+              </div>
+              <div className="flex items-center text-gray-300">
+                <ClockIcon className="w-5 h-5 mr-3 text-purple-300 flex-shrink-0" />
+                <div>
+                  <span className="font-medium">End:</span> {formattedEnd} at{' '}
+                  {formattedEndTime}
+                </div>
+              </div>
+              {event.location && (
+                <div className="flex items-start text-gray-300">
+                  <MapPinIcon className="w-5 h-5 mr-3 mt-0.5 text-purple-300 flex-shrink-0" />
+                  <span className="text-sm">{event.location}</span>
+                </div>
+              )}
+            </div>
+            <div className="space-y-4">
+              <div>
+                <span className="text-gray-300 font-medium">Theme:</span>
+                <span className="ml-2 px-3 py-1 bg-purple-800/30 rounded-full text-sm text-purple-300">
+                  {event.theme}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-300 font-medium">Description:</span>
+                <p className="mt-2 text-gray-300 text-sm">
+                  {event.additional_info}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Upload Section - Admin Only */}
+        {session && event && session.id === event.user_id && (
+          <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
+            <h3 className="text-2xl font-bold text-white mb-6">
+              Payment Verification
+            </h3>
+            <p className="text-gray-300 mb-6">
+              Upload your Venmo and Zelle statements to automatically verify
+              payments with your RSVPs.
+            </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Zelle Statement (.txt)
+                </label>
+                <input
+                  type="file"
+                  accept=".txt"
+                  onChange={handleZelleUpload}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-800/50 file:text-purple-300 hover:file:bg-purple-800/70"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Venmo Statement (.csv)
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleVenmoUpload}
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-800/50 file:text-orange-300 hover:file:bg-orange-800/70"
+                />
+              </div>
+            </div>
+            {processingPayments && (
+              <div className="mt-4 text-center">
+                <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-2"></div>
+                <p className="text-purple-300 text-sm">
+                  Processing payments...
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* RSVPs Section */}
+        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-white">RSVPs</h3>
+            <div className="flex items-center text-gray-300">
+              <UsersIcon className="w-5 h-5 mr-2 text-purple-300" />
+              <span>{rsvps.length} guests</span>
+            </div>
+          </div>
+          <DataTable columns={columns} data={rsvps} onSave={handleSave} />
+        </div>
+      </div>
+
+      {/* QR Scanner Modal */}
+      {showScanner && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/95 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-2xl p-8 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">Scan QR Code</h3>
               <Button
-                onClick={() => router.push(`/event/${eventId}/scan`)}
-                className="ml-4 inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+                onClick={() => setShowScanner(false)}
+                variant="outline"
+                size="sm"
+                className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
               >
-                Scan QR Code
+                <XMarkIcon className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="mb-6">
+              {!verificationStatus && (
+                <Scanner
+                  onScan={handleScanSuccess}
+                  onError={handleScanFailure}
+                />
+              )}
+            </div>
+
+            {verificationStatus && (
+              <div className="text-center">
+                <div
+                  className={`rounded-lg p-4 text-2xl font-bold mb-4 ${
+                    verificationStatus === 'Verified'
+                      ? 'bg-green-900/20 text-green-400 border border-green-500/30'
+                      : 'bg-red-900/20 text-red-400 border border-red-500/30'
+                  }`}
+                >
+                  {verificationStatus}
+                </div>
+                <p className="text-gray-300 text-sm">
+                  {verificationStatus === 'Verified'
+                    ? 'Guest verified successfully!'
+                    : 'Guest not found in RSVP list'}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-center mt-6">
+              <Button
+                onClick={() => setShowScanner(false)}
+                className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+              >
+                Close Scanner
               </Button>
             </div>
           </div>
-          <div className="w-full rounded-lg border p-6 shadow-md">
-            <p className="text-gray-600">
-              <strong>Theme:</strong> {event.theme}
-            </p>
-            <p className="text-gray-600">
-              <strong>Start:</strong>{' '}
-              {new Date(event.start_date).toLocaleString()}
-            </p>
-            <p className="text-gray-600">
-              <strong>End:</strong> {new Date(event.end_date).toLocaleString()}
-            </p>
-            <p className="text-gray-600">
-              <strong>Additional Info:</strong> {event.additional_info}
-            </p>
-          </div>
-
-          {/* Admin-only payment upload UI */}
-          {session && event && session.id === event.user_id && (
-            <div className="w-full mb-8 p-4 border rounded bg-gray-50">
-              <h3 className="text-lg font-semibold mb-2">Upload Payment Statements</h3>
-              <div className="flex flex-col gap-4 sm:flex-row sm:gap-8">
-                <div>
-                  <label className="block mb-1 font-medium">Zelle Statement (.txt)</label>
-                  <input
-                    type="file"
-                    accept=".txt"
-                    onChange={e => handleZelleUpload(e)}
-                    className="block w-full border rounded p-1"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-1 font-medium">Venmo Statement (.csv)</label>
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={e => handleVenmoUpload(e)}
-                    className="block w-full border rounded p-1"
-                  />
-                </div>
-              </div>
-              {/* Optionally show upload status or errors here */}
-            </div>
-          )}
-
-          <h2 className="mt-8 text-2xl font-bold">RSVPs</h2>
-          <DataTable columns={columns} data={rsvps} onSave={handleSave} />
-        </main>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
