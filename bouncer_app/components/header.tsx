@@ -2,15 +2,23 @@
 
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+// Using native anchors for consistent full navigations through middleware
+import { useState, useEffect } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import type { Database } from '@/lib/database.types';
 import type { User } from '@supabase/supabase-js';
 
 export default function Header() {
   const [session, setSession] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  // Dropdown handled by shadcn menu
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -32,22 +40,7 @@ export default function Header() {
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    }
-    if (dropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dropdownOpen]);
+  // Removed manual outside-click logic; Radix handles it
 
   const fetchProfile = async (user: User) => {
     try {
@@ -109,106 +102,81 @@ export default function Header() {
   };
 
   return (
-    <div>
-      <header className="text-xl flex items-center justify-between p-4 text-white">
-        <a href="/" className="font-bold hover:underline">
-          Bouncer
+    <div className="sticky top-0 z-50">
+      <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 md:py-5 flex items-center justify-between bg-black/25 backdrop-blur-md border-b border-white/10 rounded-b-2xl">
+        <a href="/" className="relative font-extrabold tracking-tight text-white text-2xl md:text-3xl">
+          <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-purple-200 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(168,85,247,0.25)]">
+            Bouncer
+          </span>
         </a>
         <nav>
-          <ul className="flex space-x-4 items-center">
+          <ul className="flex items-center gap-2 sm:gap-3 md:gap-4">
+
             <li>
-              {/* <a href="/about" className="hover:underline">
-                About
-              </a> */}
-            </li>
-            <li>
-              <a href="/contact" className="hover:underline">
-                Contact
+              <a href="/event" className="group relative inline-flex items-center px-3 py-2 text-sm md:text-base text-gray-300 hover:text-white transition-colors">
+                <span>My Events</span>
+                <span className="pointer-events-none absolute inset-0 rounded-md bg-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></span>
+                <span className="pointer-events-none absolute left-1/2 -bottom-0.5 h-[2px] w-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300 group-hover:left-0 group-hover:w-full"></span>
               </a>
             </li>
             <li>
-              <a href="/event" className="hover:underline">
-                My Events
+              <a href="/my-rsvps" className="group relative inline-flex items-center px-3 py-2 text-sm md:text-base text-gray-300 hover:text-white transition-colors">
+                <span>My RSVPs</span>
+                <span className="pointer-events-none absolute inset-0 rounded-md bg-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></span>
+                <span className="pointer-events-none absolute left-1/2 -bottom-0.5 h-[2px] w-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300 group-hover:left-0 group-hover:w-full"></span>
               </a>
             </li>
-            <li>
-              <a href="/my-rsvps" className="hover:underline">
-                My RSVPs
-              </a>
-            </li>
-            <li className="relative">
-              <button
-                type="button"
-                onClick={() => setDropdownOpen(open => !open)}
-                className="flex items-center focus:outline-none"
-                aria-label="User menu"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 32 32" 
-                  className="w-10 h-10 text-white cursor-pointer"
-                  xmlSpace="preserve"
-                >
-                  <path d="M16 31C7.729 31 1 24.271 1 16S7.729 1 16 1s15 6.729 15 15-6.729 15-15 15zm0-28C8.832 3 3 8.832 3 16s5.832 13 13 13 13-5.832 13-13S23.168 3 16 3z" fill="currentColor"/>
-                  <circle cx="16" cy="11.368" r="3.368" fill="currentColor"/>
-                  <path d="M20.673 24h-9.346c-.83 0-1.502-.672-1.502-1.502v-.987a5.404 5.404 0 0 1 5.403-5.403h1.544a5.404 5.404 0 0 1 5.403 5.403v.987c0 .83-.672 1.502-1.502 1.502z" fill="currentColor"/>
-                </svg>
-              </button>
-              {/* Dropdown menu */}
-              {dropdownOpen && (
-                <div
-                  ref={dropdownRef}
-                  className="absolute right-0 mt-2 z-10 bg-white divide-y divide-gray-100 rounded-lg shadow-lg w-44 dark:bg-gray-700 dark:divide-gray-600"
-                >
+            <li className="relative ml-1 md:ml-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="group flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white ring-1 ring-white/10 transition-all hover:bg-white/10 hover:ring-purple-500/30"
+                    aria-label="User menu"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 32 32"
+                      className="h-6 w-6 transition-transform group-hover:scale-105"
+                      xmlSpace="preserve"
+                    >
+                      <path d="M16 31C7.729 31 1 24.271 1 16S7.729 1 16 1s15 6.729 15 15-6.729 15-15 15zm0-28C8.832 3 3 8.832 3 16s5.832 13 13 13 13-5.832 13-13S23.168 3 16 3z" fill="currentColor"/>
+                      <circle cx="16" cy="11.368" r="3.368" fill="currentColor"/>
+                      <path d="M20.673 24h-9.346c-.83 0-1.502-.672-1.502-1.502v-.987a5.404 5.404 0 0 1 5.403-5.403h1.544a5.404 5.404 0 0 1 5.403 5.403v.987c0 .83-.672 1.502-1.502 1.502z" fill="currentColor"/>
+                    </svg>
+                    <span className="absolute -inset-px rounded-full bg-gradient-to-r from-purple-500/0 via-indigo-500/0 to-purple-500/0 opacity-0 blur transition-opacity duration-300 group-hover:opacity-20" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-black/85 text-white border border-white/10 backdrop-blur-md min-w-[12rem]">
                   {session ? (
                     <>
-                      <div className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                        <div className="font-medium">{profile?.full_name || 'User'}</div>
-                        <div className="font-medium truncate text-gray-500 dark:text-gray-400">
-                          {session.email}
-                        </div>
-                      </div>
-                      <ul className="py-2 text-sm text-gray-700 dark:text-gray-200">
-                        <li>
-                          <a href="/event" className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                            My Events
-                          </a>
-                        </li>
-                        <li>
-                          <a href="/my-rsvps" className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                            My RSVPs
-                          </a>
-                        </li>
-                        <li>
-                          <button
-                            onClick={handleSignInDifferent}
-                            className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                          >
-                            Switch Account
-                          </button>
-                        </li>
-                      </ul>
-                      <div className="py-1">
-                        <button
-                          onClick={handleSignOut}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                        >
-                          Sign out
-                        </button>
-                      </div>
+                      <DropdownMenuLabel className="text-white/80">
+                        <div className="font-semibold">{profile?.full_name || 'User'}</div>
+                        <div className="truncate text-xs text-white/60">{session.email}</div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-white/10" />
+                      <DropdownMenuItem onSelect={() => (window.location.href = '/event')}>
+                        My Events
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => (window.location.href = '/my-rsvps')}>
+                        My RSVPs
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => (window.location.href = '/qr-code')}>
+                        My QR Code
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/10" />
+                      <DropdownMenuItem onSelect={handleSignInDifferent}>
+                        Switch Account
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={handleSignOut} data-variant="destructive">
+                        Sign out
+                      </DropdownMenuItem>
                     </>
                   ) : (
-                    <div className="py-1">
-                      <button
-                        onClick={handleSignIn}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                      >
-                        Sign in with Google
-                      </button>
-                    </div>
+                    <DropdownMenuItem onSelect={handleSignIn}>Sign in with Google</DropdownMenuItem>
                   )}
-                </div>
-              )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </li>
           </ul>
         </nav>

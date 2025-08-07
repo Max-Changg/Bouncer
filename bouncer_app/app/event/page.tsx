@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
+import Footer from '@/components/footer';
 import { createBrowserClient } from '@supabase/ssr';
 import type { User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
@@ -16,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDownIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, CalendarIcon, PlusIcon } from '@heroicons/react/24/outline';
 import EventCard from '@/components/event-card';
 
 export default function Event() {
@@ -120,10 +121,10 @@ export default function Event() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">      
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">      
       {/* Extended Hero Section with Header */}
       <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
-        {/* Rave Light Beams Background */}
+        {/* Background: subtle beams + dotted grid */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Thin rave-style light beams */}
           <div
@@ -150,6 +151,13 @@ export default function Event() {
             className="absolute top-0 left-1/2 w-18 h-full bg-gradient-to-b from-orange-400/40 via-orange-400/18 to-transparent transform translate-x-[500px] skew-x-8"
             style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
           ></div>
+          {/* Dotted grid overlay */}
+          <div className="absolute inset-0 opacity-[0.14]" style={{
+            backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
+            color: '#ffffff',
+            backgroundSize: '22px 22px',
+            backgroundPosition: '0 0, 11px 11px',
+          }}></div>
         </div>
         
         <div className="absolute inset-0 bg-black/20"></div>
@@ -266,22 +274,34 @@ export default function Event() {
                  onClick={() => router.push('/create-event')}
                  className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
                >
-                Create Your First Event
+                Schedule Your First Event
               </Button>
             </div>
           </div>
-        ) : (
-                     <div className="flex flex-wrap justify-center gap-8">
-             {events.map(event => (
-               <EventCard
-                 key={event.id}
-                 event={event}
-                 onShare={handleShare}
-               />
-             ))}
-           </div>
-        )}
+         ) : (
+           <>
+             <div className="w-full flex flex-wrap gap-8 justify-start items-start content-start">
+               {events.map(event => (
+                 <EventCard
+                   key={event.id}
+                   event={event}
+                   onShare={handleShare}
+                 />
+               ))}
+             </div>
+             <div className="mt-8">
+              <Button
+                 onClick={() => router.push('/create-event')}
+                 className="bg-gray-800/95 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+               >
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Schedule Another Event
+               </Button>
+             </div>
+           </>
+         )}
       </div>
+      <Footer />
     </div>
   );
 }

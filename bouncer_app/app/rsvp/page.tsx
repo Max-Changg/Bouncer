@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 import Header from '@/components/header';
+import Footer from '@/components/footer';
 import { Button } from '@/components/ui/button';
 
 import type { Database } from '@/lib/database.types';
@@ -307,68 +308,93 @@ export default function Rsvp() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-gray-300">
-      <Header />
-      <div className="flex min-h-screen flex-col items-center justify-center py-2">
-        <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-          <h1 className="text-6xl font-bold">RSVP</h1>
-          
-          <div className="mt-4 mb-8 p-4 bg-[#18181b] rounded-lg">
-            <h2 className="text-2xl font-semibold">{event?.name}</h2>
-            <p className="text-gray-400">Theme: {event?.theme}</p>
-            <p className="text-gray-400">
-              Start: {event ? new Date(event.start_date).toLocaleString() : ''}
-            </p>
-            <p className="text-gray-400">
-              End: {event ? new Date(event.end_date).toLocaleString() : ''}
-            </p>
-            {event?.additional_info && (
-              <p className="text-gray-400">Additional Info: {event.additional_info}</p>
-            )}
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
+      {/* Unique party background (no light beams): neon rings + soft glow */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-28 right-[-120px] w-[520px] h-[520px] rounded-full bg-fuchsia-700/25 blur-3xl mix-blend-screen"></div>
+        <div className="absolute bottom-[-140px] -left-24 w-[560px] h-[560px] rounded-full bg-cyan-500/20 blur-3xl mix-blend-screen"></div>
+        <div className="absolute inset-0 opacity-[0.10]"
+             style={{
+               backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
+               color: '#ffffff',
+               backgroundSize: '20px 20px',
+               backgroundPosition: '0 0, 10px 10px',
+             }}></div>
+      </div>
+
+      {/* Header */}
+      <div className="relative z-20">
+        <Header />
+      </div>
+
+      {/* Hero */}
+      <div className="relative z-10 px-6 py-12 sm:px-8 lg:px-12">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-white to-fuchsia-200 bg-clip-text text-transparent">
+            RSVP
+          </h1>
+          <p className="text-lg text-gray-300 max-w-2xl">
+            You're almost in. Confirm your spot and we'll save you on the list.
+          </p>
+        </div>
+      </div>
+
+      {/* Content card */}
+      <div className="relative z-10 max-w-4xl mx-auto px-6 pb-16 sm:px-8 lg:px-12">
+        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-6 sm:p-8">
+          {/* Event summary */}
+          <div className="mb-6 rounded-2xl border border-gray-700/50 bg-gray-800/60 p-5">
+            <h2 className="text-2xl font-semibold text-white">{event?.name}</h2>
+            <div className="mt-2 text-gray-300">
+              {event?.theme && <p>Theme: {event.theme}</p>}
+              <p>Start: {event ? new Date(event.start_date).toLocaleString() : ''}</p>
+              <p>End: {event ? new Date(event.end_date).toLocaleString() : ''}</p>
+              {event?.additional_info && (
+                <p className="text-gray-400">Additional Info: {event.additional_info}</p>
+              )}
+            </div>
           </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="-space-y-px rounded-md shadow-sm">
-              <div>
-                <label htmlFor="name" className="sr-only">
-                  Name
-                </label>
+          {/* RSVP form */}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="name" className="text-sm text-gray-300">Name</label>
                 <input
                   id="name"
                   name="name"
                   type="text"
                   required
-                  className="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                  placeholder="Name"
+                  className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-600"
+                  placeholder="Your name"
                   onChange={e => setName(e.target.value)}
                 />
               </div>
-              <div>
-                <label htmlFor="email" className="sr-only">
-                  Email address
-                </label>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="email" className="text-sm text-gray-300">Email</label>
                 <input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  className="relative block w-full appearance-none rounded-none border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
-                  placeholder="Email address"
+                  className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-600"
+                  placeholder="you@example.com"
                   value={email}
-                  readOnly={!!session.email} // Make read-only if session exists
+                  readOnly={!!session.email}
                   onChange={e => setEmail(e.target.value)}
                 />
               </div>
-              <div>
-                <label htmlFor="status" className="sr-only">
-                  Status
-                </label>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="status" className="text-sm text-gray-300">Status</label>
                 <select
                   id="status"
                   name="status"
                   required
-                  className="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+                  className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-600"
                   onChange={e => setStatus(e.target.value)}
                 >
                   <option>Attending</option>
@@ -377,15 +403,20 @@ export default function Rsvp() {
                 </select>
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-left font-medium mb-2">Select Ticket Type</label>
+              <label className="block text-left font-medium text-gray-200 mb-2">Select Ticket Type</label>
               <div className="space-y-2">
-                {tickets.length === 0 && <div className="text-gray-500">No tickets available for this event.</div>}
+                {tickets.length === 0 && (
+                  <div className="text-gray-500">No tickets available for this event.</div>
+                )}
                 {tickets.map(ticket => {
                   const soldOut = ticket.quantity_available <= 0 || (ticket.purchase_deadline && isAfter(new Date(), new Date(ticket.purchase_deadline)));
                   return (
-                    <label key={ticket.id} className={`flex items-center gap-2 p-2 rounded border ${soldOut ? 'bg-gray-100 text-gray-400' : 'bg-white'}`}> 
+                    <label
+                      key={ticket.id}
+                      className={`flex items-center gap-3 rounded-lg border p-3 ${soldOut ? 'bg-gray-800/60 text-gray-500 border-gray-700' : 'bg-gray-900 text-gray-200 border-gray-700 hover:border-fuchsia-600'}`}
+                    > 
                       <input
                         type="radio"
                         name="ticket"
@@ -400,22 +431,23 @@ export default function Rsvp() {
                       {ticket.purchase_deadline && (
                         <span className="ml-2">until {new Date(ticket.purchase_deadline).toLocaleString()}</span>
                       )}
-                      {soldOut && <span className="ml-2 text-red-500 font-bold">Sold Out</span>}
+                      {soldOut && <span className="ml-2 text-red-400 font-semibold">Sold Out</span>}
                     </label>
                   );
                 })}
               </div>
             </div>
-            
-            <div>
+
+            <div className="pt-2">
               <Button
                 type="submit"
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                className="w-full bg-gradient-to-r from-fuchsia-700 to-indigo-700 hover:from-fuchsia-800 hover:to-indigo-800 shadow-lg hover:shadow-fuchsia-800/40 transition-all duration-200"
               >
                 Submit RSVP
               </Button>
             </div>
           </form>
+
           {/* Sign in with a different account button */}
           <Button
             onClick={async () => {
@@ -423,12 +455,13 @@ export default function Rsvp() {
               const currentUrl = `/rsvp?event_id=${eventId || ''}`;
               router.push(`/login?next=${encodeURIComponent(currentUrl)}`);
             }}
-            className="mt-6 inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+            className="mt-6 inline-flex justify-center rounded-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 shadow-sm hover:bg-gray-700 focus:outline-none"
           >
             Sign in with a different account
           </Button>
-        </main>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }

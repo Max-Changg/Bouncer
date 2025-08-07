@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/lib/database.types';
 import Scanner from '@/components/scanner';
+import Footer from '@/components/footer';
 
 export default function ScanPage() {
   const params = useParams();
@@ -91,6 +92,7 @@ export default function ScanPage() {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 }

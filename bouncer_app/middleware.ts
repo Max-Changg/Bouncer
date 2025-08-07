@@ -9,6 +9,7 @@ const protectedRoutes = [
   '/test-auth',
   '/test-google',
   '/rsvp',
+  '/my-rsvps',
 ];
 const publicRoutes = ['/login', '/auth/callback', '/'];
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/header';
+import Footer from '@/components/footer';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
@@ -431,10 +432,10 @@ export default function EventDetails() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
       {/* Extended Hero Section with Header */}
       <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
-        {/* Rave Light Beams Background */}
+        {/* Background: subtle beams + dotted grid */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Thin rave-style light beams */}
           <div
@@ -449,6 +450,13 @@ export default function EventDetails() {
             className="absolute top-0 left-1/2 w-28 h-full bg-gradient-to-b from-purple-400/55 via-purple-500/28 to-transparent transform -skew-x-16 translate-x-[60px]"
             style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
           ></div>
+          {/* Dotted grid overlay */}
+          <div className="absolute inset-0 opacity-[0.14]" style={{
+            backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
+            color: '#ffffff',
+            backgroundSize: '22px 22px',
+            backgroundPosition: '0 0, 11px 11px',
+          }}></div>
         </div>
 
         <div className="absolute inset-0 bg-black/20"></div>
@@ -669,6 +677,7 @@ export default function EventDetails() {
           </div>
         </div>
       )}
+      <Footer />
     </div>
   );
 }

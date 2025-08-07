@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/header';
+import Footer from '@/components/footer';
 import ClientHome from '@/components/client-home';
 import FlipCard from '@/components/flip-card';
 import { Button } from '@/components/ui/button';
@@ -110,7 +111,7 @@ export default function Home() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-b from-black via-black to-gray-700  overflow-hidden"
+      className="relative min-h-screen bg-gradient-to-b from-black via-black to-gray-700 overflow-hidden"
       style={{ fontFamily: 'Inter, sans-serif' }}
     >
       {/* Static Light Beams Background */}
@@ -148,7 +149,15 @@ export default function Home() {
         {/* <div
           className="absolute top-0 left-1/2 w-48 h-full bg-gradient-to-b from-orange-500/30 via-orange-500/15 to-transparent transform translate-x-[800px] skew-x-4 static-beam"
           style={{ clipPath: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' }}
-        ></div> */}
+        ></div>
+        {/* Dotted grid overlay filling full page */}
+        <div className="absolute left-0 right-0 top-0 bottom-0 opacity-[0.14]"
+             style={{
+               backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
+               color: '#ffffff',
+               backgroundSize: '22px 22px',
+               backgroundPosition: '0 0, 11px 11px',
+             }}></div>
       </div>
 
       {/* Header with transparency and higher z-index */}
@@ -166,7 +175,7 @@ export default function Home() {
             <div className="text-gray-200 text-center w-full">
               <h1
                 ref={headingRef}
-                className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-8 opacity-0 animate-fade-in-only leading-tight"
+                className="text-7xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl font-bold mb-8 opacity-0 animate-fade-in-only leading-tight"
                 style={{ animationDelay: '0.5s' }}
               >
                 <span className="moving-gradient-text">
@@ -467,7 +476,7 @@ export default function Home() {
               Join thousands of event organizers who trust Bouncer to make their
               events run smoothly. Start creating your first event today.
             </p> */}
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 mb-20">
               <Button
                 style={{
                   backgroundColor: '#A259FF',
@@ -522,6 +531,7 @@ export default function Home() {
           </svg>
         </button>
       )}
+      <Footer />
     </div>
   );
 }

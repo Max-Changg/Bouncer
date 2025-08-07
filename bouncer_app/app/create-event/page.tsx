@@ -10,6 +10,7 @@ declare global {
 }
 import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
+import Footer from '@/components/footer';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
@@ -279,7 +280,14 @@ export default function CreateEvent() {
         process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Set' : 'Missing'
       );
 
-      if (locationInputRef.current && window.google) {
+      // Check if Google Maps API is fully loaded
+      if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.log('⏳ Google Maps API not fully loaded yet, retrying in 100ms...');
+        setTimeout(initAutocomplete, 100);
+        return;
+      }
+
+      if (locationInputRef.current) {
         try {
           console.log('✅ Creating Autocomplete widget...');
           const autocomplete = new window.google.maps.places.Autocomplete(
@@ -330,7 +338,7 @@ export default function CreateEvent() {
       }
     };
 
-    if (window.google) {
+    if (window.google && window.google.maps && window.google.maps.places) {
       console.log('🌐 Google Maps API already loaded');
       initAutocomplete();
     } else {
@@ -343,23 +351,28 @@ export default function CreateEvent() {
       // 3. Set usage quotas to prevent abuse
       if (!document.querySelector('script[src*="maps.googleapis.com"]')) {
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&loading=async&callback=initGoogleMaps`;
         script.async = true;
         script.defer = true;
-        script.onload = () => {
-          console.log('✅ Google Maps API script loaded successfully');
-          initAutocomplete();
-        };
         script.onerror = error => {
           console.error('❌ Failed to load Google Maps API script:', error);
           setError(
             'Failed to load Google Maps API. Please check your API key configuration.'
           );
         };
+        
+        // Set up global callback
+        (window as any).initGoogleMaps = () => {
+          console.log('✅ Google Maps API script loaded successfully');
+          initAutocomplete();
+        };
+        
         document.head.appendChild(script);
         console.log('📡 Google Maps script added to DOM');
       } else {
         console.log('📡 Google Maps script already exists in DOM');
+        // If script exists but API isn't ready, wait for it
+        setTimeout(initAutocomplete, 100);
       }
     }
   }, []);
@@ -603,10 +616,10 @@ export default function CreateEvent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
       {/* Extended Hero Section with Header */}
       <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
-        {/* Rave Light Beams Background */}
+        {/* Background: subtle beams + dotted grid */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Thin rave-style light beams */}
           <div
@@ -633,6 +646,13 @@ export default function CreateEvent() {
             className="absolute top-0 left-1/2 w-18 h-full bg-gradient-to-b from-orange-400/40 via-orange-400/18 to-transparent transform translate-x-[500px] skew-x-8"
             style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
           ></div>
+          {/* Dotted grid overlay */}
+          <div className="absolute inset-0 opacity-[0.14]" style={{
+            backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
+            color: '#ffffff',
+            backgroundSize: '22px 22px',
+            backgroundPosition: '0 0, 11px 11px',
+          }}></div>
         </div>
 
         <div className="absolute inset-0 bg-black/20"></div>
@@ -1110,6 +1130,7 @@ export default function CreateEvent() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

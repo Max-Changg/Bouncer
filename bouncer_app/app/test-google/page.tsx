@@ -4,6 +4,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { useState } from 'react';
 import type { Database } from '@/lib/database.types';
 import { Button } from '@/components/ui/button';
+import Footer from '@/components/footer';
 
 export default function TestGoogle() {
   const [status, setStatus] = useState<string>('Ready');
@@ -113,6 +114,7 @@ export default function TestGoogle() {
           </ol>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
