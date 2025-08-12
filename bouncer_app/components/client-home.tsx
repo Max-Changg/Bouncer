@@ -143,28 +143,9 @@ export default function ClientHome() {
           className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
           variant="default"
         >
-          <Link href="/create-event">Create Event</Link>
+          <Link href="/create-event">Create Your First Event</Link>
         </Button>
-        <Button
-          style={{
-            backgroundColor: '#A259FF',
-            color: 'white',
-          }}
-          className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
-          variant="default"
-        >
-          <Link href="/event">My Events</Link>
-        </Button>
-        <Button
-          style={{
-            backgroundColor: '#A259FF',
-            color: 'white',
-          }}
-          className="hover:bg-[#8e3fff] font-mono hover:animate-grow"
-          variant="default"
-        >
-          <Link href="/qr-code">My QR Code</Link>
-        </Button>
+        
       </div>
 
       {/* {session && events && events.length > 0 && (
