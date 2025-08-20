@@ -29,6 +29,22 @@ export default function Rsvp() {
   const [session, setSession] = useState<User | null>(null);
   const [tickets, setTickets] = useState<any[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [paymentImage, setPaymentImage] = useState<File | null>(null);
+
+  // Extract payment info block from additional_info (if present)
+  const PAYMENT_SECTION_REGEX = /\n\nPayment Information:\n[\s\S]*$/i;
+  const extractPaymentInfo = (info: string) => {
+    if (!info) return { venmo: '', zelle: '' };
+    const match = info.match(PAYMENT_SECTION_REGEX);
+    if (!match) return { venmo: '', zelle: '' };
+    const paymentBlock = match[0];
+    const venmoMatch = paymentBlock.match(/Venmo:\s*([^\n]+)/i);
+    const zelleMatch = paymentBlock.match(/Zelle:\s*([^\n]+)/i);
+    return {
+      venmo: venmoMatch?.[1]?.trim() || '',
+      zelle: zelleMatch?.[1]?.trim() || '',
+    };
+  };
 
   // Debug: Log current state
   console.log('RSVP Page State:', {
@@ -162,6 +178,11 @@ export default function Rsvp() {
     }
     // Check if ticket is still available
     const ticket = tickets.find(t => t.id === selectedTicketId);
+    // If ticket has a cost, require payment proof image to be uploaded
+    if (ticket && ticket.price > 0 && !paymentImage) {
+      setError('Please upload a picture of your payment confirmation for the selected paid ticket.');
+      return;
+    }
     if (!ticket || ticket.quantity_available <= 0 || (ticket.purchase_deadline && isAfter(new Date(), new Date(ticket.purchase_deadline)))) {
       setError('Selected ticket is no longer available.');
       return;
@@ -350,7 +371,10 @@ export default function Rsvp() {
               <p>Start: {event ? new Date(event.start_date).toLocaleString() : ''}</p>
               <p>End: {event ? new Date(event.end_date).toLocaleString() : ''}</p>
               {event?.additional_info && (
-                <p className="text-gray-400">Additional Info: {event.additional_info}</p>
+                <div className="text-gray-400 whitespace-pre-line">
+                  <p className="font-medium text-gray-300 mb-1">Additional Info:</p>
+                  <p>{event.additional_info}</p>
+                </div>
               )}
             </div>
           </div>
@@ -437,6 +461,46 @@ export default function Rsvp() {
                 })}
               </div>
             </div>
+
+            {/* Payment info and proof upload (conditional) */}
+            {(() => {
+              const payment = extractPaymentInfo(event?.additional_info || '');
+              const hasPaymentInfo = !!(payment.venmo || payment.zelle);
+              const selectedTicket = tickets.find(t => t.id === selectedTicketId);
+              const requiresProof = !!selectedTicket && selectedTicket.price > 0;
+              return (
+                <>
+                  {hasPaymentInfo && (
+                    <div className="rounded-2xl border border-fuchsia-600/30 bg-fuchsia-900/10 p-5">
+                      <h4 className="text-white font-semibold mb-2">Payment Information</h4>
+                      <ul className="text-sm text-fuchsia-100 list-disc pl-5 space-y-1">
+                        {payment.venmo && <li>Venmo: {payment.venmo}</li>}
+                        {payment.zelle && <li>Zelle: {payment.zelle}</li>}
+                      </ul>
+                    </div>
+                  )}
+                  {requiresProof && (
+                    <div className="rounded-2xl border border-amber-500/30 bg-amber-900/10 p-5">
+                      <label className="block text-sm font-medium text-amber-200 mb-2">
+                        Upload payment confirmation (required for paid tickets)
+                      </label>
+                      <p className="text-xs text-amber-200 mb-3">
+                        Please upload a picture of the payment confirmation receipt with the correct ticket price amount.
+                      </p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => setPaymentImage(e.target.files?.[0] || null)}
+                        className="block w-full text-sm text-gray-200 file:mr-4 file:rounded-md file:border-0 file:bg-amber-600 file:px-3 file:py-2 file:text-white hover:file:bg-amber-700"
+                      />
+                      {!paymentImage && (
+                        <p className="text-xs text-amber-300 mt-2">This is required to submit when selecting a paid ticket.</p>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             <div className="pt-2">
               <Button

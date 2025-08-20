@@ -72,6 +72,19 @@ export default function CreateEvent() {
   const [session, setSession] = useState<User | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [eventId, setEventId] = useState<number | null>(null);
+  const DEFAULT_TICKET: {
+    id?: string;
+    name: string;
+    price: number;
+    quantity_available: number;
+    purchase_deadline: Date | null;
+  } = {
+    name: 'Free',
+    price: 0,
+    quantity_available: 100,
+    purchase_deadline: null,
+  };
+
   const [tickets, setTickets] = useState<
     Array<{
       id?: string;
@@ -80,13 +93,44 @@ export default function CreateEvent() {
       quantity_available: number;
       purchase_deadline: Date | null;
     }>
-  >([]);
+  >([DEFAULT_TICKET]);
   const [selectedTicketIndex, setSelectedTicketIndex] = useState<number | null>(
     null
   );
   const [showTicketSidebar, setShowTicketSidebar] = useState(false);
   const [loading, setLoading] = useState(false);
   const locationInputRef = useRef<HTMLInputElement>(null);
+
+  // Payment handles for paid tickets
+  const [venmoHandle, setVenmoHandle] = useState('');
+  const [zelleHandle, setZelleHandle] = useState('');
+
+  // Helpers to parse/strip payment info embedded in additional_info
+  const PAYMENT_SECTION_REGEX = /\n\nPayment Information:\n[\s\S]*$/i;
+  const extractPaymentInfo = (info: string) => {
+    if (!info) return { baseInfo: '', venmo: '', zelle: '' };
+    const match = info.match(PAYMENT_SECTION_REGEX);
+    if (!match) return { baseInfo: info, venmo: '', zelle: '' };
+    const paymentBlock = match[0];
+    const baseInfo = info.replace(PAYMENT_SECTION_REGEX, '').trim();
+    const venmoMatch = paymentBlock.match(/Venmo:\s*([^\n]+)/i);
+    const zelleMatch = paymentBlock.match(/Zelle:\s*([^\n]+)/i);
+    return {
+      baseInfo,
+      venmo: venmoMatch?.[1]?.trim() || '',
+      zelle: zelleMatch?.[1]?.trim() || '',
+    };
+  };
+  const buildAdditionalInfoWithPayment = (baseInfo: string) => {
+    const trimmed = (baseInfo || '').replace(PAYMENT_SECTION_REGEX, '').trim();
+    const hasPaidTickets = tickets.some(t => t.price > 0);
+    const hasPaymentHandles = venmoHandle.trim() || zelleHandle.trim();
+    if (!hasPaidTickets || !hasPaymentHandles) return trimmed;
+    const lines: string[] = ['\n\nPayment Information:'];
+    if (venmoHandle.trim()) lines.push(`Venmo: ${venmoHandle.trim()}`);
+    if (zelleHandle.trim()) lines.push(`Zelle: ${zelleHandle.trim()}`);
+    return `${trimmed}${lines.join('\n')}`;
+  };
 
   // Track location state changes
   useEffect(() => {
@@ -228,7 +272,12 @@ export default function CreateEvent() {
         setEndDate(new Date(data.end_date));
         setTimeZone(data.time_zone);
         setLocation(data.location || '');
-        setAdditionalInfo(data.additional_info);
+        const { baseInfo, venmo, zelle } = extractPaymentInfo(
+          data.additional_info || ''
+        );
+        setAdditionalInfo(baseInfo);
+        setVenmoHandle(venmo);
+        setZelleHandle(zelle);
       }
 
       // Load existing tickets for this event
@@ -238,17 +287,21 @@ export default function CreateEvent() {
         .eq('event_id', id);
 
       if (!ticketsError && ticketsData) {
-        setTickets(
-          ticketsData.map(ticket => ({
-            id: ticket.id,
-            name: ticket.name,
-            price: ticket.price,
-            quantity_available: ticket.quantity_available,
-            purchase_deadline: ticket.purchase_deadline
-              ? new Date(ticket.purchase_deadline)
-              : null,
-          }))
-        );
+        if (ticketsData.length === 0) {
+          setTickets([DEFAULT_TICKET]);
+        } else {
+          setTickets(
+            ticketsData.map(ticket => ({
+              id: ticket.id,
+              name: ticket.name,
+              price: ticket.price,
+              quantity_available: ticket.quantity_available,
+              purchase_deadline: ticket.purchase_deadline
+                ? new Date(ticket.purchase_deadline)
+                : null,
+            }))
+          );
+        }
       }
     };
 
@@ -397,6 +450,21 @@ export default function CreateEvent() {
         setLoading(false);
         return;
       }
+      // Require at least one ticket
+      if (!tickets || tickets.length === 0) {
+        setError('Please add at least one ticket type.');
+        setLoading(false);
+        return;
+      }
+      // Basic ticket validation: non-empty name, non-negative price, positive quantity
+      const invalidTicket = tickets.find(
+        t => !t.name.trim() || t.price < 0 || !Number.isFinite(t.price) || t.quantity_available <= 0
+      );
+      if (invalidTicket) {
+        setError('Each ticket must have a name, non-negative price, and quantity of at least 1.');
+        setLoading(false);
+        return;
+      }
       if (!location.trim()) {
         setError('Event location is required.');
         setLoading(false);
@@ -444,6 +512,9 @@ export default function CreateEvent() {
       );
       const endUtcDateTime = createUtcDateTime(endDate, endTime, timeZone);
 
+      // Merge payment info if applicable
+      const additionalInfoToSave = buildAdditionalInfoWithPayment(additionalInfo);
+
       if (eventId) {
         // Update existing event (including auto-created ones)
         const { error } = await supabase
@@ -456,7 +527,7 @@ export default function CreateEvent() {
               : null,
             end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
             location: location,
-            additional_info: additionalInfo,
+            additional_info: additionalInfoToSave,
             time_zone: timeZone,
           })
           .eq('id', eventId);
@@ -484,7 +555,7 @@ export default function CreateEvent() {
               : null,
             end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
             location: location,
-            additional_info: additionalInfo,
+            additional_info: additionalInfoToSave,
             time_zone: timeZone,
             user_id: session.id,
           })
@@ -549,6 +620,11 @@ export default function CreateEvent() {
   };
 
   const removeTicket = (index: number) => {
+    // Prevent removing the last ticket; require at least one ticket
+    if (tickets.length <= 1) {
+      setError('At least one ticket type is required.');
+      return;
+    }
     const updatedTickets = tickets.filter((_, i) => i !== index);
     setTickets(updatedTickets);
     if (selectedTicketIndex === index) {
@@ -565,7 +641,7 @@ export default function CreateEvent() {
   };
 
   const saveTickets = async (eventIdToUse: number | null = eventId) => {
-    if (!eventIdToUse) {
+      if (!eventIdToUse) {
       setError('Event must be created before saving tickets.');
       return;
     }
@@ -897,12 +973,13 @@ export default function CreateEvent() {
                     />
                   </svg>
                 </div>
-                <p className="text-gray-400 mb-6">No tickets created yet</p>
+                <p className="text-gray-400 mb-2">No tickets created yet</p>
+                <p className="text-gray-300 mb-6">A default <span className="font-semibold text-white">Free</span> ticket for 100 guests has been added.</p>
                 <Button
                   onClick={addTicket}
                   className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
                 >
-                  Create Your First Ticket
+                  Add Another Ticket Type
                 </Button>
               </div>
             ) : (
@@ -962,6 +1039,39 @@ export default function CreateEvent() {
             )}
           </div>
         </div>
+
+        {/* Payment handles if any ticket is paid */}
+        {tickets.some(t => t.price > 0) && (
+          <div className="mt-4 rounded-2xl border border-fuchsia-600/30 bg-fuchsia-900/10 p-6">
+            <h4 className="text-lg font-semibold text-white mb-4">Payment Details for Paid Tickets</h4>
+            <p className="text-sm text-fuchsia-200 mb-4">
+              Add your payment handle(s) so guests can send payment after selecting a paid ticket.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Venmo Username</label>
+                <input
+                  type="text"
+                  value={venmoHandle}
+                  onChange={e => setVenmoHandle(e.target.value)}
+                  placeholder="e.g., @yourname"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 focus:outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Zelle (phone or email)</label>
+                <input
+                  type="text"
+                  value={zelleHandle}
+                  onChange={e => setZelleHandle(e.target.value)}
+                  placeholder="e.g., 555-123-4567 or you@email.com"
+                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 focus:outline-none transition-colors"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-3">These will be shown on the RSVP page under Additional Info.</p>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -1067,13 +1177,17 @@ export default function CreateEvent() {
                   <input
                     type="number"
                     min="0"
-                    step="0.01"
-                    value={tickets[selectedTicketIndex].price}
-                    onChange={e =>
-                      updateTicket(selectedTicketIndex, {
-                        price: parseFloat(e.target.value) || 0,
-                      })
-                    }
+                    step="1"
+                    value={tickets[selectedTicketIndex].price || ''}
+                    onChange={e => {
+                      const value = e.target.value;
+                      const numValue = value === '' ? 0 : parseInt(value);
+                      if (!isNaN(numValue) && numValue >= 0) {
+                        updateTicket(selectedTicketIndex, {
+                          price: numValue,
+                        });
+                      }
+                    }}
                     className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
                   />
                 </div>
@@ -1085,12 +1199,16 @@ export default function CreateEvent() {
                   <input
                     type="number"
                     min="1"
-                    value={tickets[selectedTicketIndex].quantity_available}
-                    onChange={e =>
-                      updateTicket(selectedTicketIndex, {
-                        quantity_available: parseInt(e.target.value) || 1,
-                      })
-                    }
+                    value={tickets[selectedTicketIndex].quantity_available || ''}
+                    onChange={e => {
+                      const value = e.target.value;
+                      const numValue = value === '' ? 0 : parseInt(value);
+                      if (!isNaN(numValue) && numValue >= 1) {
+                        updateTicket(selectedTicketIndex, {
+                          quantity_available: numValue,
+                        });
+                      }
+                    }}
                     className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
                   />
                 </div>

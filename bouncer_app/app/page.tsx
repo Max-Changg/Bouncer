@@ -187,10 +187,10 @@ export default function Home() {
                 className="text-7xl sm:text-7xl md:text-8xl lg:text-9xl xl:text-10xl font-bold mb-8 opacity-0 animate-fade-in-only leading-tight"
                 style={{ animationDelay: '0.5s' }}
               >
-                <span className="moving-gradient-text">
-                  <span className="inline">Optimize </span>
-                  <span className="inline whitespace-nowrap">Check-Ins</span>
-                </span>
+
+                <span className="inline text-gray-200">Make every arrival </span>
+                <span className="inline moving-gradient-text">effortless.</span>
+
               </h1>
               <div className="max-w-[800px] mx-auto">
                 <p
