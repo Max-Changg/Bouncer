@@ -81,6 +81,7 @@ export interface Database {
           payment_method?: string;
           ticket_id?: string;
           amount_owed?: number;
+          payment_proof_url?: string;
         };
         Insert: {
           event_id: number;
@@ -94,6 +95,7 @@ export interface Database {
           payment_method?: string;
           ticket_id?: string;
           amount_owed?: number;
+          payment_proof_url?: string;
         };
         Update: {
           name?: string;
@@ -105,6 +107,7 @@ export interface Database {
           payment_method?: string;
           ticket_id?: string;
           amount_owed?: number;
+          payment_proof_url?: string;
         };
       };
       profiles: {

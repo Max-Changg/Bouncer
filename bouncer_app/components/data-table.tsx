@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ColumnDef,
   flexRender,
@@ -21,9 +21,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Database } from '@/lib/database.types';
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+  columns: ColumnDef<TData, TValue>[] | ((onVerificationChange: (id: string, verified: boolean) => void, onViewPaymentProof?: (imageUrl: string, guestName: string) => void) => ColumnDef<TData, TValue>[]);
   data: TData[];
-  onSave: (updatedData: TData[]) => void;
+  onSave: (updatedData: TData[]) => Promise<void> | void;
+  onViewPaymentProof?: (imageUrl: string, guestName: string) => void;
 }
 
 export function DataTable<
@@ -32,12 +33,34 @@ export function DataTable<
     is_approved: boolean;
   },
   TValue,
->({ columns, data, onSave }: DataTableProps<TData, TValue>) {
+>({ columns, data, onSave, onViewPaymentProof }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = useState({});
+  const [tableData, setTableData] = useState(data);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Update tableData when data prop changes
+  useEffect(() => {
+    setTableData(data);
+  }, [data]);
+
+  const handleVerificationChange = (id: string, verified: boolean) => {
+    setTableData(prevData => 
+      prevData.map(item => 
+        item.id === id 
+          ? { ...item, is_approved: verified } as TData
+          : item
+      )
+    );
+  };
+
+  // Handle both static columns and column factory functions
+  const resolvedColumns = typeof columns === 'function' 
+    ? columns(handleVerificationChange, onViewPaymentProof) 
+    : columns;
 
   const table = useReactTable({
-    data,
-    columns,
+    data: tableData,
+    columns: resolvedColumns,
     getCoreRowModel: getCoreRowModel(),
     onRowSelectionChange: setRowSelection,
     state: {
@@ -45,27 +68,26 @@ export function DataTable<
     },
   });
 
-  const handleSave = () => {
-    const updatedData = table.getCoreRowModel().rows.map(row => {
-      const original = row.original as TData;
-      return {
-        ...original,
-        is_approved: row.getIsSelected(),
-      };
-    });
-    onSave(updatedData);
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // Use the current table data which includes any verification changes
+      await onSave(tableData);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div>
-      <div className="rounded-md border">
+    <div className="space-y-4">
+      <div className="rounded-lg border border-gray-700/50 bg-gray-800/30 backdrop-blur-sm overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="border-gray-700/50 bg-gray-800/50">
                 {headerGroup.headers.map(header => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="text-gray-300 font-semibold">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -84,9 +106,10 @@ export function DataTable<
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className="border-gray-700/30 hover:bg-gray-800/40 transition-colors"
                 >
                   {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="text-gray-200">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -98,18 +121,34 @@ export function DataTable<
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
+                  colSpan={resolvedColumns.length}
+                  className="h-24 text-center text-gray-400"
                 >
-                  No results.
+                  No RSVPs found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button onClick={handleSave}>Save Changes</Button>
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-400">
+          Click checkboxes to verify RSVPs, then save changes to update the database.
+        </div>
+        <Button 
+          onClick={handleSave}
+          disabled={isSaving}
+          className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSaving ? (
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <span>Saving...</span>
+            </div>
+          ) : (
+            'Save Changes'
+          )}
+        </Button>
       </div>
     </div>
   );

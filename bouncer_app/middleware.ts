@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Define protected and public routes
 const protectedRoutes = [
-  '/event',
+  '/event$', // Only exact match for /event (not /event/[id])
   '/create-event',
   '/qr-code',
   '/test-auth',
@@ -80,7 +80,16 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getSession();
 
   // If the user is not logged in and is trying to access a protected route, redirect to login
-  if (!session && protectedRoutes.some(route => pathname.startsWith(route))) {
+  if (!session && protectedRoutes.some(route => {
+    if (route.endsWith('$')) {
+      // For routes ending with $, do exact match (remove the $ first)
+      const exactRoute = route.slice(0, -1);
+      return pathname === exactRoute;
+    } else {
+      // For other routes, check if pathname starts with the route
+      return pathname.startsWith(route);
+    }
+  })) {
     const loginUrl = new URL('/login', request.url);
     // Preserve the current URL as the next parameter for RSVP routes
     if (pathname.startsWith('/rsvp')) {

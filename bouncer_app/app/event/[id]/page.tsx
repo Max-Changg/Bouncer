@@ -8,7 +8,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { DataTable } from '@/components/data-table';
-import { columns } from './columns';
+import { createColumns } from './columns';
 import { Button } from '@/components/ui/button';
 import { format, toZonedTime } from 'date-fns-tz';
 import {
@@ -23,6 +23,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import Scanner from '@/components/scanner';
+import PaymentProofModal from '@/components/payment-proof-modal';
 
 export default function EventDetails() {
   const [session, setSession] = useState<User | null>(null);
@@ -47,6 +48,15 @@ export default function EventDetails() {
   const [verificationStatus, setVerificationStatus] = useState<
     'Verified' | 'Not Found' | null
   >(null);
+  const [paymentProofModal, setPaymentProofModal] = useState<{
+    isOpen: boolean;
+    imageUrl: string;
+    guestName: string;
+  }>({
+    isOpen: false,
+    imageUrl: '',
+    guestName: '',
+  });
   const router = useRouter();
   const params = useParams();
   const supabase = createBrowserClient<Database>(
@@ -66,7 +76,7 @@ export default function EventDetails() {
       .from('Events')
       .select('*')
       .eq('id', eventId)
-      .single();
+      .maybeSingle(); // Use maybeSingle to handle 0 rows gracefully
 
     if (error) {
       console.error(
@@ -80,7 +90,7 @@ export default function EventDetails() {
     } else if (data) {
       setEvent(data);
     } else {
-      setError('Event not found.');
+      setError('Event not found. The event may have been deleted or the link is invalid.');
       setEvent(null);
     }
     setLoading(false);
@@ -89,7 +99,7 @@ export default function EventDetails() {
   const fetchRsvps = useCallback(async () => {
     const { data, error } = await supabase
       .from('rsvps')
-      .select('*')
+      .select('*, tickets (name, price)')
       .eq('event_id', eventId);
 
     if (error) {
@@ -102,7 +112,13 @@ export default function EventDetails() {
       setError(error.message);
       setRsvps([]); // Ensure rsvps is empty array on error
     } else if (data) {
-      setRsvps(data);
+      // Transform the data to include ticket_name and ticket_price
+      const transformedData = data.map(rsvp => ({
+        ...rsvp,
+        ticket_name: rsvp.tickets?.name || 'Unknown',
+        ticket_price: rsvp.tickets?.price || 0,
+      }));
+      setRsvps(transformedData);
       // Extract user_ids for QR verification
       setGuests(data.map(rsvp => rsvp.user_id));
     } else {
@@ -143,6 +159,9 @@ export default function EventDetails() {
   }, [scanResult, guests]);
 
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -176,9 +195,11 @@ export default function EventDetails() {
   }, [supabase.auth, router, eventId, fetchEventDetails, fetchRsvps]);
 
   const handleShare = (eventId: string) => {
-    const inviteLink = `${window.location.origin}/rsvp?event_id=${eventId}`;
-    navigator.clipboard.writeText(inviteLink);
-    alert('Invite link copied to clipboard!');
+    if (typeof window !== 'undefined') {
+      const inviteLink = `${window.location.origin}/rsvp?event_id=${eventId}`;
+      navigator.clipboard.writeText(inviteLink);
+      alert('Invite link copied to clipboard!');
+    }
   };
 
   const handleEdit = () => {
@@ -219,19 +240,53 @@ export default function EventDetails() {
   };
 
   const handleSave = async (
-    updatedRsvps: Database['public']['Tables']['rsvps']['Row'][]
+    updatedRsvps: (Database['public']['Tables']['rsvps']['Row'] & { ticket_name?: string; ticket_price?: number })[]
   ) => {
-    const { error } = await supabase
-      .from('rsvps')
-      .upsert(updatedRsvps, { onConflict: 'id' });
+    try {
+      // Filter out the extra fields that don't exist in the database schema
+      const cleanRsvps = updatedRsvps.map(({ ticket_name, ticket_price, ...rsvp }) => rsvp);
+      
+      const { error } = await supabase
+        .from('rsvps')
+        .upsert(cleanRsvps, { onConflict: 'id' });
 
-    if (error) {
-      console.error('Error updating RSVPs:', error);
-      setError(error.message);
-    } else {
-      fetchRsvps(); // Refresh the data
-      alert('RSVPs updated successfully!');
+      if (error) {
+        console.error('Error updating RSVPs:', error);
+        setError(error.message);
+        throw error;
+      } else {
+        await fetchRsvps(); // Refresh the data
+        // Show success notification in a more modern way
+        const successMessage = document.createElement('div');
+        successMessage.className = 'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
+        successMessage.textContent = 'Verification changes saved successfully!';
+        document.body.appendChild(successMessage);
+        
+        // Remove the notification after 3 seconds
+        setTimeout(() => {
+          document.body.removeChild(successMessage);
+        }, 3000);
+      }
+    } catch (error) {
+      // Error is already handled above
+      console.error('Save operation failed:', error);
     }
+  };
+
+  const handleViewPaymentProof = (imageUrl: string, guestName: string) => {
+    setPaymentProofModal({
+      isOpen: true,
+      imageUrl,
+      guestName,
+    });
+  };
+
+  const handleClosePaymentProof = () => {
+    setPaymentProofModal({
+      isOpen: false,
+      imageUrl: '',
+      guestName: '',
+    });
   };
 
   const parseZelleFile = async (file: File) => {
@@ -287,7 +342,11 @@ export default function EventDetails() {
     if (!rsvps.length) return;
 
     setProcessingPayments(true);
-    const updatedRsvps = [...rsvps];
+    const updatedRsvps = [...rsvps] as (Database['public']['Tables']['rsvps']['Row'] & { 
+      tickets?: any; 
+      ticket_name?: string; 
+      ticket_price?: number; 
+    })[];
 
     for (const rsvp of updatedRsvps) {
       const rsvpName = rsvp.name.toLowerCase().trim().replace(/\s+/g, ' ');
@@ -332,10 +391,13 @@ export default function EventDetails() {
       rsvp.payment_method = paymentMethod;
     }
 
+    // Filter out the extra fields that don't exist in the database schema
+    const cleanRsvps = updatedRsvps.map(({ tickets, ticket_name, ticket_price, ...rsvp }) => rsvp);
+    
     // Update database
     const { error } = await supabase
       .from('rsvps')
-      .upsert(updatedRsvps, { onConflict: 'id' });
+      .upsert(cleanRsvps, { onConflict: 'id' });
 
     if (error) {
       console.error('Error updating payment status:', error);
@@ -618,7 +680,12 @@ export default function EventDetails() {
               <span>{rsvps.length} guests</span>
             </div>
           </div>
-          <DataTable columns={columns} data={rsvps} onSave={handleSave} />
+          <DataTable 
+            columns={createColumns} 
+            data={rsvps} 
+            onSave={handleSave} 
+            onViewPaymentProof={handleViewPaymentProof}
+          />
         </div>
       </div>
 
@@ -677,6 +744,15 @@ export default function EventDetails() {
           </div>
         </div>
       )}
+
+      {/* Payment Proof Modal */}
+      <PaymentProofModal
+        isOpen={paymentProofModal.isOpen}
+        onClose={handleClosePaymentProof}
+        imageUrl={paymentProofModal.imageUrl}
+        guestName={paymentProofModal.guestName}
+      />
+
       <Footer />
     </div>
   );
