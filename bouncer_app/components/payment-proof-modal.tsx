@@ -94,7 +94,7 @@ export default function PaymentProofModal({ isOpen, onClose, imageUrl, guestName
                 <p className="text-gray-400 text-sm mt-1">The payment proof image could not be loaded</p>
               </div>
             </div>
-          ) : (
+          ) : fullImageUrl ? (
             <div className="flex justify-center">
               <img
                 src={fullImageUrl}
@@ -103,6 +103,15 @@ export default function PaymentProofModal({ isOpen, onClose, imageUrl, guestName
                 onError={() => setImageLoadError(true)}
                 onLoad={() => setImageLoadError(false)}
               />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64 bg-gray-700/30 rounded-lg">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gray-600/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <p className="text-gray-400 font-medium">Loading image...</p>
+              </div>
             </div>
           )}
         </div>

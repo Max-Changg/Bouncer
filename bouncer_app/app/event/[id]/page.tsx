@@ -240,11 +240,11 @@ export default function EventDetails() {
   };
 
   const handleSave = async (
-    updatedRsvps: (Database['public']['Tables']['rsvps']['Row'] & { ticket_name?: string; ticket_price?: number })[]
+    updatedRsvps: (Database['public']['Tables']['rsvps']['Row'] & { ticket_name?: string; ticket_price?: number; tickets?: any })[]
   ) => {
     try {
       // Filter out the extra fields that don't exist in the database schema
-      const cleanRsvps = updatedRsvps.map(({ ticket_name, ticket_price, ...rsvp }) => rsvp);
+      const cleanRsvps = updatedRsvps.map(({ ticket_name, ticket_price, tickets, ...rsvp }) => rsvp);
       
       const { error } = await supabase
         .from('rsvps')

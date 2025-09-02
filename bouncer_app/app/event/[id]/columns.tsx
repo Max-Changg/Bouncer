@@ -38,10 +38,6 @@ export const createColumns = (
     header: 'Email',
   },
   {
-    accessorKey: 'status',
-    header: 'Status',
-  },
-  {
     accessorKey: 'payment_status',
     header: 'Payment Status',
   },

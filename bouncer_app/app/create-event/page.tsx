@@ -539,7 +539,7 @@ export default function CreateEvent() {
           return;
         }
 
-        // Save tickets after updating event
+        // Save tickets after updating event (direct call, not debounced for final save)
         await saveTickets(eventId);
 
         setInviteLink(`${window.location.origin}/rsvp?event_id=${eventId}`);
@@ -597,9 +597,7 @@ export default function CreateEvent() {
 
     // Auto-save new ticket only if event already exists
     if (eventId) {
-      setTimeout(() => {
-        saveTickets(eventId);
-      }, 500);
+      debouncedSaveTickets(eventId);
     }
   };
 
@@ -613,9 +611,7 @@ export default function CreateEvent() {
 
     // Auto-save tickets after a short delay
     if (eventId) {
-      setTimeout(() => {
-        saveTickets(eventId);
-      }, 500);
+      debouncedSaveTickets(eventId);
     }
   };
 
@@ -634,29 +630,41 @@ export default function CreateEvent() {
 
     // Auto-save after removing ticket
     if (eventId) {
-      setTimeout(() => {
-        saveTickets(eventId);
-      }, 500);
+      debouncedSaveTickets(eventId);
     }
   };
 
+  const [isSavingTickets, setIsSavingTickets] = useState(false);
+  const saveTicketsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const saveTickets = async (eventIdToUse: number | null = eventId) => {
-      if (!eventIdToUse) {
+    if (!eventIdToUse) {
       setError('Event must be created before saving tickets.');
       return;
     }
+    
+    // Prevent multiple simultaneous saves
+    if (isSavingTickets) {
+      return;
+    }
+    
+    setIsSavingTickets(true);
+    
     try {
       // Delete existing tickets for this event
       await supabase.from('tickets').delete().eq('event_id', eventIdToUse);
-      // Insert new tickets
-      if (tickets.length > 0) {
-        const ticketsToInsert = tickets.map(ticket => ({
+      
+      // Insert new tickets (only non-empty tickets)
+      const validTickets = tickets.filter(ticket => ticket.name.trim() !== '');
+      if (validTickets.length > 0) {
+        const ticketsToInsert = validTickets.map(ticket => ({
           event_id: eventIdToUse,
-          name: ticket.name,
+          name: ticket.name.trim(),
           price: ticket.price,
           quantity_available: ticket.quantity_available,
           purchase_deadline: ticket.purchase_deadline?.toISOString(),
         }));
+        
         const { error } = await supabase
           .from('tickets')
           .insert(ticketsToInsert);
@@ -666,8 +674,31 @@ export default function CreateEvent() {
     } catch (error) {
       console.error('Error saving tickets:', error);
       setError('Failed to save tickets');
+    } finally {
+      setIsSavingTickets(false);
     }
   };
+
+  const debouncedSaveTickets = (eventIdToUse: number | null = eventId) => {
+    // Clear existing timeout
+    if (saveTicketsTimeoutRef.current) {
+      clearTimeout(saveTicketsTimeoutRef.current);
+    }
+    
+    // Set new timeout
+    saveTicketsTimeoutRef.current = setTimeout(() => {
+      saveTickets(eventIdToUse);
+    }, 1000); // Increased delay to 1 second for better debouncing
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTicketsTimeoutRef.current) {
+        clearTimeout(saveTicketsTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (sessionLoading) {
     return (

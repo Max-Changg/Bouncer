@@ -14,7 +14,6 @@ import { formatISO, isAfter } from 'date-fns';
 export default function Rsvp() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState('Attending');
   const [loading, setLoading] = useState(true);
   const [eventLoading, setEventLoading] = useState(false);
   const [event, setEvent] = useState<any>(null);
@@ -28,7 +27,7 @@ export default function Rsvp() {
   );
   const [session, setSession] = useState<User | null>(null);
   const [tickets, setTickets] = useState<any[]>([]);
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [selectedTicketType, setSelectedTicketType] = useState<any | null>(null);
   const [paymentImage, setPaymentImage] = useState<File | null>(null);
 
   // Extract payment info block from additional_info (if present)
@@ -119,7 +118,27 @@ export default function Rsvp() {
           })
         );
         
-        setTickets(ticketsWithAvailability);
+        // Group tickets by name and price (ticket type)
+        const ticketTypes = new Map();
+        ticketsWithAvailability.forEach(ticket => {
+          const key = `${ticket.name}-${ticket.price}`;
+          if (ticketTypes.has(key)) {
+            const existing = ticketTypes.get(key);
+            existing.quantity_available += ticket.quantity_available;
+            existing.original_quantity += ticket.original_quantity;
+            existing.rsvps_count += ticket.rsvps_count;
+            existing.ticket_ids.push(ticket.id);
+          } else {
+            ticketTypes.set(key, {
+              ...ticket,
+              ticket_ids: [ticket.id], // Store all ticket IDs for this type
+            });
+          }
+        });
+        
+        // Convert back to array
+        const groupedTickets = Array.from(ticketTypes.values());
+        setTickets(groupedTickets);
       }
     } else {
       setError('Event not found.');
@@ -193,7 +212,7 @@ export default function Rsvp() {
       return;
     }
 
-    if (!selectedTicketId) {
+    if (!selectedTicketType) {
       setError('Please select a ticket type.');
       return;
     }
@@ -217,22 +236,25 @@ export default function Rsvp() {
       return;
     }
     
-    // Check if ticket is still available
-    const ticket = tickets.find(t => t.id === selectedTicketId);
+    // Check if ticket type is still available
+    const ticketType = selectedTicketType;
     // If ticket has a cost, require payment proof image to be uploaded
-    if (ticket && ticket.price > 0 && !paymentImage) {
+    if (ticketType && ticketType.price > 0 && !paymentImage) {
       setError('Please upload a picture of your payment confirmation for the selected paid ticket.');
       return;
     }
-    if (!ticket || ticket.quantity_available <= 0 || (ticket.purchase_deadline && isAfter(new Date(), new Date(ticket.purchase_deadline)))) {
-      setError('Selected ticket is no longer available.');
+    if (!ticketType || ticketType.quantity_available <= 0 || (ticketType.purchase_deadline && isAfter(new Date(), new Date(ticketType.purchase_deadline)))) {
+      setError('Selected ticket type is no longer available.');
       return;
     }
+
+    // Pick the first available ticket ID from this ticket type
+    const availableTicketId = ticketType.ticket_ids[0];
 
     let paymentProofUrl = null;
 
     // Upload payment proof image if provided
-    if (paymentImage && ticket.price > 0) {
+    if (paymentImage && ticketType.price > 0) {
       const fileExt = paymentImage.name.split('.').pop();
       const fileName = `${session.id}-${eventId}-${Date.now()}.${fileExt}`;
       
@@ -256,10 +278,9 @@ export default function Rsvp() {
         {
           name,
           email,
-          status,
           event_id: Number(eventId),
           user_id: session.id,
-          ticket_id: selectedTicketId,
+          ticket_id: availableTicketId,
           payment_proof_url: paymentProofUrl,
         },
       ])
@@ -477,22 +498,7 @@ export default function Rsvp() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label htmlFor="status" className="text-sm text-gray-300">Status</label>
-                <select
-                  id="status"
-                  name="status"
-                  required
-                  className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-600"
-                  onChange={e => setStatus(e.target.value)}
-                >
-                  <option>Attending</option>
-                  <option>Maybe</option>
-                  <option>Not Attending</option>
-                </select>
-              </div>
-            </div>
+
 
             <div>
               <label className="block text-left font-medium text-gray-200 mb-4">Select Ticket Type</label>
@@ -507,79 +513,62 @@ export default function Rsvp() {
                     No tickets available for this event.
                   </div>
                 )}
-                {tickets.map(ticket => {
-                  const soldOut = ticket.quantity_available <= 0 || (ticket.purchase_deadline && isAfter(new Date(), new Date(ticket.purchase_deadline)));
-                  const isPaid = ticket.price > 0;
+                {tickets.map((ticketType, index) => {
+                  const soldOut = ticketType.quantity_available <= 0 || (ticketType.purchase_deadline && isAfter(new Date(), new Date(ticketType.purchase_deadline)));
+                  const isPaid = ticketType.price > 0;
+                  const isSelected = selectedTicketType?.id === ticketType.id;
                   
                   return (
-                    <div
-                      key={ticket.id}
-                      className={`relative rounded-xl border-2 p-4 transition-all duration-200 ${
+                    <label
+                      key={`${ticketType.name}-${ticketType.price}-${index}`}
+                      className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
                         soldOut 
-                          ? 'bg-gray-800/30 border-gray-700/50 text-gray-500' 
-                          : selectedTicketId === ticket.id
-                            ? 'bg-fuchsia-900/20 border-fuchsia-500/50 text-white shadow-lg shadow-fuchsia-500/20'
-                            : 'bg-gray-800/50 border-gray-600/50 text-gray-200 hover:border-fuchsia-500/50 hover:bg-gray-800/70 cursor-pointer'
+                          ? 'bg-gray-800/30 border-gray-700/50 text-gray-500 cursor-not-allowed' 
+                          : isSelected
+                            ? 'bg-fuchsia-900/20 border-fuchsia-500 text-white'
+                            : 'bg-gray-800/50 border-gray-600 text-gray-200 hover:border-fuchsia-500/50 hover:bg-gray-800/70'
                       }`}
-                      onClick={() => !soldOut && setSelectedTicketId(ticket.id)}
                     > 
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-3">
-                          <div className="mt-1">
-                            <input
-                              type="radio"
-                              name="ticket"
-                              value={ticket.id}
-                              disabled={soldOut}
-                              checked={selectedTicketId === ticket.id}
-                              onChange={() => setSelectedTicketId(ticket.id)}
-                              className="w-4 h-4 text-fuchsia-600 border-gray-600 focus:ring-fuchsia-500 focus:ring-2"
-                            />
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="radio"
+                          name="ticket"
+                          value={`${ticketType.name}-${ticketType.price}`}
+                          disabled={soldOut}
+                          checked={isSelected}
+                          onChange={() => setSelectedTicketType(ticketType)}
+                          className="w-4 h-4 text-fuchsia-600 border-gray-600 focus:ring-fuchsia-500 focus:ring-2"
+                        />
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-semibold text-lg">{ticketType.name}</span>
+                            {isPaid ? (
+                              <span className="text-amber-300 font-bold">${ticketType.price.toFixed(2)}</span>
+                            ) : (
+                              <span className="text-green-400 font-bold">FREE</span>
+                            )}
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <h4 className="font-bold text-lg">{ticket.name}</h4>
-                              <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                isPaid 
-                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                                  : 'bg-green-500/20 text-green-300 border border-green-500/30'
-                              }`}>
-                                {isPaid ? `$${ticket.price.toFixed(2)}` : 'FREE'}
-                              </div>
+                          {ticketType.purchase_deadline && (
+                            <div className="text-sm text-gray-400 mt-1">
+                              Available until {new Date(ticketType.purchase_deadline).toLocaleDateString()}
                             </div>
-                            
-                            <div className="flex items-center space-x-4 text-sm">
-                              <div className={`flex items-center space-x-1 ${
-                                ticket.quantity_available > 5 ? 'text-green-400' : 
-                                ticket.quantity_available > 0 ? 'text-amber-400' : 'text-red-400'
-                              }`}>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                                <span className="font-medium">
-                                  {soldOut ? 'Sold Out' : `${ticket.quantity_available} available`}
-                                </span>
-                              </div>
-                              
-                              {ticket.purchase_deadline && (
-                                <div className="text-gray-400 flex items-center space-x-1">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  <span>Until {new Date(ticket.purchase_deadline).toLocaleDateString()}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          )}
                         </div>
-                        
-                        {soldOut && (
-                          <div className="absolute top-4 right-4 bg-red-500/20 border border-red-500/50 text-red-400 px-2 py-1 rounded-full text-xs font-semibold">
-                            SOLD OUT
+                      </div>
+                      
+                      <div className="text-right">
+                        {soldOut ? (
+                          <span className="text-red-400 font-semibold text-sm">SOLD OUT</span>
+                        ) : (
+                          <div className={`text-sm font-medium ${
+                            ticketType.quantity_available > 10 ? 'text-green-400' : 
+                            ticketType.quantity_available > 5 ? 'text-amber-400' : 'text-red-400'
+                          }`}>
+                            {ticketType.quantity_available} remaining
                           </div>
                         )}
                       </div>
-                    </div>
+                    </label>
                   );
                 })}
               </div>
@@ -589,8 +578,7 @@ export default function Rsvp() {
             {(() => {
               const payment = extractPaymentInfo(event?.additional_info || '');
               const hasPaymentInfo = !!(payment.venmo || payment.zelle);
-              const selectedTicket = tickets.find(t => t.id === selectedTicketId);
-              const requiresProof = !!selectedTicket && selectedTicket.price > 0;
+              const requiresProof = !!selectedTicketType && selectedTicketType.price > 0;
               return (
                 <>
                   {hasPaymentInfo && (

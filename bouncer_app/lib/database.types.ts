@@ -72,7 +72,6 @@ export interface Database {
           event_id: number;
           name: string;
           email: string;
-          status: string;
           created_at: string;
           is_approved: boolean;
           user_id: string /* Corrected: uuid maps to string */;
@@ -87,7 +86,6 @@ export interface Database {
           event_id: number;
           name: string;
           email: string;
-          status: string;
           is_approved?: boolean;
           user_id: string;
           payment_status?: string;
@@ -100,7 +98,6 @@ export interface Database {
         Update: {
           name?: string;
           email?: string;
-          status?: string;
           is_approved?: boolean;
           payment_status?: string;
           amount_paid?: number;
