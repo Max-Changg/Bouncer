@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
@@ -25,15 +25,27 @@ import {
 import Scanner from '@/components/scanner';
 import PaymentProofModal from '@/components/payment-proof-modal';
 
+interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  loading: boolean;
+  isAuthorized?: boolean;
+}
+
 export default function EventDetails() {
-  const [session, setSession] = useState<User | null>(null);
+  const [auth, setAuth] = useState<AuthState>({
+    isAuthenticated: false,
+    user: null,
+    loading: true,
+    isAuthorized: undefined
+  });
   const [event, setEvent] = useState<
     Database['public']['Tables']['Events']['Row'] | null
   >(null);
   const [rsvps, setRsvps] = useState<
     Database['public']['Tables']['rsvps']['Row'][]
   >([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [zelleData, setZelleData] = useState<
     Array<{ name: string; amount: number }>
@@ -70,59 +82,117 @@ export default function EventDetails() {
   );
   const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const fetchEventDetails = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('Events')
-      .select('*')
-      .eq('id', eventId)
-      .maybeSingle(); // Use maybeSingle to handle 0 rows gracefully
+  // Simple session check - like a backend getSession endpoint
+  const checkSession = useCallback(async () => {
+    try {
+      console.log('🔍 Checking session...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Session check error:', error);
+        return { isAuthenticated: false, user: null };
+      }
 
-    if (error) {
-      console.error(
-        'Error fetching event details:',
-        error.message,
-        error.details,
-        error.hint
-      );
-      setError(error.message);
-      setEvent(null); // Ensure event is null on error
-    } else if (data) {
-      setEvent(data);
-    } else {
-      setError('Event not found. The event may have been deleted or the link is invalid.');
-      setEvent(null);
+      if (session?.user) {
+        console.log('✅ Session found:', session.user.email);
+        return { isAuthenticated: true, user: session.user };
+      } else {
+        console.log('❌ No session found');
+        return { isAuthenticated: false, user: null };
+      }
+    } catch (err) {
+      console.error('Session check failed:', err);
+      return { isAuthenticated: false, user: null };
     }
-    setLoading(false);
+  }, [supabase.auth]);
+
+  const fetchEventDetails = useCallback(async (user: User) => {
+    if (!eventId) {
+      setError('No event ID provided');
+      return null;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('Events')
+        .select('*')
+        .eq('id', eventId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching event details:', error);
+        setError(error.message);
+        setEvent(null);
+        return null;
+      }
+
+      if (data) {
+        setEvent(data);
+        setError(null);
+        
+        // Check if user is the event owner
+        const isOwner = user.id === data.user_id;
+        console.log('🔐 Authorization check:', {
+          isOwner,
+          userId: user.id,
+          eventOwnerId: data.user_id,
+          userEmail: user.email,
+          eventName: data.name
+        });
+        
+        return { event: data, isOwner };
+      } else {
+        setError('Event not found. The event may have been deleted or the link is invalid.');
+        setEvent(null);
+        return null;
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching event:', err);
+      setError('Failed to load event details');
+      setEvent(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
   }, [supabase, eventId]);
 
   const fetchRsvps = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('*, tickets (name, price)')
-      .eq('event_id', eventId);
-
-    if (error) {
-      console.error(
-        'Error fetching RSVPs:',
-        error.message,
-        error.details,
-        error.hint
-      );
-      setError(error.message);
-      setRsvps([]); // Ensure rsvps is empty array on error
-    } else if (data) {
-      // Transform the data to include ticket_name and ticket_price
-      const transformedData = data.map(rsvp => ({
-        ...rsvp,
-        ticket_name: rsvp.tickets?.name || 'Unknown',
-        ticket_price: rsvp.tickets?.price || 0,
-      }));
-      setRsvps(transformedData);
-      // Extract user_ids for QR verification
-      setGuests(data.map(rsvp => rsvp.user_id));
-    } else {
+    if (!eventId) {
       setRsvps([]);
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('rsvps')
+        .select('*, tickets (name, price)')
+        .eq('event_id', eventId);
+
+      if (error) {
+        console.error('Error fetching RSVPs:', error);
+        setError(error.message);
+        setRsvps([]);
+      } else if (data) {
+        // Transform the data to include ticket_name and ticket_price
+        const transformedData = data.map(rsvp => ({
+          ...rsvp,
+          ticket_name: rsvp.tickets?.name || 'Unknown',
+          ticket_price: rsvp.tickets?.price || 0,
+        }));
+        setRsvps(transformedData);
+        // Extract user_ids for QR verification
+        setGuests(data.map(rsvp => rsvp.user_id));
+      } else {
+        setRsvps([]);
+        setGuests([]);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching RSVPs:', err);
+      setRsvps([]);
+      setGuests([]);
     }
   }, [supabase, eventId]);
 
@@ -158,41 +228,91 @@ export default function EventDetails() {
     }
   }, [scanResult, guests]);
 
+  // Main authentication effect - simple session endpoint approach
   useEffect(() => {
-    // Only run on client side
-    if (typeof window === 'undefined') return;
+    const initializeAuth = async () => {
+      console.log('🚀 Initializing authentication on page load/refresh');
+      
+      // Step 1: Check session (like calling backend getSession endpoint)
+      const sessionResult = await checkSession();
+      
+      if (!sessionResult.isAuthenticated) {
+        console.log('❌ Not authenticated, redirecting to login');
+        setAuth({
+          isAuthenticated: false,
+          user: null,
+          loading: false,
+          isAuthorized: false
+        });
+        router.replace(`/login?next=${encodeURIComponent(`/event/${eventId}`)}`);
+        return;
+      }
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        setSession(session.user);
+      // Step 2: User is authenticated, now check event authorization
+      console.log('✅ User is authenticated, checking event authorization');
+      setAuth(prev => ({
+        ...prev,
+        isAuthenticated: true,
+        user: sessionResult.user,
+        loading: true // Still loading while checking authorization
+      }));
+
+      const eventResult = await fetchEventDetails(sessionResult.user!);
+      
+      if (!eventResult) {
+        // Event not found or error occurred
+        setAuth(prev => ({
+          ...prev,
+          loading: false,
+          isAuthorized: false
+        }));
+        return;
+      }
+
+      if (eventResult.isOwner) {
+        console.log('✅ User is authorized as event owner');
+        setAuth(prev => ({
+          ...prev,
+          loading: false,
+          isAuthorized: true
+        }));
+        // Fetch RSVPs
+        fetchRsvps();
       } else {
-        setSession(null); // Clear session on logout
-        router.push('/login');
+        console.log('❌ User is not the event owner');
+        setAuth(prev => ({
+          ...prev,
+          loading: false,
+          isAuthorized: false
+        }));
+        setError('You are not authorized to view this event page. Only the event creator can access this page.');
+      }
+    };
+
+    // Set up auth state listener for future changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, !!session);
+      
+      if (event === 'SIGNED_OUT') {
+        setAuth({
+          isAuthenticated: false,
+          user: null,
+          loading: false,
+          isAuthorized: false
+        });
+        router.replace('/login');
+      } else if (event === 'SIGNED_IN' && session) {
+        // Re-run the full initialization
+        initializeAuth();
       }
     });
 
-    // Initial session check
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setSession(user);
-      } else {
-        setSession(null); // Clear session on logout
-        router.push('/login');
-      }
-    });
-
-    // Also call fetch functions if eventId is already available on initial render
-    if (eventId) {
-      fetchEventDetails();
-      fetchRsvps();
-    }
+    initializeAuth();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase.auth, router, eventId, fetchEventDetails, fetchRsvps]);
+  }, [checkSession, fetchEventDetails, fetchRsvps, router, eventId, supabase.auth]);
 
   const handleShare = (eventId: string) => {
     if (typeof window !== 'undefined') {
@@ -442,6 +562,11 @@ export default function EventDetails() {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-300">Loading event details...</p>
+          {process.env.NODE_ENV === 'development' && (
+            <p className="text-xs text-gray-500 mt-2">
+              Fetching event data...
+            </p>
+          )}
         </div>
       </div>
     );
@@ -472,7 +597,52 @@ export default function EventDetails() {
     );
   }
 
-  if (!session || !event) {
+  // Show loading while checking authentication or authorization
+  if (auth.loading || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">
+            {!auth.isAuthenticated ? 'Checking authentication...' : loading ? 'Loading event...' : 'Verifying access...'}
+          </p>
+          {process.env.NODE_ENV === 'development' && (
+            <p className="text-xs text-gray-500 mt-2">
+              Auth: {auth.isAuthenticated ? 'authenticated' : 'checking'}, 
+              Authorized: {auth.isAuthorized?.toString() ?? 'checking'}, 
+              Loading: {loading}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show unauthorized message if user is not the event owner
+  if (auth.isAuthenticated && auth.isAuthorized === false) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center max-w-md mx-4">
+          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
+          <p className="text-gray-300 mb-4">You are not authorized to view this event page. Only the event creator can access this page.</p>
+          <button
+            onClick={() => router.push('/event')}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            Go to Events
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if authentication hasn't completed successfully
+  if (!auth.isAuthenticated || auth.isAuthorized !== true || !auth.user || !event) {
     return null;
   }
 
@@ -627,7 +797,7 @@ export default function EventDetails() {
         </div>
 
         {/* Payment Upload Section - Admin Only */}
-        {session && event && session.id === event.user_id && (
+        {auth.user && event && auth.user.id === event.user_id && (
           <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
             <h3 className="text-2xl font-bold text-white mb-6">
               Payment Verification

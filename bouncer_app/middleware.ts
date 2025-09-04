@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 // Define protected and public routes
 const protectedRoutes = [
   '/event$', // Only exact match for /event (not /event/[id])
+  '/event/', // Match /event/[id] routes
   '/create-event',
   '/qr-code',
   '/test-auth',
@@ -79,8 +80,10 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // If the user is not logged in and is trying to access a protected route, redirect to login
-  if (!session && protectedRoutes.some(route => {
+  console.log('Middleware - pathname:', pathname, 'session:', !!session);
+
+  // Check if this is a protected route
+  const isProtectedRoute = protectedRoutes.some(route => {
     if (route.endsWith('$')) {
       // For routes ending with $, do exact match (remove the $ first)
       const exactRoute = route.slice(0, -1);
@@ -89,7 +92,12 @@ export async function middleware(request: NextRequest) {
       // For other routes, check if pathname starts with the route
       return pathname.startsWith(route);
     }
-  })) {
+  });
+
+  console.log('Middleware - isProtectedRoute:', isProtectedRoute);
+
+  // If the user is not logged in and is trying to access a protected route, redirect to login
+  if (!session && isProtectedRoute) {
     const loginUrl = new URL('/login', request.url);
     // Preserve the current URL as the next parameter for RSVP routes
     if (pathname.startsWith('/rsvp')) {
