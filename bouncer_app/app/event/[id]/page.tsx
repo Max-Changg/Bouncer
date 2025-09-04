@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
-import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
+import { createClient } from '@/lib/supabase-browser-client';
 import { DataTable } from '@/components/data-table';
 import { createColumns } from './columns';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export default function EventDetails() {
     isAuthenticated: false,
     user: null,
     loading: true,
-    isAuthorized: undefined
+    isAuthorized: undefined,
   });
   const [event, setEvent] = useState<
     Database['public']['Tables']['Events']['Row'] | null
@@ -71,25 +71,28 @@ export default function EventDetails() {
   });
   const router = useRouter();
   const params = useParams();
-  const supabase = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookieOptions: {
-        name: 'sb-auth-token',
-      },
-    }
-  );
+  const supabase = createClient();
   const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   // Simple session check - like a backend getSession endpoint
   const checkSession = useCallback(async () => {
     try {
       console.log('🔍 Checking session...');
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
       if (error) {
         console.error('Session check error:', error);
+        // If it's a refresh token error, sign out to clear invalid tokens
+        if (
+          error.message?.includes('refresh') ||
+          error.message?.includes('Invalid')
+        ) {
+          console.log('🔄 Clearing invalid session...');
+          await supabase.auth.signOut();
+        }
         return { isAuthenticated: false, user: null };
       }
 
@@ -106,65 +109,70 @@ export default function EventDetails() {
     }
   }, [supabase.auth]);
 
-  const fetchEventDetails = useCallback(async (user: User) => {
-    if (!eventId) {
-      setError('No event ID provided');
-      return null;
-    }
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const { data, error } = await supabase
-        .from('Events')
-        .select('*')
-        .eq('id', eventId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching event details:', error);
-        setError(error.message);
-        setEvent(null);
+  const fetchEventDetails = useCallback(
+    async (user: User) => {
+      if (!eventId) {
+        setError('No event ID provided');
         return null;
       }
 
-      if (data) {
-        setEvent(data);
-        setError(null);
-        
-        // Check if user is the event owner
-        const isOwner = user.id === data.user_id;
-        console.log('🔐 Authorization check:', {
-          isOwner,
-          userId: user.id,
-          eventOwnerId: data.user_id,
-          userEmail: user.email,
-          eventName: data.name
-        });
-        
-        return { event: data, isOwner };
-      } else {
-        setError('Event not found. The event may have been deleted or the link is invalid.');
+      setLoading(true);
+      setError(null);
+
+      try {
+        const { data, error } = await supabase
+          .from('Events')
+          .select('*')
+          .eq('id', eventId)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching event details:', error);
+          setError(error.message);
+          setEvent(null);
+          return null;
+        }
+
+        if (data) {
+          setEvent(data);
+          setError(null);
+
+          // Check if user is the event owner
+          const isOwner = user.id === data.user_id;
+          console.log('🔐 Authorization check:', {
+            isOwner,
+            userId: user.id,
+            eventOwnerId: data.user_id,
+            userEmail: user.email,
+            eventName: data.name,
+          });
+
+          return { event: data, isOwner };
+        } else {
+          setError(
+            'Event not found. The event may have been deleted or the link is invalid.'
+          );
+          setEvent(null);
+          return null;
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching event:', err);
+        setError('Failed to load event details');
         setEvent(null);
         return null;
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Unexpected error fetching event:', err);
-      setError('Failed to load event details');
-      setEvent(null);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [supabase, eventId]);
+    },
+    [supabase, eventId]
+  );
 
   const fetchRsvps = useCallback(async () => {
     if (!eventId) {
       setRsvps([]);
       return;
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('rsvps')
@@ -232,19 +240,21 @@ export default function EventDetails() {
   useEffect(() => {
     const initializeAuth = async () => {
       console.log('🚀 Initializing authentication on page load/refresh');
-      
+
       // Step 1: Check session (like calling backend getSession endpoint)
       const sessionResult = await checkSession();
-      
+
       if (!sessionResult.isAuthenticated) {
         console.log('❌ Not authenticated, redirecting to login');
         setAuth({
           isAuthenticated: false,
           user: null,
           loading: false,
-          isAuthorized: false
+          isAuthorized: false,
         });
-        router.replace(`/login?next=${encodeURIComponent(`/event/${eventId}`)}`);
+        router.replace(
+          `/login?next=${encodeURIComponent(`/event/${eventId}`)}`
+        );
         return;
       }
 
@@ -254,17 +264,17 @@ export default function EventDetails() {
         ...prev,
         isAuthenticated: true,
         user: sessionResult.user,
-        loading: true // Still loading while checking authorization
+        loading: true, // Still loading while checking authorization
       }));
 
       const eventResult = await fetchEventDetails(sessionResult.user!);
-      
+
       if (!eventResult) {
         // Event not found or error occurred
         setAuth(prev => ({
           ...prev,
           loading: false,
-          isAuthorized: false
+          isAuthorized: false,
         }));
         return;
       }
@@ -274,7 +284,7 @@ export default function EventDetails() {
         setAuth(prev => ({
           ...prev,
           loading: false,
-          isAuthorized: true
+          isAuthorized: true,
         }));
         // Fetch RSVPs
         fetchRsvps();
@@ -283,22 +293,26 @@ export default function EventDetails() {
         setAuth(prev => ({
           ...prev,
           loading: false,
-          isAuthorized: false
+          isAuthorized: false,
         }));
-        setError('You are not authorized to view this event page. Only the event creator can access this page.');
+        setError(
+          'You are not authorized to view this event page. Only the event creator can access this page.'
+        );
       }
     };
 
     // Set up auth state listener for future changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, !!session);
-      
+
       if (event === 'SIGNED_OUT') {
         setAuth({
           isAuthenticated: false,
           user: null,
           loading: false,
-          isAuthorized: false
+          isAuthorized: false,
         });
         router.replace('/login');
       } else if (event === 'SIGNED_IN' && session) {
@@ -312,7 +326,14 @@ export default function EventDetails() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [checkSession, fetchEventDetails, fetchRsvps, router, eventId, supabase.auth]);
+  }, [
+    checkSession,
+    fetchEventDetails,
+    fetchRsvps,
+    router,
+    eventId,
+    supabase.auth,
+  ]);
 
   const handleShare = (eventId: string) => {
     if (typeof window !== 'undefined') {
@@ -360,12 +381,18 @@ export default function EventDetails() {
   };
 
   const handleSave = async (
-    updatedRsvps: (Database['public']['Tables']['rsvps']['Row'] & { ticket_name?: string; ticket_price?: number; tickets?: any })[]
+    updatedRsvps: (Database['public']['Tables']['rsvps']['Row'] & {
+      ticket_name?: string;
+      ticket_price?: number;
+      tickets?: any;
+    })[]
   ) => {
     try {
       // Filter out the extra fields that don't exist in the database schema
-      const cleanRsvps = updatedRsvps.map(({ ticket_name, ticket_price, tickets, ...rsvp }) => rsvp);
-      
+      const cleanRsvps = updatedRsvps.map(
+        ({ ticket_name, ticket_price, tickets, ...rsvp }) => rsvp
+      );
+
       const { error } = await supabase
         .from('rsvps')
         .upsert(cleanRsvps, { onConflict: 'id' });
@@ -378,10 +405,11 @@ export default function EventDetails() {
         await fetchRsvps(); // Refresh the data
         // Show success notification in a more modern way
         const successMessage = document.createElement('div');
-        successMessage.className = 'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
+        successMessage.className =
+          'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
         successMessage.textContent = 'Verification changes saved successfully!';
         document.body.appendChild(successMessage);
-        
+
         // Remove the notification after 3 seconds
         setTimeout(() => {
           document.body.removeChild(successMessage);
@@ -462,10 +490,12 @@ export default function EventDetails() {
     if (!rsvps.length) return;
 
     setProcessingPayments(true);
-    const updatedRsvps = [...rsvps] as (Database['public']['Tables']['rsvps']['Row'] & { 
-      tickets?: any; 
-      ticket_name?: string; 
-      ticket_price?: number; 
+    const updatedRsvps = [
+      ...rsvps,
+    ] as (Database['public']['Tables']['rsvps']['Row'] & {
+      tickets?: any;
+      ticket_name?: string;
+      ticket_price?: number;
     })[];
 
     for (const rsvp of updatedRsvps) {
@@ -512,8 +542,10 @@ export default function EventDetails() {
     }
 
     // Filter out the extra fields that don't exist in the database schema
-    const cleanRsvps = updatedRsvps.map(({ tickets, ticket_name, ticket_price, ...rsvp }) => rsvp);
-    
+    const cleanRsvps = updatedRsvps.map(
+      ({ tickets, ticket_name, ticket_price, ...rsvp }) => rsvp
+    );
+
     // Update database
     const { error } = await supabase
       .from('rsvps')
@@ -563,9 +595,7 @@ export default function EventDetails() {
           <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-300">Loading event details...</p>
           {process.env.NODE_ENV === 'development' && (
-            <p className="text-xs text-gray-500 mt-2">
-              Fetching event data...
-            </p>
+            <p className="text-xs text-gray-500 mt-2">Fetching event data...</p>
           )}
         </div>
       </div>
@@ -604,12 +634,16 @@ export default function EventDetails() {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-300">
-            {!auth.isAuthenticated ? 'Checking authentication...' : loading ? 'Loading event...' : 'Verifying access...'}
+            {!auth.isAuthenticated
+              ? 'Checking authentication...'
+              : loading
+                ? 'Loading event...'
+                : 'Verifying access...'}
           </p>
           {process.env.NODE_ENV === 'development' && (
             <p className="text-xs text-gray-500 mt-2">
-              Auth: {auth.isAuthenticated ? 'authenticated' : 'checking'}, 
-              Authorized: {auth.isAuthorized?.toString() ?? 'checking'}, 
+              Auth: {auth.isAuthenticated ? 'authenticated' : 'checking'},
+              Authorized: {auth.isAuthorized?.toString() ?? 'checking'},
               Loading: {loading}
             </p>
           )}
@@ -624,12 +658,25 @@ export default function EventDetails() {
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
         <div className="text-center max-w-md mx-4">
           <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="w-8 h-8 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
-          <p className="text-gray-300 mb-4">You are not authorized to view this event page. Only the event creator can access this page.</p>
+          <p className="text-gray-300 mb-4">
+            You are not authorized to view this event page. Only the event
+            creator can access this page.
+          </p>
           <button
             onClick={() => router.push('/event')}
             className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
@@ -642,7 +689,12 @@ export default function EventDetails() {
   }
 
   // Don't render if authentication hasn't completed successfully
-  if (!auth.isAuthenticated || auth.isAuthorized !== true || !auth.user || !event) {
+  if (
+    !auth.isAuthenticated ||
+    auth.isAuthorized !== true ||
+    !auth.user ||
+    !event
+  ) {
     return null;
   }
 
@@ -683,12 +735,16 @@ export default function EventDetails() {
             style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
           ></div>
           {/* Dotted grid overlay */}
-          <div className="absolute inset-0 opacity-[0.14]" style={{
-            backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
-            color: '#ffffff',
-            backgroundSize: '22px 22px',
-            backgroundPosition: '0 0, 11px 11px',
-          }}></div>
+          <div
+            className="absolute inset-0 opacity-[0.14]"
+            style={{
+              backgroundImage:
+                'radial-gradient(currentColor 1px, transparent 1px)',
+              color: '#ffffff',
+              backgroundSize: '22px 22px',
+              backgroundPosition: '0 0, 11px 11px',
+            }}
+          ></div>
         </div>
 
         <div className="absolute inset-0 bg-black/20"></div>
@@ -850,10 +906,10 @@ export default function EventDetails() {
               <span>{rsvps.length} guests</span>
             </div>
           </div>
-          <DataTable 
-            columns={createColumns} 
-            data={rsvps} 
-            onSave={handleSave} 
+          <DataTable
+            columns={createColumns}
+            data={rsvps}
+            onSave={handleSave}
             onViewPaymentProof={handleViewPaymentProof}
           />
         </div>

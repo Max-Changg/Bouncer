@@ -48,10 +48,7 @@ export async function middleware(request: NextRequest) {
             value,
             ...options,
           });
-          const newResponse = NextResponse.next({
-            request,
-          });
-          newResponse.cookies.set({
+          response.cookies.set({
             name,
             value,
             ...options,
@@ -63,10 +60,7 @@ export async function middleware(request: NextRequest) {
             value: '',
             ...options,
           });
-          const newResponse = NextResponse.next({
-            request,
-          });
-          newResponse.cookies.set({
+          response.cookies.set({
             name,
             value: '',
             ...options,
@@ -76,9 +70,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // Try to refresh the session if it exists but might be expired
   const {
     data: { session },
+    error: sessionError,
   } = await supabase.auth.getSession();
+
+  // If there's a session error (like invalid refresh token), clear the session
+  if (sessionError) {
+    console.log('Middleware - session error, clearing session:', sessionError.message);
+    await supabase.auth.signOut();
+  }
 
   console.log('Middleware - pathname:', pathname, 'session:', !!session);
 
