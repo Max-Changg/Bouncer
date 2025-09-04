@@ -9,7 +9,12 @@ import { EyeIcon } from '@heroicons/react/24/outline';
 export const createColumns = (
   onVerificationChange?: (id: string, verified: boolean) => void,
   onViewPaymentProof?: (imageUrl: string, guestName: string) => void
-): ColumnDef<Database['public']['Tables']['rsvps']['Row']>[] => [
+): ColumnDef<
+  Database['public']['Tables']['rsvps']['Row'] & {
+    ticket_name?: string;
+    ticket_price?: number;
+  }
+>[] => [
   {
     id: 'select',
     header: ({ table }) => (
@@ -38,13 +43,36 @@ export const createColumns = (
     header: 'Email',
   },
   {
+    accessorKey: 'ticket_name',
+    header: 'Ticket Type',
+    cell: ({ row }) => {
+      const ticketName = row.original.ticket_name;
+      return <span className="text-gray-300">{ticketName || 'Unknown'}</span>;
+    },
+  },
+  {
+    accessorKey: 'ticket_price',
+    header: 'Amount Owed',
+    cell: ({ row }) => {
+      const ticketPrice = row.original.ticket_price;
+      return (
+        <span className="text-green-400 font-medium">
+          {ticketPrice != null ? `$${ticketPrice.toFixed(2)}` : '$0.00'}
+        </span>
+      );
+    },
+  },
+  {
     accessorKey: 'payment_status',
     header: 'Payment Status',
   },
   {
     accessorKey: 'amount_paid',
     header: 'Amount Paid',
-    cell: ({ row }) => row.original.amount_paid != null ? `$${row.original.amount_paid.toFixed(2)}` : '-',
+    cell: ({ row }) =>
+      row.original.amount_paid != null
+        ? `$${row.original.amount_paid.toFixed(2)}`
+        : '-',
   },
   {
     id: 'payment_proof',
@@ -59,7 +87,10 @@ export const createColumns = (
           size="sm"
           onClick={() => {
             if (onViewPaymentProof) {
-              onViewPaymentProof(row.original.payment_proof_url!, row.original.name);
+              onViewPaymentProof(
+                row.original.payment_proof_url!,
+                row.original.name
+              );
             }
           }}
           className="bg-blue-800/20 border-blue-500/50 text-blue-300 hover:bg-blue-800/40 hover:text-white flex items-center space-x-1"
@@ -84,7 +115,7 @@ export const createColumns = (
       <div className="flex items-center justify-center">
         <Checkbox
           checked={row.original.is_approved}
-          onCheckedChange={(value) => {
+          onCheckedChange={value => {
             if (onVerificationChange) {
               onVerificationChange(row.original.id, !!value);
             }
