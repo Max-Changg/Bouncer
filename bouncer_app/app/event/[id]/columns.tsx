@@ -3,12 +3,77 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Database } from '@/lib/database.types';
 import { EyeIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
+
+// Component for editable amount input
+const EditableAmountInput = ({
+  initialValue,
+  onAmountChange,
+  rsvpId,
+}: {
+  initialValue: number | null;
+  onAmountChange?: (id: string, amount: number) => void;
+  rsvpId: string;
+}) => {
+  const [value, setValue] = useState(initialValue?.toString() || '');
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    const numericValue = parseFloat(value) || 0;
+    if (onAmountChange) {
+      onAmountChange(rsvpId, numericValue);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    }
+    if (e.key === 'Escape') {
+      setValue(initialValue?.toString() || '');
+      setIsEditing(false);
+    }
+  };
+
+  const formatDisplayValue = (val: string) => {
+    const num = parseFloat(val);
+    return isNaN(num) ? '$0.00' : `$${num.toFixed(2)}`;
+  };
+
+  if (isEditing) {
+    return (
+      <Input
+        type="number"
+        step="0.01"
+        min="0"
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        className="w-20 h-8 text-sm bg-gray-700 border-gray-600 text-white"
+        autoFocus
+      />
+    );
+  }
+
+  return (
+    <span
+      className="text-green-400 font-medium cursor-pointer hover:text-green-300 transition-colors"
+      onClick={() => setIsEditing(true)}
+    >
+      {formatDisplayValue(value)}
+    </span>
+  );
+};
 
 export const createColumns = (
   onVerificationChange?: (id: string, verified: boolean) => void,
-  onViewPaymentProof?: (imageUrl: string, guestName: string) => void
+  onViewPaymentProof?: (imageUrl: string, guestName: string) => void,
+  onAmountPaidChange?: (id: string, amount: number) => void
 ): ColumnDef<
   Database['public']['Tables']['rsvps']['Row'] & {
     ticket_name?: string;
@@ -62,17 +127,17 @@ export const createColumns = (
       );
     },
   },
-  {
-    accessorKey: 'payment_status',
-    header: 'Payment Status',
-  },
+
   {
     accessorKey: 'amount_paid',
     header: 'Amount Paid',
-    cell: ({ row }) =>
-      row.original.amount_paid != null
-        ? `$${row.original.amount_paid.toFixed(2)}`
-        : '-',
+    cell: ({ row }) => (
+      <EditableAmountInput
+        initialValue={row.original.amount_paid}
+        onAmountChange={onAmountPaidChange}
+        rsvpId={row.original.id}
+      />
+    ),
   },
   {
     id: 'payment_proof',

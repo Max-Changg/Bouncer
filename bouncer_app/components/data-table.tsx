@@ -21,10 +21,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Database } from '@/lib/database.types';
 
 interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[] | ((onVerificationChange: (id: string, verified: boolean) => void, onViewPaymentProof?: (imageUrl: string, guestName: string) => void) => ColumnDef<TData, TValue>[]);
+  columns:
+    | ColumnDef<TData, TValue>[]
+    | ((
+        onVerificationChange: (id: string, verified: boolean) => void,
+        onViewPaymentProof?: (imageUrl: string, guestName: string) => void,
+        onAmountPaidChange?: (id: string, amount: number) => void
+      ) => ColumnDef<TData, TValue>[]);
   data: TData[];
   onSave: (updatedData: TData[]) => Promise<void> | void;
   onViewPaymentProof?: (imageUrl: string, guestName: string) => void;
+  onAmountPaidChange?: (id: string, amount: number) => void;
 }
 
 export function DataTable<
@@ -33,7 +40,13 @@ export function DataTable<
     is_approved: boolean;
   },
   TValue,
->({ columns, data, onSave, onViewPaymentProof }: DataTableProps<TData, TValue>) {
+>({
+  columns,
+  data,
+  onSave,
+  onViewPaymentProof,
+  onAmountPaidChange,
+}: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = useState({});
   const [tableData, setTableData] = useState(data);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,19 +57,22 @@ export function DataTable<
   }, [data]);
 
   const handleVerificationChange = (id: string, verified: boolean) => {
-    setTableData(prevData => 
-      prevData.map(item => 
-        item.id === id 
-          ? { ...item, is_approved: verified } as TData
-          : item
+    setTableData(prevData =>
+      prevData.map(item =>
+        item.id === id ? ({ ...item, is_approved: verified } as TData) : item
       )
     );
   };
 
   // Handle both static columns and column factory functions
-  const resolvedColumns = typeof columns === 'function' 
-    ? columns(handleVerificationChange, onViewPaymentProof) 
-    : columns;
+  const resolvedColumns =
+    typeof columns === 'function'
+      ? columns(
+          handleVerificationChange,
+          onViewPaymentProof,
+          onAmountPaidChange
+        )
+      : columns;
 
   const table = useReactTable({
     data: tableData,
@@ -84,10 +100,16 @@ export function DataTable<
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id} className="border-gray-700/50 bg-gray-800/50">
+              <TableRow
+                key={headerGroup.id}
+                className="border-gray-700/50 bg-gray-800/50"
+              >
                 {headerGroup.headers.map(header => {
                   return (
-                    <TableHead key={header.id} className="text-gray-300 font-semibold">
+                    <TableHead
+                      key={header.id}
+                      className="text-gray-300 font-semibold"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -133,9 +155,10 @@ export function DataTable<
       </div>
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-400">
-          Click checkboxes to verify RSVPs, then save changes to update the database.
+          Click checkboxes to verify RSVPs, then save changes to update the
+          database.
         </div>
-        <Button 
+        <Button
           onClick={handleSave}
           disabled={isSaving}
           className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"

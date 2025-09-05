@@ -380,6 +380,18 @@ export default function EventDetails() {
     }
   };
 
+  // Handler for amount paid changes
+  const handleAmountPaidChange = useCallback(
+    (rsvpId: string, amount: number) => {
+      setRsvps(prevRsvps =>
+        prevRsvps.map(rsvp =>
+          rsvp.id === rsvpId ? { ...rsvp, amount_paid: amount } : rsvp
+        )
+      );
+    },
+    []
+  );
+
   const handleSave = async (
     updatedRsvps: (Database['public']['Tables']['rsvps']['Row'] & {
       ticket_name?: string;
@@ -911,6 +923,7 @@ export default function EventDetails() {
             data={rsvps}
             onSave={handleSave}
             onViewPaymentProof={handleViewPaymentProof}
+            onAmountPaidChange={handleAmountPaidChange}
           />
         </div>
       </div>
