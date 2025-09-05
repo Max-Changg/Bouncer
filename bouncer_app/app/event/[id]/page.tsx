@@ -24,6 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Scanner from '@/components/scanner';
 import PaymentProofModal from '@/components/payment-proof-modal';
+import EmailModal from '@/components/email-modal';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -68,6 +69,11 @@ export default function EventDetails() {
     isOpen: false,
     imageUrl: '',
     guestName: '',
+  });
+  const [emailModal, setEmailModal] = useState<{
+    isOpen: boolean;
+  }>({
+    isOpen: false,
   });
   const router = useRouter();
   const params = useParams();
@@ -449,6 +455,50 @@ export default function EventDetails() {
     });
   };
 
+  const handleOpenEmailModal = () => {
+    setEmailModal({ isOpen: true });
+  };
+
+  const handleCloseEmailModal = () => {
+    setEmailModal({ isOpen: false });
+  };
+
+  const handleSendEmails = async (recipients: string[], message: string) => {
+    // For now, we'll use a simple mailto approach
+    // In a production app, you'd want to implement a proper email service
+    try {
+      // Create a mailto link for each recipient
+      const subject = encodeURIComponent(`Update from ${event?.name || 'Event'}`);
+      const body = encodeURIComponent(message);
+      
+      // For multiple recipients, we'll open multiple mailto windows
+      // This is a simple client-side approach - in production you'd use a backend email service
+      recipients.forEach((email, index) => {
+        setTimeout(() => {
+          window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+        }, index * 100); // Small delay between opens to prevent browser blocking
+      });
+
+      // Show success message
+      const successMessage = document.createElement('div');
+      successMessage.className =
+        'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
+      successMessage.textContent = `Email composer opened for ${recipients.length} recipients`;
+      document.body.appendChild(successMessage);
+
+      // Remove the notification after 4 seconds
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
+      }, 4000);
+
+    } catch (error) {
+      console.error('Failed to send emails:', error);
+      throw new Error('Failed to send emails');
+    }
+  };
+
   const parseZelleFile = async (file: File) => {
     const text = await file.text();
     const lines = text.split('\n');
@@ -796,7 +846,7 @@ export default function EventDetails() {
                   className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200"
                 >
                   <ShareIcon className="w-4 h-4 mr-2" />
-                  Share Link
+                  Invite Guests
                 </Button>
                 <Button
                   onClick={() => setShowScanner(true)}
@@ -924,6 +974,7 @@ export default function EventDetails() {
             onSave={handleSave}
             onViewPaymentProof={handleViewPaymentProof}
             onAmountPaidChange={handleAmountPaidChange}
+            onSendEmails={handleOpenEmailModal}
           />
         </div>
       </div>
@@ -990,6 +1041,14 @@ export default function EventDetails() {
         onClose={handleClosePaymentProof}
         imageUrl={paymentProofModal.imageUrl}
         guestName={paymentProofModal.guestName}
+      />
+
+      {/* Email Modal */}
+      <EmailModal
+        isOpen={emailModal.isOpen}
+        onClose={handleCloseEmailModal}
+        rsvps={rsvps}
+        onSendEmails={handleSendEmails}
       />
 
       <Footer />

@@ -60,26 +60,26 @@ export default function Event() {
   );
 
   // Add deleteAllEvents function
-  const deleteAllEvents = async () => {
-    if (!session) return;
-    setDeleting(true);
-    setError(null);
-    try {
-      const { error } = await supabase
-        .from('Events')
-        .delete()
-        .eq('user_id', session.id);
-      if (error) {
-        setError('Failed to delete events: ' + error.message);
-      } else {
-        setEvents([]);
-      }
-    } catch (err) {
-      setError('Failed to delete events.');
-    } finally {
-      setDeleting(false);
-    }
-  };
+  // const deleteAllEvents = async () => {
+  //   if (!session) return;
+  //   setDeleting(true);
+  //   setError(null);
+  //   try {
+  //     const { error } = await supabase
+  //       .from('Events')
+  //       .delete()
+  //       .eq('user_id', session.id);
+  //     if (error) {
+  //       setError('Failed to delete events: ' + error.message);
+  //     } else {
+  //       setEvents([]);
+  //     }
+  //   } catch (err) {
+  //     setError('Failed to delete events.');
+  //   } finally {
+  //     setDeleting(false);
+  //   }
+  // };
 
   useEffect(() => {
     const {
@@ -246,7 +246,7 @@ export default function Event() {
             </div>
 
             {/* Delete All Button */}
-            {events.length > 0 && (
+            {/* {events.length > 0 && (
               <Button
                 onClick={deleteAllEvents}
                 variant="destructive"
@@ -255,7 +255,7 @@ export default function Event() {
               >
                 {deleting ? 'Deleting...' : 'Delete All Events'}
               </Button>
-            )}
+            )} */}
           </div>
         </div>
 

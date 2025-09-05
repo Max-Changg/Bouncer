@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Database } from '@/lib/database.types';
+import { EnvelopeIcon } from '@heroicons/react/24/outline';
 
 interface DataTableProps<TData, TValue> {
   columns:
@@ -32,6 +33,7 @@ interface DataTableProps<TData, TValue> {
   onSave: (updatedData: TData[]) => Promise<void> | void;
   onViewPaymentProof?: (imageUrl: string, guestName: string) => void;
   onAmountPaidChange?: (id: string, amount: number) => void;
+  onSendEmails?: () => void;
 }
 
 export function DataTable<
@@ -46,6 +48,7 @@ export function DataTable<
   onSave,
   onViewPaymentProof,
   onAmountPaidChange,
+  onSendEmails,
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = useState({});
   const [tableData, setTableData] = useState(data);
@@ -158,20 +161,32 @@ export function DataTable<
           Click checkboxes to verify RSVPs, then save changes to update the
           database.
         </div>
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSaving ? (
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Saving...</span>
-            </div>
-          ) : (
-            'Save Changes'
+        <div className="flex items-center gap-3">
+          {onSendEmails && (
+            <Button
+              onClick={onSendEmails}
+              variant="outline"
+              className="bg-purple-800/20 border-purple-500/50 text-purple-300 hover:bg-purple-800/40 hover:text-white shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+            >
+              <EnvelopeIcon className="w-4 h-4 mr-2" />
+              Send Email to Guests
+            </Button>
           )}
-        </Button>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSaving ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Saving...</span>
+              </div>
+            ) : (
+              'Save Changes'
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );
