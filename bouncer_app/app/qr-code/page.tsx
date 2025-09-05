@@ -158,7 +158,7 @@ export default function QRCodePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden flex flex-col">
       {/* Neon arcs & dotted grid */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-24 right-[-120px] w-[520px] h-[520px] rounded-full bg-purple-700/25 blur-3xl mix-blend-screen"></div>
@@ -178,28 +178,30 @@ export default function QRCodePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-6 py-12 sm:px-8 lg:px-12">
-        <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-          Your QR Code
-        </h1>
+      <div className="flex-1">
+        <div className="relative max-w-7xl mx-auto px-6 pb-16 sm:px-8 lg:px-12">
+          <h1 className="text-5xl font-bold mb-12 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+            Your QR Code
+          </h1>
 
-        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-6 sm:p-8">
-          {qrCodeData ? (
-            <div className="flex flex-col items-center">
-              <div ref={qrContainerRef} className="p-4 bg-white rounded-xl">
-                <QRCode value={qrCodeData} size={256} level="H" title="Event QR Code" />
+          <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-6 sm:p-8">
+            {qrCodeData ? (
+              <div className="flex flex-col items-center">
+                <div ref={qrContainerRef} className="p-4 bg-white rounded-xl">
+                  <QRCode value={qrCodeData} size={256} level="H" title="Event QR Code" />
+                </div>
+                <p className="mt-4 text-gray-300">Scan this code at the event entrance.</p>
+                <div className="mt-6">
+                  <Button onClick={handleDownloadQr} className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/40 transition-all duration-200">
+                    <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
+                    Download QR Code
+                  </Button>
+                </div>
               </div>
-              <p className="mt-4 text-gray-300">Scan this code at the event entrance.</p>
-              <div className="mt-6">
-                <Button onClick={handleDownloadQr} className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/40 transition-all duration-200">
-                  <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
-                  Download QR Code
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-300">No QR code available.</p>
-          )}
+            ) : (
+              <p className="text-gray-300">No QR code available.</p>
+            )}
+          </div>
         </div>
       </div>
       <Footer />

@@ -60,7 +60,7 @@ export default function MyRsvps() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden flex flex-col">
       {/* Neon orbs background (unique, no light beams) */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full bg-purple-700/30 blur-3xl mix-blend-screen"></div>
@@ -82,20 +82,22 @@ export default function MyRsvps() {
         <Header />
       </div>
 
-      {/* Hero section */}
-      <div className="relative z-10 px-6 py-12 sm:px-8 lg:px-12">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-            My RSVPs
-          </h1>
-          <p className="text-lg text-gray-300 max-w-2xl">
-            Track the parties you&apos;re in for. Confirmed, pending, and everything in between.
-          </p>
+      {/* Main content area that grows to push footer down */}
+      <div className="flex-1">
+        {/* Hero section */}
+        <div className="relative z-10 px-6 py-12 sm:px-8 lg:px-12">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+              My RSVPs
+            </h1>
+            <p className="text-lg text-gray-300 max-w-2xl">
+              Track the parties you&apos;re in for. Confirmed, pending, and everything in between.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Content card */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 pb-16 sm:px-8 lg:px-12">
+        {/* Content card */}
+        <div className="relative max-w-7xl mx-auto px-6 pb-16 sm:px-8 lg:px-12">
         <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-6 sm:p-8">
           {loading ? (
             <div className="text-gray-300">Loading...</div>
@@ -153,6 +155,7 @@ export default function MyRsvps() {
               </table>
             </div>
           )}
+        </div>
         </div>
       </div>
       <Footer />
