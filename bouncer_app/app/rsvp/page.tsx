@@ -1,8 +1,8 @@
-export const dynamic = 'force-dynamic'
-
 'use client';
 
-import { useState, useEffect } from 'react';
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import type { Session, User } from '@supabase/supabase-js';
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import type { Database } from '@/lib/database.types';
 import { formatISO, isAfter } from 'date-fns';
 
-export default function Rsvp() {
+function RsvpContent() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
@@ -640,5 +640,23 @@ export default function Rsvp() {
       </div>
       <Footer />
     </div>
+  );
+}
+
+export default function Rsvp() {
+  return (
+    <Suspense fallback={
+      <div>
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center">
+            <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    }>
+      <RsvpContent />
+    </Suspense>
   );
 }

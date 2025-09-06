@@ -3,7 +3,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 // Using native anchors for consistent full navigations through middleware
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -15,7 +15,7 @@ import {
 import type { Database } from '@/lib/database.types';
 import type { User } from '@supabase/supabase-js';
 
-export default function Header() {
+function HeaderContent() {
   const [session, setSession] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
   // Dropdown handled by shadcn menu
@@ -182,5 +182,25 @@ export default function Header() {
         </nav>
       </header>
     </div>
+  );
+}
+
+export default function Header() {
+  return (
+    <Suspense fallback={
+      <div className="bg-white shadow-sm">
+        <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <h1 className="text-xl font-bold text-gray-900">Bouncer</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+      </div>
+    }>
+      <HeaderContent />
+    </Suspense>
   );
 }

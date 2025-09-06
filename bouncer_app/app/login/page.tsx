@@ -1,15 +1,15 @@
-export const dynamic = 'force-dynamic'
-
 'use client';
+
+export const dynamic = 'force-dynamic'
 
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import type { Database } from '@/lib/database.types';
 import { createClient } from '@/lib/supabase-browser-client';
 
-export default function Login() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
   const next = searchParams.get('next') || '/event';
@@ -86,5 +86,22 @@ export default function Login() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
+          <h2 className="text-center text-2xl font-bold">Sign in to Bouncer</h2>
+          <div className="flex justify-center">
+            <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
