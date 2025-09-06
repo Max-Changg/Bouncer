@@ -133,7 +133,7 @@ export const createColumns = (
     header: 'Amount Paid',
     cell: ({ row }) => (
       <EditableAmountInput
-        initialValue={row.original.amount_paid}
+        initialValue={row.original.amount_paid ?? null}
         onAmountChange={onAmountPaidChange}
         rsvpId={row.original.id}
       />
