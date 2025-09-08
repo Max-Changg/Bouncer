@@ -9,13 +9,13 @@ export default function Footer() {
   const [email, setEmail] = useState('');
   const year = new Date().getFullYear();
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    // Simple client-only placeholder action. Replace with your newsletter backend when ready.
-    window.open(`mailto:hello@bouncer.app?subject=Subscribe&body=${encodeURIComponent(email)}`);
-    setEmail('');
-  };
+  // const handleSubscribe = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!email) return;
+  //   // Simple client-only placeholder action. Replace with your newsletter backend when ready.
+  //   window.open(`mailto:hello@bouncer.app?subject=Subscribe&body=${encodeURIComponent(email)}`);
+  //   setEmail('');
+  // };
 
   return (
     <footer className="relative mt-20 border-t border-white/10 bg-black/40 text-white">
@@ -89,7 +89,7 @@ export default function Footer() {
           </div>
 
           {/* Newsletter */}
-          <div className="md:col-span-1">
+          {/* <div className="md:col-span-1">
             <h4 className="mb-3 text-sm font-semibold tracking-wide text-white/80">Get updates</h4>
             <p className="mb-3 text-sm text-white/70">No spam. Party news only.</p>
             <form onSubmit={handleSubscribe} className="flex gap-2">
@@ -106,7 +106,7 @@ export default function Footer() {
                 Subscribe
               </Button>
             </form>
-          </div>
+          </div> */}
         </div>
 
         {/* Bottom bar */}

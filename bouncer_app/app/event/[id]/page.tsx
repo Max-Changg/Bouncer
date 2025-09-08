@@ -466,26 +466,80 @@ export default function EventDetails() {
   };
 
   const handleSendEmails = async (recipients: string[], message: string) => {
-    // For now, we'll use a simple mailto approach
-    // In a production app, you'd want to implement a proper email service
     try {
-      // Create a mailto link for each recipient
-      const subject = encodeURIComponent(`Update from ${event?.name || 'Event'}`);
-      const body = encodeURIComponent(message);
-      
-      // For multiple recipients, we'll open multiple mailto windows
-      // This is a simple client-side approach - in production you'd use a backend email service
-      recipients.forEach((email, index) => {
-        setTimeout(() => {
-          window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
-        }, index * 100); // Small delay between opens to prevent browser blocking
+      // Check if user has Gmail connected first
+      const checkResponse = await fetch('/api/send-emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recipients,
+          message,
+          eventName: event?.name,
+          userId: auth.user?.id,
+        }),
       });
 
-      // Show success message
+      const result = await checkResponse.json();
+
+      // Handle Gmail authentication required
+      if (!checkResponse.ok && (checkResponse.status === 401 || checkResponse.status === 404)) {
+        if (result.error.includes('authenticate with Gmail') || result.error.includes('Gmail not connected')) {
+          // Show Gmail connection prompt
+          const confirmConnect = confirm(
+            'To send emails from your Gmail account, you need to connect Gmail first. Would you like to connect now?'
+          );
+          
+          if (confirmConnect) {
+            // Get Gmail auth URL
+            const authResponse = await fetch(`/api/auth/gmail?userId=${auth.user?.id}`);
+            const authResult = await authResponse.json();
+            
+            if (authResponse.ok && authResult.authUrl) {
+              // Open Gmail OAuth in new window
+              window.open(authResult.authUrl, 'gmail-auth', 'width=500,height=600');
+              
+              // Show message to user
+              const infoMessage = document.createElement('div');
+              infoMessage.className =
+                'fixed top-4 right-4 bg-blue-800/90 text-blue-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-blue-600/50';
+              infoMessage.textContent = 'Please complete Gmail authentication in the popup window, then try sending emails again.';
+              document.body.appendChild(infoMessage);
+
+              setTimeout(() => {
+                if (document.body.contains(infoMessage)) {
+                  document.body.removeChild(infoMessage);
+                }
+              }, 6000);
+              
+              return; // Don't throw error, just return
+            } else {
+              throw new Error('Failed to get Gmail authentication URL');
+            }
+          } else {
+            return; // User cancelled, don't throw error
+          }
+        } else {
+          throw new Error(result.error || 'Failed to send emails');
+        }
+      } else if (!checkResponse.ok) {
+        throw new Error(result.error || 'Failed to send emails');
+      }
+
+      // Show success message with details
+      const { successful, failed } = result.results;
       const successMessage = document.createElement('div');
       successMessage.className =
         'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
-      successMessage.textContent = `Email composer opened for ${recipients.length} recipients`;
+      
+      if (failed > 0) {
+        successMessage.textContent = `Emails sent from your Gmail! ${successful} successful, ${failed} failed`;
+        console.log('Email send results:', result.results.details);
+      } else {
+        successMessage.textContent = `Successfully sent emails from your Gmail to ${successful} recipients!`;
+      }
+      
       document.body.appendChild(successMessage);
 
       // Remove the notification after 4 seconds
@@ -496,8 +550,23 @@ export default function EventDetails() {
       }, 4000);
 
     } catch (error) {
-      console.error('Failed to send emails:', error);
-      throw new Error('Failed to send emails');
+      console.error('Error sending emails:', error);
+      
+      // Show error message
+      const errorMessage = document.createElement('div');
+      errorMessage.className =
+        'fixed top-4 right-4 bg-red-800/90 text-red-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-red-600/50';
+      errorMessage.textContent = `Failed to send emails: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      document.body.appendChild(errorMessage);
+
+      // Remove the notification after 4 seconds
+      setTimeout(() => {
+        if (document.body.contains(errorMessage)) {
+          document.body.removeChild(errorMessage);
+        }
+      }, 4000);
+
+      throw error; // Re-throw so the modal can handle the error state
     }
   };
 

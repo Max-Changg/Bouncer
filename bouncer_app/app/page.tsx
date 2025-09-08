@@ -200,7 +200,7 @@ export default function Home() {
                   className="text-2xl mb-8 opacity-0 animate-fade-in-only"
                 >
                   Streamline your event management with our check-in solution
-                  designed for modern parties and events.
+                  designed for modern events.
                 </p>
               </div>
               <div
@@ -210,18 +210,6 @@ export default function Home() {
                 <ClientHome />
               </div>
             </div>
-
-            {/* Right side - QR Code Image
-            <div className="flex-1 flex justify-center -mt-2 order-1 lg:order-2">
-              <Image
-                src="/qr-code-hands.jpg"
-                alt="Two hands holding smartphones with QR codes"
-                width={600}
-                height={400}
-                className="rounded-lg shadow-lg animate-fade-in-up-delay-2"
-                priority
-              />
-            </div> */}
           </div>
         </main>
       </div>
@@ -334,7 +322,7 @@ export default function Home() {
             ref={costAdvantageRef}
           >
             <h3 className="text-2xl font-bold text-white mb-6 text-center">
-              Save Money on Every Transaction
+              Save Money on Every Ticket
             </h3>
             <div className="grid md:grid-cols-2 gap-8">
               <div>
@@ -344,11 +332,11 @@ export default function Home() {
                 <ul className="space-y-2 text-gray-300">
                   <li className="flex items-center">
                     <span className="text-red-400 mr-2">✗</span>
-                    Eventbrite: 2.9% + $0.79 per ticket
+                    Fees for every ticket sold
                   </li>
                   <li className="flex items-center">
                     <span className="text-red-400 mr-2">✗</span>
-                    RSVPify: 2.9% + $0.30 per transaction
+                    Heavy burden on event goers
                   </li>
                   <li className="flex items-center">
                     <span className="text-red-400 mr-2">✗</span>
@@ -481,7 +469,7 @@ export default function Home() {
           {/* Call to Action */}
           <div className="text-center opacity-0 transform translate-y-8 transition-all duration-800 ease-out">
             <h3 className="text-2xl font-bold text-white mb-6">
-              Ready to Streamline Your Events?
+              Ready to Start?
             </h3>
             {/* <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
               Join thousands of event organizers who trust Bouncer to make their
@@ -498,17 +486,7 @@ export default function Home() {
               >
                 <Link href="/create-event">Create Your First Event</Link>
               </Button>
-              <Button
-                style={{
-                  backgroundColor: 'transparent',
-                  color: 'white',
-                  border: '1px solid #A259FF',
-                }}
-                className="hover:bg-[#A259FF]/10 font-mono hover:animate-grow"
-                variant="outline"
-              >
-                <Link href="/event">View Demo Events</Link>
-              </Button>
+
             </div>
           </div>
         </div>
