@@ -98,7 +98,7 @@ function HeaderContent() {
         pathname +
         (searchParams.toString() ? `?${searchParams.toString()}` : '');
     }
-    router.push(`/login?next=${encodeURIComponent(currentUrl)}`);
+    router.push(`/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`);
   };
 
   return (

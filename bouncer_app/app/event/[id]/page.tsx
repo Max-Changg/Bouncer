@@ -284,7 +284,7 @@ export default function EventDetails() {
           isAuthorized: false,
         });
         router.replace(
-          `/login?next=${encodeURIComponent(`/event/${eventId}`)}`
+          `/api/auth/direct-google?next=${encodeURIComponent(`/event/${eventId}`)}`
         );
         return;
       }

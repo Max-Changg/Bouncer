@@ -89,7 +89,7 @@ export default function Event() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session?.user ?? null);
       if (!session) {
-        router.push('/login');
+        router.push('/api/auth/direct-google');
       }
     });
 
@@ -97,7 +97,7 @@ export default function Event() {
       if (session) {
         setSession(session.user);
       } else {
-        router.push('/login');
+        router.push('/api/auth/direct-google');
       }
     });
 

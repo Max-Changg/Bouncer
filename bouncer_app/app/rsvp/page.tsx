@@ -342,14 +342,14 @@ function RsvpContent() {
                   const eventIdForRedirect = eventIdParam || eventId || '';
                   const currentUrl = `/rsvp?event_id=${eventIdForRedirect}`;
                   console.log('Sign In button clicked, redirecting to:', `/login?next=${encodeURIComponent(currentUrl)}`);
-                  router.push(`/login?next=${encodeURIComponent(currentUrl)}`);
+                  router.push(`/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`);
                 }}
                 className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
               >
                 Sign In
               </Button>
               <a
-                href={`/login?next=${encodeURIComponent(`/rsvp?event_id=${eventIdParam || eventId || ''}`)}`}
+                href={`/api/auth/direct-google?next=${encodeURIComponent(`/rsvp?event_id=${eventIdParam || eventId || ''}`)}`}
                 className="ml-4 text-blue-600 underline"
               >
                 Or click here to sign in
