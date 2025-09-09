@@ -648,9 +648,25 @@ function RsvpContent() {
               </div>
               <Button
                 onClick={async () => {
-                  await supabase.auth.signOut();
-                  const currentUrl = `/rsvp?event_id=${eventId || ''}`;
-                  router.push(`/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`);
+                  try {
+                    // Sign out and clear all session data
+                    await supabase.auth.signOut({ scope: 'global' });
+                    
+                    // Clear any cached authentication state
+                    setSession(null);
+                    setEmail('');
+                    
+                    // Small delay to ensure cleanup
+                    setTimeout(() => {
+                      const currentUrl = `/rsvp?event_id=${eventId || ''}`;
+                      window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
+                    }, 100);
+                  } catch (error) {
+                    console.error('Error during sign out:', error);
+                    // Fallback: force redirect anyway
+                    const currentUrl = `/rsvp?event_id=${eventId || ''}`;
+                    window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
+                  }
                 }}
                 variant="outline"
                 size="sm"

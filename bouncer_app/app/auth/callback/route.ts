@@ -20,8 +20,16 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('OAuth error:', error, errorDescription);
+    
+    // Handle PKCE errors by redirecting back to direct Google auth
+    if (error === 'access_denied' || errorDescription?.includes('code_challenge')) {
+      console.log('PKCE or access denied error, redirecting back to Google auth with next param');
+      return NextResponse.redirect(`${origin}/api/auth/direct-google?next=${encodeURIComponent(next)}`);
+    }
+    
+    // For other errors, redirect to home page with error
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(`${error}: ${errorDescription || 'Unknown error'}`)}`
+      `${origin}/?error=${encodeURIComponent(`Authentication failed: ${error}`)}`
     );
   }
 
@@ -94,7 +102,7 @@ export async function GET(request: NextRequest) {
         }
         
         return NextResponse.redirect(
-          `${origin}/login?error=${encodeURIComponent(`Exchange failed: ${exchangeError.message}`)}`
+          `${origin}/api/auth/direct-google?next=${encodeURIComponent(next)}`
         );
       }
 
@@ -106,20 +114,20 @@ export async function GET(request: NextRequest) {
       } else {
         console.error('Code exchange succeeded but no session returned');
         return NextResponse.redirect(
-          `${origin}/login?error=${encodeURIComponent('Authentication succeeded but no session created')}`
+          `${origin}/?error=${encodeURIComponent('Authentication succeeded but no session created')}`
         );
       }
     } catch (err) {
       console.error('Unexpected error during code exchange:', err);
       return NextResponse.redirect(
-        `${origin}/login?error=${encodeURIComponent('Unexpected authentication error')}`
+        `${origin}/?error=${encodeURIComponent('Unexpected authentication error')}`
       );
     }
   }
 
-  // No code or error - redirect back to login with error
+  // No code or error - redirect back to Google auth
   console.error('Auth callback - no code received');
   return NextResponse.redirect(
-    `${origin}/login?error=${encodeURIComponent('No authorization code received')}`
+    `${origin}/api/auth/direct-google?next=${encodeURIComponent(next)}`
   );
 }
