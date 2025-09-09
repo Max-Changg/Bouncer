@@ -94,19 +94,37 @@ function HeaderContent() {
   };
 
   const handleSignInDifferent = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setProfile(null);
-    // Redirect to direct Google auth with next param set to current page
-    let currentUrl = pathname;
-    if (typeof window !== 'undefined') {
-      currentUrl = window.location.pathname + window.location.search;
-    } else if (searchParams) {
-      currentUrl =
-        pathname +
-        (searchParams.toString() ? `?${searchParams.toString()}` : '');
+    try {
+      // Sign out and clear all session data
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Clear any cached authentication state
+      setSession(null);
+      setProfile(null);
+      
+      // Get current URL for redirect
+      let currentUrl = pathname;
+      if (typeof window !== 'undefined') {
+        currentUrl = window.location.pathname + window.location.search;
+      } else if (searchParams) {
+        currentUrl =
+          pathname +
+          (searchParams.toString() ? `?${searchParams.toString()}` : '');
+      }
+      
+      // Small delay to ensure cleanup, then force redirect
+      setTimeout(() => {
+        window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
+      }, 100);
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      // Fallback: force redirect anyway
+      let currentUrl = pathname;
+      if (typeof window !== 'undefined') {
+        currentUrl = window.location.pathname + window.location.search;
+      }
+      window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
     }
-    router.push(`/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`);
   };
 
   return (
