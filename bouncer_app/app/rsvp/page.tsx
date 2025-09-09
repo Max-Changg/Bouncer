@@ -9,6 +9,8 @@ import type { Session, User } from '@supabase/supabase-js';
 import Header from '@/components/header';
 import Footer from '@/components/footer';
 import { Button } from '@/components/ui/button';
+import QRCode from 'react-qr-code';
+import { ArrowDownTrayIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 import type { Database } from '@/lib/database.types';
 import { formatISO, isAfter } from 'date-fns';
@@ -31,6 +33,61 @@ function RsvpContent() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [selectedTicketType, setSelectedTicketType] = useState<any | null>(null);
   const [paymentImage, setPaymentImage] = useState<File | null>(null);
+  const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+
+  // QR code download functionality
+  const handleDownloadQr = async () => {
+    try {
+      const qrContainer = document.querySelector('.qr-code-container svg');
+      if (!qrContainer) return;
+
+      // Serialize SVG
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(qrContainer as SVGElement);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      // Draw onto canvas for PNG export
+      const image = new Image();
+      const scale = 4; // improve resolution
+      const canvas = document.createElement('canvas');
+      canvas.width = 256 * scale;
+      canvas.height = 256 * scale;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      image.onload = () => {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+
+        const pngUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = pngUrl;
+        link.download = 'bouncer-qr-code.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      image.onerror = () => {
+        // Fallback: download SVG directly
+        const fallbackLink = document.createElement('a');
+        fallbackLink.href = url;
+        fallbackLink.download = 'bouncer-qr-code.svg';
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        document.body.removeChild(fallbackLink);
+        URL.revokeObjectURL(url);
+      };
+
+      image.src = url;
+    } catch (e) {
+      console.error('Failed to download QR code', e);
+    }
+  };
 
   // Extract payment info block from additional_info (if present)
   const PAYMENT_SECTION_REGEX = /\n\nPayment Information:\n[\s\S]*$/i;
@@ -192,11 +249,41 @@ function RsvpContent() {
     };
   }, [supabase, searchParams]);
 
+  // Fetch QR code data for the user
+  const fetchQRCodeData = async (userId: string) => {
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('qr_code_data')
+      .eq('id', userId)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Error fetching profile:', profileError);
+    } else if (profileData && profileData.qr_code_data) {
+      setQrCodeData(profileData.qr_code_data);
+    } else {
+      // Create new QR code data if it doesn't exist
+      const newQrCodeData = userId;
+      setQrCodeData(newQrCodeData);
+      await supabase.from('profiles').upsert(
+        {
+          id: userId,
+          qr_code_data: newQrCodeData,
+        },
+        {
+          onConflict: 'id',
+        }
+      );
+    }
+  };
+
   // Fetch event details when session becomes available
   useEffect(() => {
     if (session && eventId && !event && !eventLoading) {
       console.log('Session available, fetching event details for ID:', eventId);
       fetchEventDetails(eventId);
+      // Also fetch QR code data
+      fetchQRCodeData(session.id);
     }
   }, [session, eventId, event, eventLoading]);
 
@@ -234,7 +321,7 @@ function RsvpContent() {
     }
 
     if (existingRsvp) {
-      setError('You have already RSVP\'d to this event. Please check your events page.');
+      setError('You have already RSVP\'d to this event. Please check the "my rsvps" page.');
       return;
     }
     
@@ -302,10 +389,14 @@ function RsvpContent() {
       return;
     }
 
-    // If RSVP was successful, update ticket quantity
-    // Note: We don't decrement here since we're tracking via RSVP count
+    // If RSVP was successful, show success state
     console.log('RSVP submitted successfully:', data);
-    router.push('/event');
+    setRsvpSubmitted(true);
+    
+    // Fetch QR code data if not already loaded
+    if (session && !qrCodeData) {
+      await fetchQRCodeData(session.id);
+    }
   };
 
   if (loading) {
@@ -483,8 +574,69 @@ function RsvpContent() {
             </div>
           </div>
 
-          {/* RSVP form */}
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          {/* Success state or RSVP form */}
+          {rsvpSubmitted ? (
+            // Success State
+            <div className="text-center space-y-6">
+              <div className="flex justify-center">
+                <CheckCircleIcon className="w-16 h-16 text-green-400" />
+              </div>
+              
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">RSVP Submitted Successfully!</h3>
+                <p className="text-gray-300">You're all set! We'll see you at the event.</p>
+              </div>
+
+              {/* QR Code Section */}
+              {qrCodeData && (
+                <div className="bg-gray-700/30 rounded-2xl p-6">
+                  <h4 className="text-lg font-semibold text-white mb-4">Your Check-in QR Code</h4>
+                  <div className="flex justify-center mb-4">
+                    <div className="qr-code-container p-4 bg-white rounded-xl">
+                      <QRCode value={qrCodeData} size={200} level="H" title="Event QR Code" />
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Use this QR code to check in at the event. Save it to your phone or download it below.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={handleDownloadQr}
+                      className="w-full bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/40 transition-all duration-200"
+                    >
+                      <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
+                      Download QR Code
+                    </Button>
+                    
+                    <p className="text-xs text-gray-500">
+                      💡 You can access your QR code anytime by logging in and going to your profile.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <Button
+                  onClick={() => router.push('/event')}
+                  variant="outline"
+                  className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                >
+                  View My Events
+                </Button>
+                
+                <Button
+                  onClick={() => router.push('/my-rsvps')}
+                  variant="outline"
+                  className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                >
+                  View My RSVPs
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // RSVP Form
+            <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <label htmlFor="name" className="text-sm text-gray-300">Name</label>
@@ -637,45 +789,48 @@ function RsvpContent() {
               >
                 Submit RSVP
               </Button>
-            </div>
-          </form>
-
-          {/* Account management section */}
-          <div className="mt-8 pt-6 border-t border-gray-700/50">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-400">
-                Signed in as: <span className="text-gray-200 font-medium">{session?.email}</span>
               </div>
-              <Button
-                onClick={async () => {
-                  try {
-                    // Sign out and clear all session data
-                    await supabase.auth.signOut({ scope: 'global' });
-                    
-                    // Clear any cached authentication state
-                    setSession(null);
-                    setEmail('');
-                    
-                    // Small delay to ensure cleanup
-                    setTimeout(() => {
+            </form>
+          )}
+
+          {/* Account management section - only show when not submitted */}
+          {!rsvpSubmitted && (
+            <div className="mt-8 pt-6 border-t border-gray-700/50">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-400">
+                  Signed in as: <span className="text-gray-200 font-medium">{session?.email}</span>
+                </div>
+                <Button
+                  onClick={async () => {
+                    try {
+                      // Sign out and clear all session data
+                      await supabase.auth.signOut({ scope: 'global' });
+                      
+                      // Clear any cached authentication state
+                      setSession(null);
+                      setEmail('');
+                      
+                      // Small delay to ensure cleanup
+                      setTimeout(() => {
+                        const currentUrl = `/rsvp?event_id=${eventId || ''}`;
+                        window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
+                      }, 100);
+                    } catch (error) {
+                      console.error('Error during sign out:', error);
+                      // Fallback: force redirect anyway
                       const currentUrl = `/rsvp?event_id=${eventId || ''}`;
                       window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
-                    }, 100);
-                  } catch (error) {
-                    console.error('Error during sign out:', error);
-                    // Fallback: force redirect anyway
-                    const currentUrl = `/rsvp?event_id=${eventId || ''}`;
-                    window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
-                  }
-                }}
-                variant="outline"
-                size="sm"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-              >
-                Switch Account
-              </Button>
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                >
+                  Switch Account
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       <Footer />

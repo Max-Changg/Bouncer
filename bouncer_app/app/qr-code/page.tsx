@@ -192,7 +192,7 @@ export default function QRCodePage() {
                 <div ref={qrContainerRef} className="p-4 bg-white rounded-xl">
                   <QRCode value={qrCodeData} size={256} level="H" title="Event QR Code" />
                 </div>
-                <p className="mt-4 text-gray-300">Scan this code at the event entrance.</p>
+                <p className="mt-4 text-gray-300">After rsvping and filling out necessary payments, use this QR code to check in!</p>
                 <div className="mt-6">
                   <Button onClick={handleDownloadQr} className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/40 transition-all duration-200">
                     <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
