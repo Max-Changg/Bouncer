@@ -159,7 +159,8 @@ export function DataTable<
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-400">
           Click checkboxes to verify RSVPs, then save changes to update the
-          database.
+          database. Under "Amount Paid", you can edit the value by the guest by clicking 
+          the amount. 
         </div>
         <div className="flex items-center gap-3">
           {onSendEmails && (

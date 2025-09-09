@@ -4,7 +4,10 @@ import { createClient } from '@/lib/supabase-server-client';
 
 export async function POST(request: NextRequest) {
   try {
-    const { recipients, message, eventName, userId } = await request.json();
+    console.log('Send emails API called');
+    const body = await request.json();
+    console.log('Request body:', body);
+    const { recipients, message, eventName, userId } = body;
 
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
       return NextResponse.json(
@@ -37,12 +40,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's stored Gmail tokens from Supabase
-    const supabase = createClient();
+    console.log('Fetching user profile for userId:', userId);
+    const supabase = await createClient();
     const { data: userProfile, error: profileError } = await supabase
       .from('profiles')
       .select('gmail_access_token, gmail_refresh_token, gmail_email')
       .eq('id', userId)
       .single();
+    
+    console.log('Profile query result:', { userProfile, profileError });
 
     if (profileError || !userProfile) {
       return NextResponse.json(
@@ -51,18 +57,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If no Gmail tokens, fall back to mailto approach
     if (!userProfile.gmail_access_token || !userProfile.gmail_refresh_token) {
-      return NextResponse.json(
-        { error: 'Gmail not connected. Please authenticate with Gmail first.' },
-        { status: 401 }
-      );
+      console.log('No Gmail tokens found, falling back to mailto approach');
+      return NextResponse.json({
+        success: true,
+        useMailto: true,
+        message: 'Gmail not connected. Will use mailto fallback.',
+        results: {
+          successful: recipients.length,
+          failed: 0,
+          details: recipients.map(email => ({ email, success: true, method: 'mailto' }))
+        }
+      });
     }
 
     // Set up OAuth2 client
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-`${process.env.NEXTAUTH_URL || 'https://bouncer-app.dev'}/api/auth/gmail/callback`
+`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/gmail/callback`
     );
 
     oauth2Client.setCredentials({

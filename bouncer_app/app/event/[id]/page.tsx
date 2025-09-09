@@ -81,6 +81,29 @@ export default function EventDetails() {
   const params = useParams();
   const supabase = createClient();
   const eventId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+
+  // Check for Gmail connection success
+  useEffect(() => {
+    if (searchParams.get('gmail_connected') === 'true') {
+      // Clear the URL parameter
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Show success message
+      const successMessage = document.createElement('div');
+      successMessage.className =
+        'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
+      successMessage.textContent = 'Gmail connected successfully! You can now send emails automatically.';
+      document.body.appendChild(successMessage);
+
+      setTimeout(() => {
+        if (document.body.contains(successMessage)) {
+          document.body.removeChild(successMessage);
+        }
+      }, 4000);
+    }
+  }, []);
 
   // Simple session check - like a backend getSession endpoint
   const checkSession = useCallback(async () => {
@@ -483,6 +506,67 @@ export default function EventDetails() {
 
       const result = await checkResponse.json();
 
+      // Handle mailto fallback - but ask if they want Gmail first
+      if (checkResponse.ok && result.useMailto) {
+        // Ask user if they want to connect Gmail for automatic sending
+        const connectGmail = confirm(
+          'Would you like to connect your Gmail account to send emails automatically? \n\n' +
+          'Choose "OK" to connect Gmail for automatic sending, or "Cancel" to use email drafts.'
+        );
+        
+        if (connectGmail) {
+          // Get Gmail auth URL
+          const authResponse = await fetch(`/api/auth/gmail?userId=${auth.user?.id}&eventId=${eventId}`);
+          const authResult = await authResponse.json();
+          
+          if (authResponse.ok && authResult.authUrl) {
+            // Open Gmail OAuth in new window
+            window.open(authResult.authUrl, 'gmail-auth', 'width=500,height=600');
+            
+            // Show message to user
+            const infoMessage = document.createElement('div');
+            infoMessage.className =
+              'fixed top-4 right-4 bg-blue-800/90 text-blue-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-blue-600/50';
+            infoMessage.textContent = 'Please complete Gmail authentication in the popup window, then try sending emails again.';
+            document.body.appendChild(infoMessage);
+
+            setTimeout(() => {
+              if (document.body.contains(infoMessage)) {
+                document.body.removeChild(infoMessage);
+              }
+            }, 6000);
+            
+            return; // Don't fall back to mailto, wait for user to authenticate
+          } else {
+            alert('Failed to get Gmail authentication URL. Falling back to email drafts.');
+          }
+        }
+        
+        // Fall back to mailto approach (either user chose Cancel or Gmail auth failed)
+        const subject = encodeURIComponent(`Update from ${event?.name || 'Event'}`);
+        const body = encodeURIComponent(message);
+        
+        recipients.forEach((email, index) => {
+          setTimeout(() => {
+            window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+          }, index * 100);
+        });
+        
+        const infoMessage = document.createElement('div');
+        infoMessage.className =
+          'fixed top-4 right-4 bg-blue-800/90 text-blue-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-blue-600/50';
+        infoMessage.textContent = `Opening ${recipients.length} email drafts in your default email client.`;
+        document.body.appendChild(infoMessage);
+
+        setTimeout(() => {
+          if (document.body.contains(infoMessage)) {
+            document.body.removeChild(infoMessage);
+          }
+        }, 6000);
+        
+        return;
+      }
+
       // Handle Gmail authentication required
       if (!checkResponse.ok && (checkResponse.status === 401 || checkResponse.status === 404)) {
         if (result.error.includes('authenticate with Gmail') || result.error.includes('Gmail not connected')) {
@@ -493,7 +577,7 @@ export default function EventDetails() {
           
           if (confirmConnect) {
             // Get Gmail auth URL
-            const authResponse = await fetch(`/api/auth/gmail?userId=${auth.user?.id}`);
+            const authResponse = await fetch(`/api/auth/gmail?userId=${auth.user?.id}&eventId=${eventId}`);
             const authResult = await authResponse.json();
             
             if (authResponse.ok && authResult.authUrl) {

@@ -110,7 +110,6 @@ export interface Database {
       profiles: {
         Row: {
           id: string;
-          updated_at: string;
           username: string;
           full_name: string;
           avatar_url: string;
@@ -122,7 +121,6 @@ export interface Database {
         };
         Insert: {
           id: string;
-          updated_at?: string;
           username?: string;
           full_name?: string;
           avatar_url?: string;
@@ -134,7 +132,6 @@ export interface Database {
         };
         Update: {
           id?: string;
-          updated_at?: string;
           username?: string;
           full_name?: string;
           avatar_url?: string;

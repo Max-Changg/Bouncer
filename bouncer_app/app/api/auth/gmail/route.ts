@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const eventId = searchParams.get('eventId');
 
     if (!userId) {
       return NextResponse.json(
@@ -26,14 +27,15 @@ export async function GET(request: NextRequest) {
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-`${process.env.NEXTAUTH_URL || 'https://bouncer-app.dev'}/api/auth/gmail/callback`
+`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/gmail/callback`
     );
 
     // Generate the authentication URL
+    const stateData = JSON.stringify({ userId, eventId });
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: ['https://www.googleapis.com/auth/gmail.send', 'https://www.googleapis.com/auth/userinfo.email'],
-      state: userId, // Pass userId in state to retrieve it in callback
+      state: stateData, // Pass userId and eventId in state to retrieve in callback
       prompt: 'consent' // Force consent to get refresh token
     });
 
