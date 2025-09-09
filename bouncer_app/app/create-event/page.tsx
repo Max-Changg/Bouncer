@@ -170,8 +170,8 @@ export default function CreateEvent() {
         setSession(null);
         // Only redirect on explicit sign out, not initial load
         if (event === 'SIGNED_OUT') {
-          console.log('User signed out, redirecting to login');
-          router.push('/login');
+          console.log('User signed out, redirecting to Google auth');
+          router.push('/api/auth/direct-google');
         } else if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           // For initial session or token refresh, if no user, set a delay before redirect
           console.log(
@@ -185,9 +185,9 @@ export default function CreateEvent() {
                 .then(({ data: { session: currentSession } }) => {
                   if (!currentSession?.user && mounted) {
                     console.log(
-                      'No session found after timeout, redirecting to login'
+                      'No session found after timeout, redirecting to Google auth'
                     );
-                    router.push('/login');
+                    router.push('/api/auth/direct-google');
                   }
                 });
             }
@@ -234,8 +234,8 @@ export default function CreateEvent() {
                 .getSession()
                 .then(({ data: { session: currentSession } }) => {
                   if (!currentSession?.user && mounted) {
-                    console.log('Confirmed no session, redirecting to login');
-                    router.push('/login');
+                    console.log('Confirmed no session, redirecting to Google auth');
+                    router.push('/api/auth/direct-google');
                   } else if (currentSession?.user) {
                     console.log(
                       'Session found during timeout check, not redirecting'
@@ -250,7 +250,7 @@ export default function CreateEvent() {
         if (mounted) {
           setSessionLoading(false);
           setSession(null);
-          router.push('/login');
+          router.push('/api/auth/direct-google');
         }
       }
     };
@@ -481,9 +481,9 @@ export default function CreateEvent() {
 
       if (!session) {
         setError(
-          'You must be logged in to create an event. Redirecting to login...'
+          'You must be logged in to create an event. Redirecting to Google sign-in...'
         );
-        setTimeout(() => router.push('/login'), 3000);
+        setTimeout(() => router.push('/api/auth/direct-google'), 3000);
         setLoading(false);
         return;
       }

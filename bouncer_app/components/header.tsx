@@ -78,18 +78,26 @@ function HeaderContent() {
     await supabase.auth.signOut();
     setSession(null);
     setProfile(null);
-    router.push('/login');
+    router.push('/');
   };
 
   const handleSignIn = async () => {
-    router.push('/login');
+    let currentUrl = pathname;
+    if (typeof window !== 'undefined') {
+      currentUrl = window.location.pathname + window.location.search;
+    } else if (searchParams) {
+      currentUrl =
+        pathname +
+        (searchParams.toString() ? `?${searchParams.toString()}` : '');
+    }
+    router.push(`/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`);
   };
 
   const handleSignInDifferent = async () => {
     await supabase.auth.signOut();
     setSession(null);
     setProfile(null);
-    // Redirect to login with next param set to current page
+    // Redirect to direct Google auth with next param set to current page
     let currentUrl = pathname;
     if (typeof window !== 'undefined') {
       currentUrl = window.location.pathname + window.location.search;

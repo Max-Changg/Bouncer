@@ -117,8 +117,8 @@ export default function DebugAuth() {
           <h3 className="font-bold">Auth Flow Test:</h3>
           <p>
             Go to{' '}
-            <a href="/login" className="text-blue-500 underline">
-              /login
+            <a href="/api/auth/direct-google" className="text-blue-500 underline">
+              /api/auth/direct-google
             </a>{' '}
             to test Google OAuth
           </p>

@@ -276,7 +276,7 @@ export default function EventDetails() {
       const sessionResult = await checkSession();
 
       if (!sessionResult.isAuthenticated) {
-        console.log('❌ Not authenticated, redirecting to login');
+        console.log('❌ Not authenticated, redirecting to Google auth');
         setAuth({
           isAuthenticated: false,
           user: null,
@@ -345,7 +345,7 @@ export default function EventDetails() {
           loading: false,
           isAuthorized: false,
         });
-        router.replace('/login');
+        router.replace('/api/auth/direct-google');
       } else if (event === 'SIGNED_IN' && session) {
         // Re-run the full initialization
         initializeAuth();

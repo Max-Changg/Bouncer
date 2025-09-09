@@ -70,7 +70,7 @@ export default function QRCodePage() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session?.user ?? null);
       if (!session) {
-        router.push('/login');
+        router.push('/api/auth/direct-google');
       }
     });
 
@@ -78,7 +78,7 @@ export default function QRCodePage() {
       if (session) {
         setSession(session.user);
       } else {
-        router.push('/login');
+        router.push('/api/auth/direct-google');
       }
     });
 
