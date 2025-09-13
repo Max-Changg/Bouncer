@@ -29,11 +29,14 @@ export async function GET(request: NextRequest) {
       }
     );
     
+    // Get the origin from the request to determine if we're local or production
+    const { origin } = new URL(request.url);
+    
     // Initiate Google OAuth directly
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
         queryParams: {
           prompt: 'select_account',
         },

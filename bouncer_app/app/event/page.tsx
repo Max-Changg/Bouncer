@@ -31,7 +31,7 @@ export default function Event() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
   const router = useRouter();
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -61,27 +61,40 @@ export default function Event() {
     [supabase, sortBy, sortOrder]
   );
 
-  // Add deleteAllEvents function
-  // const deleteAllEvents = async () => {
-  //   if (!session) return;
-  //   setDeleting(true);
-  //   setError(null);
-  //   try {
-  //     const { error } = await supabase
-  //       .from('Events')
-  //       .delete()
-  //       .eq('user_id', session.id);
-  //     if (error) {
-  //       setError('Failed to delete events: ' + error.message);
-  //     } else {
-  //       setEvents([]);
-  //     }
-  //   } catch (err) {
-  //     setError('Failed to delete events.');
-  //   } finally {
-  //     setDeleting(false);
-  //   }
-  // };
+  // Delete single event with confirmation
+  const deleteEvent = async (eventId: number) => {
+    if (!session) return;
+    
+    const eventToDelete = events.find(e => e.id === eventId);
+    const confirmMessage = `Are you sure you want to delete "${eventToDelete?.name}"?\n\nThis will permanently delete:\n• The event\n• All tickets\n• All RSVPs\n\nThis action cannot be undone.`;
+    
+    if (!confirm(confirmMessage)) return;
+    
+    setDeleting(eventId);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'DELETE',
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete event');
+      }
+
+      // Remove event from local state
+      setEvents(events.filter(e => e.id !== eventId));
+      
+      console.log('Event deleted successfully:', result.message);
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete event');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   useEffect(() => {
     const {
@@ -284,11 +297,13 @@ export default function Event() {
            <>
              <div className="w-full flex flex-wrap gap-8 justify-start items-start content-start">
                {events.map(event => (
-                 <EventCard
-                   key={event.id}
-                   event={event}
-                   onShare={handleShare}
-                 />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onShare={handleShare}
+                  onDelete={deleteEvent}
+                  isDeleting={deleting === event.id}
+                />
                ))}
              </div>
              <div className="mt-8">

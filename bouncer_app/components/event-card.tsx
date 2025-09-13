@@ -8,15 +8,18 @@ import {
   ClockIcon,
   MapPinIcon,
   UsersIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import type { Database } from '@/lib/database.types';
 
 interface EventCardProps {
   event: Database['public']['Tables']['Events']['Row'];
   onShare: (eventId: string) => void;
+  onDelete: (eventId: number) => void;
+  isDeleting?: boolean;
 }
 
-export default function EventCard({ event, onShare }: EventCardProps) {
+export default function EventCard({ event, onShare, onDelete, isDeleting = false }: EventCardProps) {
   const router = useRouter();
 
   const eventTimeZone = event.time_zone || 'America/Los_Angeles';
@@ -67,7 +70,7 @@ export default function EventCard({ event, onShare }: EventCardProps) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pt-4 border-t border-gray-700 flex-shrink-0">
+        <div className="flex gap-2 pt-4 border-t border-gray-700 flex-shrink-0">
           <Button
             onClick={() => router.push(`/event/${event.id}`)}
             className="flex-1 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-md hover:shadow-lg transition-all duration-200"
@@ -80,7 +83,19 @@ export default function EventCard({ event, onShare }: EventCardProps) {
             variant="outline"
             className="flex-1 bg-gray-700/50 border-gray-600 text-gray-200 hover:bg-green-900/30 hover:border-green-500 hover:text-green-400 shadow-md transition-all duration-200"
           >
-            Share Link
+            Share
+          </Button>
+          <Button
+            onClick={() => onDelete(event.id)}
+            variant="outline"
+            disabled={isDeleting}
+            className="bg-gray-700/50 border-gray-600 text-gray-200 hover:bg-red-900/30 hover:border-red-500 hover:text-red-400 shadow-md transition-all duration-200 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeleting ? (
+              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <TrashIcon className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>

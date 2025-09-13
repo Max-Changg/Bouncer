@@ -100,6 +100,12 @@ export default function CreateEvent() {
     null
   );
   const [showTicketSidebar, setShowTicketSidebar] = useState(false);
+  const [editingTicket, setEditingTicket] = useState<{
+    name: string;
+    price: number;
+    quantity_available: number;
+    purchase_deadline: Date | null;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const locationInputRef = useRef<HTMLInputElement>(null);
 
@@ -304,6 +310,9 @@ export default function CreateEvent() {
             }))
           );
         }
+        
+        // Fetch RSVP counts for existing tickets
+        await fetchTicketRsvpCounts(id);
       }
     };
 
@@ -442,41 +451,40 @@ export default function CreateEvent() {
         setLoading(false);
         return;
       }
-      if (!eventTheme.trim()) {
-        setError('Event theme is required.');
-        setLoading(false);
-        return;
-      }
-      if (!startDate || !endDate) {
-        setError('Start and end dates are required.');
-        setLoading(false);
-        return;
-      }
+      // Event theme is optional - no validation needed
+      // Start and end dates are optional - no validation needed
       // Require at least one ticket
       if (!tickets || tickets.length === 0) {
         setError('Please add at least one ticket type.');
         setLoading(false);
         return;
       }
-      // Basic ticket validation: non-empty name, non-negative price, positive quantity
-      const invalidTicket = tickets.find(
-        t => !t.name.trim() || t.price < 0 || !Number.isFinite(t.price) || t.quantity_available <= 0
+      
+      // Filter out empty/invalid tickets
+      const validTickets = tickets.filter(t => 
+        t.name.trim() && 
+        Number.isFinite(t.price) && 
+        t.price >= 0 && 
+        Number.isFinite(t.quantity_available) && 
+        t.quantity_available > 0
       );
-      if (invalidTicket) {
-        setError('Each ticket must have a name, non-negative price, and quantity of at least 1.');
+      
+      // Ensure at least one valid ticket exists
+      if (validTickets.length === 0) {
+        setError('Please create at least one valid ticket with a name, price, and quantity greater than 0.');
         setLoading(false);
         return;
       }
-      if (!location.trim()) {
-        setError('Event location is required.');
+      
+      // Update tickets to only include valid ones
+      if (validTickets.length !== tickets.length) {
+        setTickets(validTickets);
+        setError('Removed invalid tickets. Please ensure all tickets have valid information.');
         setLoading(false);
         return;
       }
-      if (!additionalInfo.trim()) {
-        setError('Additional information is required.');
-        setLoading(false);
-        return;
-      }
+      // Location is optional - no validation needed
+      // Description is optional - no validation needed
       setError('');
 
       if (!session) {
@@ -514,8 +522,11 @@ export default function CreateEvent() {
       );
       const endUtcDateTime = createUtcDateTime(endDate, endTime, timeZone);
 
-      // Merge payment info if applicable
+      // Handle all optional fields - save as null if empty
       const additionalInfoToSave = buildAdditionalInfoWithPayment(additionalInfo);
+      const finalAdditionalInfo = additionalInfoToSave.trim() || null;
+      const finalTheme = eventTheme.trim() || null;
+      const finalLocation = location.trim() || null;
 
       if (eventId) {
         // Update existing event (including auto-created ones)
@@ -523,13 +534,13 @@ export default function CreateEvent() {
           .from('Events')
           .update({
             name: eventName,
-            theme: eventTheme,
+            theme: finalTheme,
             start_date: startUtcDateTime
               ? startUtcDateTime.toISOString()
               : null,
             end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
-            location: location,
-            additional_info: additionalInfoToSave,
+            location: finalLocation,
+            additional_info: finalAdditionalInfo,
             time_zone: timeZone,
           })
           .eq('id', eventId);
@@ -551,13 +562,13 @@ export default function CreateEvent() {
           .from('Events')
           .insert({
             name: eventName,
-            theme: eventTheme,
+            theme: finalTheme,
             start_date: startUtcDateTime
               ? startUtcDateTime.toISOString()
               : null,
             end_date: endUtcDateTime ? endUtcDateTime.toISOString() : null,
-            location: location,
-            additional_info: additionalInfoToSave,
+            location: finalLocation,
+            additional_info: finalAdditionalInfo,
             time_zone: timeZone,
             user_id: session.id,
           })
@@ -594,13 +605,11 @@ export default function CreateEvent() {
     };
     const updatedTickets = [...tickets, newTicket];
     setTickets(updatedTickets);
-    setSelectedTicketIndex(tickets.length);
-    setShowTicketSidebar(true);
+    
+    // Open the editor for the new ticket
+    openTicketEditor(tickets.length);
 
-    // Auto-save new ticket only if event already exists
-    if (eventId) {
-      debouncedSaveTickets(eventId);
-    }
+    // Don't auto-save - tickets will be saved when event is created/updated
   };
 
   const updateTicket = (
@@ -611,18 +620,76 @@ export default function CreateEvent() {
     updatedTickets[index] = { ...updatedTickets[index], ...updates };
     setTickets(updatedTickets);
 
-    // Auto-save tickets after a short delay
-    if (eventId) {
-      debouncedSaveTickets(eventId);
+    // Don't auto-save - tickets will be saved when event is created/updated
+  };
+
+  const openTicketEditor = (index: number) => {
+    const ticket = tickets[index];
+    
+    // Check if ticket can be edited (no RSVPs)
+    if (!canEditTicket(ticket.id)) {
+      const rsvpCount = ticketRsvpCounts[ticket.id!] || 0;
+      setError(`Cannot edit "${ticket.name}" ticket - ${rsvpCount} people have already RSVP'd. You can only edit tickets with no RSVPs.`);
+      return;
     }
+    
+    setEditingTicket({
+      name: ticket.name,
+      price: ticket.price,
+      quantity_available: ticket.quantity_available,
+      purchase_deadline: ticket.purchase_deadline,
+    });
+    setSelectedTicketIndex(index);
+    setShowTicketSidebar(true);
+  };
+
+  const closeTicketEditor = () => {
+    setEditingTicket(null);
+    setSelectedTicketIndex(null);
+    setShowTicketSidebar(false);
+  };
+
+  const saveTicketChanges = () => {
+    if (selectedTicketIndex !== null && editingTicket) {
+      // Validate the editing ticket before saving
+      const finalTicket = {
+        ...editingTicket,
+        name: editingTicket.name.trim() || 'Untitled Ticket',
+        price: Math.max(0, editingTicket.price || 0),
+        quantity_available: Math.max(1, editingTicket.quantity_available || 1),
+      };
+      
+      updateTicket(selectedTicketIndex, finalTicket);
+    }
+    closeTicketEditor();
   };
 
   const removeTicket = (index: number) => {
-    // Prevent removing the last ticket; require at least one ticket
-    if (tickets.length <= 1) {
-      setError('At least one ticket type is required.');
+    const ticket = tickets[index];
+    
+    // Check if ticket can be removed (no RSVPs)
+    if (!canEditTicket(ticket.id)) {
+      const rsvpCount = ticketRsvpCounts[ticket.id!] || 0;
+      setError(`Cannot remove "${ticket.name}" ticket - ${rsvpCount} people have already RSVP'd. You can only remove tickets with no RSVPs.`);
       return;
     }
+    
+    // Count valid tickets (after potential removal)
+    const remainingTickets = tickets.filter((_, i) => i !== index);
+    const validRemainingTickets = remainingTickets.filter(t => 
+      t.name.trim() && 
+      Number.isFinite(t.price) && 
+      t.price >= 0 && 
+      Number.isFinite(t.quantity_available) && 
+      t.quantity_available > 0
+    );
+    
+    // Prevent removing if it would leave no valid tickets
+    if (validRemainingTickets.length === 0) {
+      setError('Cannot remove this ticket. Every event must have at least one valid ticket type with a name, price, and quantity.');
+      return;
+    }
+    
     const updatedTickets = tickets.filter((_, i) => i !== index);
     setTickets(updatedTickets);
     if (selectedTicketIndex === index) {
@@ -630,14 +697,56 @@ export default function CreateEvent() {
       setShowTicketSidebar(false);
     }
 
-    // Auto-save after removing ticket
-    if (eventId) {
-      debouncedSaveTickets(eventId);
-    }
+    // Don't auto-save - tickets will be saved when event is updated
   };
 
   const [isSavingTickets, setIsSavingTickets] = useState(false);
   const saveTicketsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [ticketRsvpCounts, setTicketRsvpCounts] = useState<Record<string, number>>({});
+
+  // Check if tickets have RSVPs (prevents editing)
+  const fetchTicketRsvpCounts = async (eventIdToUse: number) => {
+    try {
+      const { data: rsvpData, error } = await supabase
+        .from('rsvps')
+        .select('ticket_id')
+        .eq('event_id', eventIdToUse);
+
+      if (error) {
+        console.error('Error fetching RSVP counts:', error);
+        return;
+      }
+
+      // Count RSVPs per ticket
+      const counts: Record<string, number> = {};
+      rsvpData?.forEach(rsvp => {
+        if (rsvp.ticket_id) {
+          counts[rsvp.ticket_id] = (counts[rsvp.ticket_id] || 0) + 1;
+        }
+      });
+
+      setTicketRsvpCounts(counts);
+    } catch (error) {
+      console.error('Error fetching ticket RSVP counts:', error);
+    }
+  };
+
+  // Check if a ticket can be edited (no RSVPs)
+  const canEditTicket = (ticketId?: string) => {
+    if (!ticketId) return true; // New tickets can always be edited
+    return (ticketRsvpCounts[ticketId] || 0) === 0;
+  };
+
+  // Count valid tickets
+  const getValidTicketsCount = () => {
+    return tickets.filter(t => 
+      t.name.trim() && 
+      Number.isFinite(t.price) && 
+      t.price >= 0 && 
+      Number.isFinite(t.quantity_available) && 
+      t.quantity_available > 0
+    ).length;
+  };
 
   const saveTickets = async (eventIdToUse: number | null = eventId) => {
     if (!eventIdToUse) {
@@ -653,29 +762,41 @@ export default function CreateEvent() {
     setIsSavingTickets(true);
     
     try {
+      // Filter to only valid tickets
+      const validTickets = tickets.filter(ticket => 
+        ticket.name.trim() && 
+        Number.isFinite(ticket.price) && 
+        ticket.price >= 0 && 
+        Number.isFinite(ticket.quantity_available) && 
+        ticket.quantity_available > 0
+      );
+      
+      // Ensure at least one valid ticket
+      if (validTickets.length === 0) {
+        throw new Error('Cannot save event without at least one valid ticket');
+      }
+      
       // Delete existing tickets for this event
       await supabase.from('tickets').delete().eq('event_id', eventIdToUse);
       
-      // Insert new tickets (only non-empty tickets)
-      const validTickets = tickets.filter(ticket => ticket.name.trim() !== '');
-      if (validTickets.length > 0) {
-        const ticketsToInsert = validTickets.map(ticket => ({
-          event_id: eventIdToUse,
-          name: ticket.name.trim(),
-          price: ticket.price,
-          quantity_available: ticket.quantity_available,
-          purchase_deadline: ticket.purchase_deadline?.toISOString(),
-        }));
-        
-        const { error } = await supabase
-          .from('tickets')
-          .insert(ticketsToInsert);
-        if (error) throw error;
-      }
+      // Insert new valid tickets
+      const ticketsToInsert = validTickets.map(ticket => ({
+        event_id: eventIdToUse,
+        name: ticket.name.trim(),
+        price: ticket.price,
+        quantity_available: ticket.quantity_available,
+        purchase_deadline: ticket.purchase_deadline?.toISOString(),
+      }));
+      
+      const { error } = await supabase
+        .from('tickets')
+        .insert(ticketsToInsert);
+      if (error) throw error;
+      
       setInviteLink(`${window.location.origin}/rsvp?event_id=${eventIdToUse}`);
     } catch (error) {
       console.error('Error saving tickets:', error);
-      setError('Failed to save tickets');
+      setError(error instanceof Error ? error.message : 'Failed to save tickets');
     } finally {
       setIsSavingTickets(false);
     }
@@ -820,7 +941,7 @@ export default function CreateEvent() {
                   htmlFor="eventTheme"
                   className="block text-sm font-medium text-gray-300 mb-2"
                 >
-                  Event Theme
+                  Event Theme <span className="text-gray-500 font-normal">(Optional)</span>
                 </label>
                 <input
                   type="text"
@@ -828,7 +949,7 @@ export default function CreateEvent() {
                   value={eventTheme}
                   onChange={e => setEventTheme(e.target.value)}
                   className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
-                  placeholder="e.g., Birthday Party, Corporate Event"
+                  placeholder="Optional: e.g., Birthday Party, Corporate Event"
                 />
               </div>
             </div>
@@ -838,7 +959,7 @@ export default function CreateEvent() {
                   htmlFor="start-date-picker"
                   className="block text-sm font-medium text-gray-300 mb-2"
                 >
-                  Start Date and Time
+                  Start Date and Time <span className="text-gray-500 font-normal">(Optional)</span>
                 </Label>
                 <div className="flex gap-3">
                   <Popover>
@@ -880,7 +1001,7 @@ export default function CreateEvent() {
                   htmlFor="end-date-picker"
                   className="block text-sm font-medium text-gray-300 mb-2"
                 >
-                  End Date and Time
+                  End Date and Time <span className="text-gray-500 font-normal">(Optional)</span>
                 </Label>
                 <div className="flex gap-3">
                   <Popover>
@@ -941,7 +1062,7 @@ export default function CreateEvent() {
                 htmlFor="location"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Event Location
+                Event Location <span className="text-gray-500 font-normal">(Optional)</span>
               </label>
               <input
                 ref={locationInputRef}
@@ -953,7 +1074,7 @@ export default function CreateEvent() {
                   setLocation(e.target.value);
                 }}
                 className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
-                placeholder="Start typing to search for a location..."
+                placeholder="Optional: Start typing to search for a location..."
               />
             </div>
             <div>
@@ -961,7 +1082,7 @@ export default function CreateEvent() {
                 htmlFor="additionalInfo"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
-                Description
+                Description <span className="text-gray-500 font-normal">(Optional)</span>
               </label>
               <textarea
                 id="additionalInfo"
@@ -969,7 +1090,7 @@ export default function CreateEvent() {
                 onChange={e => setAdditionalInfo(e.target.value)}
                 rows={4}
                 className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors resize-none"
-                placeholder="Address, dress code, what to bring, parking info..."
+                placeholder="Optional: Address details, dress code, what to bring, parking info..."
               />
             </div>
           </form>
@@ -979,21 +1100,51 @@ export default function CreateEvent() {
         <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
           <h3 className="text-2xl font-bold text-white mb-6">Event Tickets</h3>
           <div className="mb-6">
+            <div className="flex items-start gap-3 mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-blue-200 font-medium">Required: At least one ticket type</p>
+                <p className="text-blue-300 text-sm mt-1">
+                  Every event must have at least one valid ticket to control capacity and prevent unlimited attendance.
+                </p>
+              </div>
+            </div>
             <p className="text-gray-300 mb-6">
               Manage up to 5 different ticket types for your event. Each ticket
-              type can have its own price, quantity, and purchase deadline.
+              type can have its own price, quantity, and purchase deadline. You can edit tickets again after the event is created.
               {!eventId && (
                 <span className="block mt-2 text-sm text-orange-300">
-                  💡 Tickets will auto-save after you create the main event
+                  💡 Tickets will be saved when you create the event
                 </span>
               )}
             </p>
 
+            {/* Ticket count indicator */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-400">Ticket Types:</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  getValidTicketsCount() === 0 
+                    ? 'bg-red-900/30 text-red-300 border border-red-500/30'
+                    : 'bg-green-900/30 text-green-300 border border-green-500/30'
+                }`}>
+                  {getValidTicketsCount()} valid of {tickets.length} total
+                </span>
+              </div>
+              {getValidTicketsCount() === 0 && (
+                <span className="text-sm text-red-300 font-medium">⚠️ At least 1 required</span>
+              )}
+            </div>
+
             {tickets.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-gray-600/50 rounded-2xl bg-gray-800/30">
-                <div className="w-16 h-16 bg-purple-800/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="text-center py-12 border-2 border-dashed border-red-500/50 rounded-2xl bg-red-900/10">
+                <div className="w-16 h-16 bg-red-800/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg
-                    className="w-8 h-8 text-purple-300"
+                    className="w-8 h-8 text-red-300"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1002,62 +1153,116 @@ export default function CreateEvent() {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
                     />
                   </svg>
                 </div>
-                <p className="text-gray-400 mb-2">No tickets created yet</p>
-                <p className="text-gray-300 mb-6">A default <span className="font-semibold text-white">Free</span> ticket for 100 guests has been added.</p>
+                <p className="text-red-300 font-medium mb-2">No tickets created</p>
+                <p className="text-red-200 mb-6">Your event needs at least one ticket type to control capacity.</p>
                 <Button
                   onClick={addTicket}
-                  className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
+                  className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg hover:shadow-red-800/50 transition-all duration-200"
                 >
-                  Add Another Ticket Type
+                  Create First Ticket Type
+                </Button>
+              </div>
+            ) : getValidTicketsCount() === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed border-orange-500/50 rounded-2xl bg-orange-900/10 mb-4">
+                <div className="w-12 h-12 bg-orange-800/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg
+                    className="w-6 h-6 text-orange-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-orange-300 font-medium mb-2">No valid tickets</p>
+                <p className="text-orange-200 mb-4 text-sm">All tickets need a name, price, and quantity greater than 0.</p>
+                <Button
+                  onClick={addTicket}
+                  className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 shadow-lg hover:shadow-orange-800/50 transition-all duration-200"
+                >
+                  Add Valid Ticket
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
-                {tickets.map((ticket, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-6 border border-gray-600/50 rounded-xl bg-gray-700/30 backdrop-blur-sm hover:bg-gray-700/50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white text-lg">
-                        {ticket.name || 'Untitled Ticket'}
-                      </h3>
-                      <p className="text-sm text-gray-300 mt-1">
-                        ${ticket.price} • {ticket.quantity_available} available
-                        {ticket.purchase_deadline && (
-                          <span>
-                            {' '}
-                            • Until{' '}
-                            {ticket.purchase_deadline.toLocaleDateString()}
-                          </span>
+                {tickets.map((ticket, index) => {
+                  const rsvpCount = ticket.id ? (ticketRsvpCounts[ticket.id] || 0) : 0;
+                  const canEdit = canEditTicket(ticket.id);
+                  
+                  return (
+                    <div
+                      key={index}
+                      className={`flex items-center justify-between p-6 border rounded-xl backdrop-blur-sm transition-colors ${
+                        canEdit 
+                          ? 'border-gray-600/50 bg-gray-700/30 hover:bg-gray-700/50' 
+                          : 'border-orange-500/30 bg-orange-900/10'
+                      }`}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-semibold text-white text-lg">
+                            {ticket.name || 'Untitled Ticket'}
+                          </h3>
+                          {!canEdit && (
+                            <span className="px-2 py-1 text-xs bg-orange-500/20 text-orange-300 rounded-full border border-orange-500/30">
+                              🔒 {rsvpCount} RSVP{rsvpCount !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-300 mt-1">
+                          ${ticket.price} • {ticket.quantity_available} available
+                          {ticket.purchase_deadline && (
+                            <span>
+                              {' '}
+                              • Until{' '}
+                              {ticket.purchase_deadline.toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                        {!canEdit && (
+                          <p className="text-xs text-orange-300 mt-2">
+                            Cannot edit - people have already RSVP'd to this ticket
+                          </p>
                         )}
-                      </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <Button
+                          onClick={() => openTicketEditor(index)}
+                          variant="outline"
+                          disabled={!canEdit}
+                          className={`px-4 py-2 text-sm ${
+                            canEdit
+                              ? 'bg-purple-800/20 border-purple-500/50 text-purple-300 hover:bg-purple-800/40 hover:text-white'
+                              : 'bg-gray-800/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => removeTicket(index)}
+                          variant="outline"
+                          disabled={!canEdit}
+                          className={`px-4 py-2 text-sm ${
+                            canEdit
+                              ? 'bg-red-800/20 border-red-500/50 text-red-300 hover:bg-red-800/40 hover:text-white'
+                              : 'bg-gray-800/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          Remove
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={() => {
-                          setSelectedTicketIndex(index);
-                          setShowTicketSidebar(true);
-                        }}
-                        variant="outline"
-                        className="px-4 py-2 text-sm bg-purple-800/20 border-purple-500/50 text-purple-300 hover:bg-purple-800/40 hover:text-white"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        onClick={() => removeTicket(index)}
-                        variant="outline"
-                        className="px-4 py-2 text-sm bg-red-800/20 border-red-500/50 text-red-300 hover:bg-red-800/40 hover:text-white"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {tickets.length < 5 && (
                   <Button
@@ -1178,7 +1383,7 @@ export default function CreateEvent() {
         )}
 
         {/* Ticket Sidebar for Edit Form */}
-        {showTicketSidebar && selectedTicketIndex !== null && (
+        {showTicketSidebar && selectedTicketIndex !== null && editingTicket && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-gray-800/95 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-2xl p-8 w-full max-w-md mx-4">
               <h3 className="text-xl font-bold text-white mb-6">
@@ -1192,11 +1397,9 @@ export default function CreateEvent() {
                   </label>
                   <input
                     type="text"
-                    value={tickets[selectedTicketIndex].name}
+                    value={editingTicket.name}
                     onChange={e =>
-                      updateTicket(selectedTicketIndex, {
-                        name: e.target.value,
-                      })
+                      setEditingTicket(prev => prev ? {...prev, name: e.target.value} : null)
                     }
                     className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
                     placeholder="e.g., Early Bird, VIP, General"
@@ -1211,17 +1414,16 @@ export default function CreateEvent() {
                     type="number"
                     min="0"
                     step="1"
-                    value={tickets[selectedTicketIndex].price || ''}
+                    value={editingTicket.price === 0 ? '' : editingTicket.price}
                     onChange={e => {
                       const value = e.target.value;
                       const numValue = value === '' ? 0 : parseInt(value);
                       if (!isNaN(numValue) && numValue >= 0) {
-                        updateTicket(selectedTicketIndex, {
-                          price: numValue,
-                        });
+                        setEditingTicket(prev => prev ? {...prev, price: numValue} : null);
                       }
                     }}
                     className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                    placeholder="Enter price (default $0)"
                   />
                 </div>
 
@@ -1232,17 +1434,16 @@ export default function CreateEvent() {
                   <input
                     type="number"
                     min="1"
-                    value={tickets[selectedTicketIndex].quantity_available || ''}
+                    value={editingTicket.quantity_available === 0 ? '' : editingTicket.quantity_available}
                     onChange={e => {
                       const value = e.target.value;
                       const numValue = value === '' ? 0 : parseInt(value);
-                      if (!isNaN(numValue) && numValue >= 1) {
-                        updateTicket(selectedTicketIndex, {
-                          quantity_available: numValue,
-                        });
+                      if (!isNaN(numValue) && numValue >= 0) {
+                        setEditingTicket(prev => prev ? {...prev, quantity_available: numValue} : null);
                       }
                     }}
                     className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                    placeholder="Enter quantity (minimum 1)"
                   />
                 </div>
 
@@ -1253,16 +1454,15 @@ export default function CreateEvent() {
                   <input
                     type="datetime-local"
                     value={
-                      tickets[selectedTicketIndex].purchase_deadline
+                      editingTicket.purchase_deadline
                         ?.toISOString()
                         .slice(0, 16) || ''
                     }
                     onChange={e =>
-                      updateTicket(selectedTicketIndex, {
-                        purchase_deadline: e.target.value
-                          ? new Date(e.target.value)
-                          : null,
-                      })
+                      setEditingTicket(prev => prev ? {
+                        ...prev,
+                        purchase_deadline: e.target.value ? new Date(e.target.value) : null
+                      } : null)
                     }
                     className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
                   />
@@ -1271,7 +1471,14 @@ export default function CreateEvent() {
 
               <div className="flex justify-center gap-3 mt-8">
                 <Button
-                  onClick={() => setShowTicketSidebar(false)}
+                  onClick={closeTicketEditor}
+                  variant="outline"
+                  className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={saveTicketChanges}
                   className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
                 >
                   Done

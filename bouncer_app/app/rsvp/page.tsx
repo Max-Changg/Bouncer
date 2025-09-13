@@ -360,37 +360,38 @@ function RsvpContent() {
       paymentProofUrl = fileName;
     }
 
-    // Use a transaction-like approach: insert RSVP first, then update ticket count
-    const { data, error } = await supabase
-      .from('rsvps')
-      .insert([
-        {
-          name,
-          email,
-          event_id: Number(eventId),
-          user_id: session.id,
-          ticket_id: availableTicketId,
-          payment_proof_url: paymentProofUrl,
-        },
-      ])
-      .select();
+    // Use the new atomic RSVP API that handles ticket quantity properly
+    const response = await fetch('/api/rsvp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        eventId: Number(eventId),
+        userId: session.id,
+        name,
+        email,
+        ticketId: availableTicketId,
+        paymentProofUrl,
+      }),
+    });
 
-    if (error) {
-      console.error('RSVP insertion error:', error);
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('RSVP API error:', result);
       
       // Handle specific error cases
-      if (error.code === '23505') {
-        setError('You have already RSVP\'d to this event.');
-      } else if (error.code === '23503') {
-        setError('Selected ticket is no longer valid.');
+      if (response.status === 409) {
+        setError(result.error || 'Ticket no longer available or you have already RSVP\'d.');
       } else {
-        setError('Failed to submit RSVP. Please try again.');
+        setError(result.error || 'Failed to submit RSVP. Please try again.');
       }
       return;
     }
 
     // If RSVP was successful, show success state
-    console.log('RSVP submitted successfully:', data);
+    console.log('RSVP submitted successfully:', result);
     setRsvpSubmitted(true);
     
     // Fetch QR code data if not already loaded

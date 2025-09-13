@@ -4,10 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:local": "cp .env.local .env && next dev --turbopack",
+    "dev:prod": "cp .env.production .env && next dev --turbopack",
     "build": "next build",
+    "build:local": "cp .env.local .env && next build",
+    "build:prod": "cp .env.production .env && next build",
     "start": "next start",
     "lint": "next lint --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "env:local": "cp .env.local .env && echo 'Switched to local environment'",
+    "env:prod": "cp .env.production .env && echo 'Switched to production environment'"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",

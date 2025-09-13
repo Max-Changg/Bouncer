@@ -143,5 +143,48 @@ export interface Database {
         };
       };
     };
+    Functions: {
+      decrement_ticket_quantity: {
+        Args: {
+          ticket_id: string;
+        };
+        Returns: {
+          id: string;
+          event_id: number;
+          name: string;
+          price: number;
+          quantity_available: number;
+          purchase_deadline: string | null;
+          created_at: string;
+        }[];
+      };
+      increment_ticket_quantity: {
+        Args: {
+          ticket_id: string;
+        };
+        Returns: {
+          id: string;
+          event_id: number;
+          name: string;
+          price: number;
+          quantity_available: number;
+          purchase_deadline: string | null;
+          created_at: string;
+        }[];
+      };
+      get_ticket_availability: {
+        Args: {
+          event_id_param: number;
+        };
+        Returns: {
+          ticket_id: string;
+          ticket_name: string;
+          price: number;
+          quantity_available: number;
+          quantity_sold: number;
+          purchase_deadline: string | null;
+        }[];
+      };
+    };
   };
 }
