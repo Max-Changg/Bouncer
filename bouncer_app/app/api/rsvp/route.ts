@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking existing RSVP:', checkError);
+      // Error checking existing RSVP
       return NextResponse.json(
         { error: 'Failed to check existing RSVP' },
         { status: 500 }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (ticketError || !ticketUpdate) {
-      console.error('Ticket update error:', ticketError);
+      // Ticket update error
       return NextResponse.json(
         { error: 'Selected ticket is no longer available' },
         { status: 409 }
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (rsvpError) {
-      console.error('RSVP insertion error:', rsvpError);
+      // RSVP insertion error
       
       // If RSVP creation fails, we need to rollback the ticket quantity
       // This is a compensation action since we don't have true transactions
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('RSVP API error:', error);
+    // RSVP API error
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

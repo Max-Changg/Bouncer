@@ -35,7 +35,7 @@ export async function DELETE(
       .single();
 
     if (eventError) {
-      console.error('Error fetching event:', eventError);
+      // Error fetching event
       return NextResponse.json(
         { error: 'Event not found' },
         { status: 404 }
@@ -50,7 +50,7 @@ export async function DELETE(
     }
 
     // Delete all related data in the correct order (due to foreign key constraints)
-    console.log('Deleting all data for event:', eventId);
+    // Deleting all data for event
 
     // Step 1: Delete RSVPs (references tickets)
     const { error: rsvpError } = await supabase
@@ -59,7 +59,7 @@ export async function DELETE(
       .eq('event_id', eventId);
 
     if (rsvpError) {
-      console.error('Error deleting RSVPs:', rsvpError);
+      // Error deleting RSVPs
       return NextResponse.json(
         { error: 'Failed to delete RSVPs' },
         { status: 500 }
@@ -73,7 +73,7 @@ export async function DELETE(
       .eq('event_id', eventId);
 
     if (ticketsError) {
-      console.error('Error deleting tickets:', ticketsError);
+      // Error deleting tickets
       return NextResponse.json(
         { error: 'Failed to delete tickets' },
         { status: 500 }
@@ -87,14 +87,14 @@ export async function DELETE(
       .eq('id', eventId);
 
     if (eventDeleteError) {
-      console.error('Error deleting event:', eventDeleteError);
+      // Error deleting event
       return NextResponse.json(
         { error: 'Failed to delete event' },
         { status: 500 }
       );
     }
 
-    console.log('Successfully deleted event and all related data:', eventId);
+    // Successfully deleted event and all related data
 
     return NextResponse.json(
       { 
@@ -105,7 +105,7 @@ export async function DELETE(
     );
 
   } catch (error) {
-    console.error('Unexpected error deleting event:', error);
+    // Unexpected error deleting event
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

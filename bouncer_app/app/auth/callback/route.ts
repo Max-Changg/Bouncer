@@ -13,17 +13,14 @@ export async function GET(request: NextRequest) {
   // if "next" is in param, use it as the redirect URL
   const next = searchParams.get('next') ?? '/';
 
-  console.log('Auth callback - code:', !!code);
-  console.log('Auth callback - next parameter:', next);
-  console.log('Auth callback - error:', error);
-  console.log('Auth callback - all cookies:', request.cookies.getAll().map(c => c.name));
+  // Auth callback processing
 
   if (error) {
-    console.error('OAuth error:', error, errorDescription);
+    // OAuth error
     
     // Handle PKCE errors by redirecting back to direct Google auth
     if (error === 'access_denied' || errorDescription?.includes('code_challenge')) {
-      console.log('PKCE or access denied error, redirecting back to Google auth with next param');
+      // PKCE or access denied error, redirecting back to Google auth with next param
       return NextResponse.redirect(`${origin}/api/auth/direct-google?next=${encodeURIComponent(next)}`);
     }
     
@@ -74,31 +71,27 @@ export async function GET(request: NextRequest) {
     );
 
     try {
-      console.log('Auth callback - attempting code exchange...');
+      // Auth callback - attempting code exchange
       
       // First try the standard PKCE flow
       const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
       if (exchangeError) {
-        console.error('Code exchange error details:', {
-          message: exchangeError.message,
-          status: exchangeError.status,
-          name: exchangeError.name
-        });
+        // Code exchange error details
         
         // If PKCE fails, try alternative approaches
         if (exchangeError.message?.includes('code verifier')) {
-          console.log('PKCE error detected, trying session refresh...');
+          // PKCE error detected, trying session refresh
           
           // Try to get the session directly
           const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
           
           if (sessionData?.session) {
-            console.log('Session found via getSession, redirecting...');
+            // Session found via getSession, redirecting
             return response;
           }
           
-          console.error('Session error:', sessionError);
+          // Session error
         }
         
         return NextResponse.redirect(
@@ -107,18 +100,16 @@ export async function GET(request: NextRequest) {
       }
 
       if (data?.session) {
-        console.log('Auth callback - successful exchange, user:', data.user?.email);
-        console.log('Auth callback - session expires at:', data.session.expires_at);
-        console.log('Auth callback - redirecting to:', `${origin}${next}`);
+        // Auth callback - successful exchange
         return response;
       } else {
-        console.error('Code exchange succeeded but no session returned');
+        // Code exchange succeeded but no session returned
         return NextResponse.redirect(
           `${origin}/?error=${encodeURIComponent('Authentication succeeded but no session created')}`
         );
       }
     } catch (err) {
-      console.error('Unexpected error during code exchange:', err);
+      // Unexpected error during code exchange
       return NextResponse.redirect(
         `${origin}/?error=${encodeURIComponent('Unexpected authentication error')}`
       );
@@ -126,7 +117,7 @@ export async function GET(request: NextRequest) {
   }
 
   // No code or error - redirect back to Google auth
-  console.error('Auth callback - no code received');
+  // Auth callback - no code received
   return NextResponse.redirect(
     `${origin}/api/auth/direct-google?next=${encodeURIComponent(next)}`
   );

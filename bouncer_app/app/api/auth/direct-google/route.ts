@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const next = searchParams.get('next') || '/event';
     
-    console.log('Direct Google auth - next parameter:', next);
+    // Direct Google auth - next parameter
     
     // Create Supabase server client for OAuth
     const cookieStore = await cookies();
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Direct Google OAuth error:', error);
+      // Direct Google OAuth error
       // Return error response instead of redirect to non-existent login page
       return NextResponse.json(
         { error: 'Authentication failed', details: error.message },
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (err) {
-    console.error('Unexpected error in direct Google auth:', err);
+    // Unexpected error in direct Google auth
     return NextResponse.json(
       { error: 'Unexpected authentication error' },
       { status: 500 }

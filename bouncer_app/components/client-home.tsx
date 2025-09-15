@@ -47,7 +47,7 @@ export default function ClientHome() {
       !process.env.NEXT_PUBLIC_SUPABASE_URL ||
       !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     ) {
-      console.error('Missing Supabase environment variables');
+      // Missing Supabase environment variables
     }
   }, []);
 
@@ -77,7 +77,7 @@ export default function ClientHome() {
       } = await supabase.auth.getSession();
 
       if (sessionError) {
-        console.error('Session error:', sessionError);
+        // Session error
         return;
       }
 
@@ -87,7 +87,7 @@ export default function ClientHome() {
         await fetchEvents(session.user.id);
       }
     } catch (error) {
-      console.error('Error checking session:', error);
+      // Error checking session
     } finally {
       setLoading(false);
     }
@@ -96,11 +96,11 @@ export default function ClientHome() {
   const fetchEvents = async (userId: string) => {
     try {
       if (!userId) {
-        console.error('No user ID provided to fetchEvents');
+        // No user ID provided to fetchEvents
         return;
       }
 
-      console.log('Fetching events for user:', userId);
+      // Fetching events for user
 
       const { data, error } = await supabase
         .from('Events')
@@ -108,27 +108,15 @@ export default function ClientHome() {
         .eq('user_id', userId);
 
       if (error) {
-        console.error('Error fetching events:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-        });
+        // Error fetching events
       } else {
-        console.log(
-          'Events fetched successfully:',
-          data?.length || 0,
-          'events'
-        );
+        // Events fetched successfully
         setEvents(
           data as unknown as Database['public']['Tables']['Events']['Row'][]
         );
       }
     } catch (error) {
-      console.error('Error fetching events:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error stringified:', JSON.stringify(error, null, 2));
+      // Error fetching events
     }
   };
 

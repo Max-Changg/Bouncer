@@ -108,34 +108,34 @@ export default function EventDetails() {
   // Simple session check - like a backend getSession endpoint
   const checkSession = useCallback(async () => {
     try {
-      console.log('🔍 Checking session...');
+      // Checking session
       const {
         data: { session },
         error,
       } = await supabase.auth.getSession();
 
       if (error) {
-        console.error('Session check error:', error);
+        // Session check error
         // If it's a refresh token error, sign out to clear invalid tokens
         if (
           error.message?.includes('refresh') ||
           error.message?.includes('Invalid')
         ) {
-          console.log('🔄 Clearing invalid session...');
+          // Clearing invalid session
           await supabase.auth.signOut();
         }
         return { isAuthenticated: false, user: null };
       }
 
       if (session?.user) {
-        console.log('✅ Session found:', session.user.email);
+        // Session found
         return { isAuthenticated: true, user: session.user };
       } else {
-        console.log('❌ No session found');
+        // No session found
         return { isAuthenticated: false, user: null };
       }
     } catch (err) {
-      console.error('Session check failed:', err);
+      // Session check failed
       return { isAuthenticated: false, user: null };
     }
   }, [supabase.auth]);
@@ -158,7 +158,7 @@ export default function EventDetails() {
           .maybeSingle();
 
         if (error) {
-          console.error('Error fetching event details:', error);
+          // Error fetching event details
           setError(error.message);
           setEvent(null);
           return null;
@@ -170,13 +170,7 @@ export default function EventDetails() {
 
           // Check if user is the event owner
           const isOwner = user.id === data.user_id;
-          console.log('🔐 Authorization check:', {
-            isOwner,
-            userId: user.id,
-            eventOwnerId: data.user_id,
-            userEmail: user.email,
-            eventName: data.name,
-          });
+          // Authorization check
 
           return { event: data, isOwner };
         } else {
@@ -187,7 +181,7 @@ export default function EventDetails() {
           return null;
         }
       } catch (err) {
-        console.error('Unexpected error fetching event:', err);
+        // Unexpected error fetching event
         setError('Failed to load event details');
         setEvent(null);
         return null;
@@ -211,7 +205,7 @@ export default function EventDetails() {
         .eq('event_id', eventId);
 
       if (error) {
-        console.error('Error fetching RSVPs:', error);
+        // Error fetching RSVPs
         setError(error.message);
         setRsvps([]);
       } else if (data) {
@@ -229,7 +223,7 @@ export default function EventDetails() {
         setGuests([]);
       }
     } catch (err) {
-      console.error('Unexpected error fetching RSVPs:', err);
+      // Unexpected error fetching RSVPs
       setRsvps([]);
       setGuests([]);
     }
@@ -246,7 +240,7 @@ export default function EventDetails() {
     if (typeof error === 'string' && error.includes('No QR code found')) {
       return;
     }
-    console.warn(`QR code scan error:`, error);
+    // QR code scan error
   };
 
   // Handle scan result verification
@@ -270,13 +264,13 @@ export default function EventDetails() {
   // Main authentication effect - simple session endpoint approach
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('🚀 Initializing authentication on page load/refresh');
+      // Initializing authentication on page load/refresh
 
       // Step 1: Check session (like calling backend getSession endpoint)
       const sessionResult = await checkSession();
 
       if (!sessionResult.isAuthenticated) {
-        console.log('❌ Not authenticated, redirecting to Google auth');
+        // Not authenticated, redirecting to Google auth
         setAuth({
           isAuthenticated: false,
           user: null,
@@ -290,7 +284,7 @@ export default function EventDetails() {
       }
 
       // Step 2: User is authenticated, now check event authorization
-      console.log('✅ User is authenticated, checking event authorization');
+      // User is authenticated, checking event authorization
       setAuth(prev => ({
         ...prev,
         isAuthenticated: true,
@@ -311,7 +305,7 @@ export default function EventDetails() {
       }
 
       if (eventResult.isOwner) {
-        console.log('✅ User is authorized as event owner');
+        // User is authorized as event owner
         setAuth(prev => ({
           ...prev,
           loading: false,
@@ -320,7 +314,7 @@ export default function EventDetails() {
         // Fetch RSVPs
         fetchRsvps();
       } else {
-        console.log('❌ User is not the event owner');
+        // User is not the event owner
         setAuth(prev => ({
           ...prev,
           loading: false,
@@ -336,7 +330,7 @@ export default function EventDetails() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, !!session);
+      // Auth state changed
 
       if (event === 'SIGNED_OUT') {
         setAuth({
@@ -391,7 +385,7 @@ export default function EventDetails() {
         .eq('event_id', eventId);
 
       if (rsvpError) {
-        console.error('Error deleting RSVPs:', rsvpError);
+        // Error deleting RSVPs
         setError(rsvpError.message);
         return;
       }
@@ -403,7 +397,7 @@ export default function EventDetails() {
         .eq('id', eventId);
 
       if (eventError) {
-        console.error('Error deleting event:', eventError);
+        // Error deleting event
         setError(eventError.message);
       } else {
         router.push('/event');
@@ -441,7 +435,7 @@ export default function EventDetails() {
         .upsert(cleanRsvps, { onConflict: 'id' });
 
       if (error) {
-        console.error('Error updating RSVPs:', error);
+        // Error updating RSVPs
         setError(error.message);
         throw error;
       } else {
@@ -460,7 +454,7 @@ export default function EventDetails() {
       }
     } catch (error) {
       // Error is already handled above
-      console.error('Save operation failed:', error);
+      // Save operation failed
     }
   };
 
@@ -619,7 +613,7 @@ export default function EventDetails() {
       
       if (failed > 0) {
         successMessage.textContent = `Emails sent from your Gmail! ${successful} successful, ${failed} failed`;
-        console.log('Email send results:', result.results.details);
+        // Email send results
       } else {
         successMessage.textContent = `Successfully sent emails from your Gmail to ${successful} recipients!`;
       }
@@ -634,7 +628,7 @@ export default function EventDetails() {
       }, 4000);
 
     } catch (error) {
-      console.error('Error sending emails:', error);
+      // Error sending emails
       
       // Show error message
       const errorMessage = document.createElement('div');
@@ -769,7 +763,7 @@ export default function EventDetails() {
       .upsert(cleanRsvps, { onConflict: 'id' });
 
     if (error) {
-      console.error('Error updating payment status:', error);
+      // Error updating payment status
       setError('Failed to update payment status');
     } else {
       setRsvps(updatedRsvps);
@@ -787,7 +781,7 @@ export default function EventDetails() {
       await parseZelleFile(file);
       await crossCheckPayments();
     } catch (error) {
-      console.error('Error processing Zelle file:', error);
+      // Error processing Zelle file
       setError('Failed to process Zelle file');
     }
   };
@@ -800,7 +794,7 @@ export default function EventDetails() {
       await parseVenmoFile(file);
       await crossCheckPayments();
     } catch (error) {
-      console.error('Error processing Venmo file:', error);
+      // Error processing Venmo file
       setError('Failed to process Venmo file');
     }
   };

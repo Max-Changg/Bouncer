@@ -152,7 +152,7 @@ export default function EmailModal({ isOpen, onClose, rsvps, onSendEmails }: Ema
       await onSendEmails(recipients, emailMessage.trim());
       onClose();
     } catch (error) {
-      console.error('Failed to send emails:', error);
+      // Failed to send emails
       alert('Failed to send emails. Please try again.');
     } finally {
       setIsSending(false);

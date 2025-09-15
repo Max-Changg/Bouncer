@@ -85,7 +85,7 @@ function RsvpContent() {
 
       image.src = url;
     } catch (e) {
-      console.error('Failed to download QR code', e);
+      // Failed to download QR code
     }
   };
 
@@ -105,21 +105,14 @@ function RsvpContent() {
   };
 
   // Debug: Log current state
-  console.log('RSVP Page State:', {
-    loading,
-    eventLoading,
-    session: !!session,
-    eventId,
-    event: !!event,
-    error
-  });
+  // RSVP Page State tracking
 
   // Fetch event details
   const fetchEventDetails = async (id: string) => {
     setEventLoading(true);
     setError(null);
     
-    console.log('Fetching event details for ID:', id);
+    // Fetching event details
     
     // Use the same approach as event/[id]/page.tsx
     const { data, error } = await supabase
@@ -128,16 +121,10 @@ function RsvpContent() {
       .eq('id', parseInt(id, 10))
       .single();
 
-    console.log('Query result:', { data, error });
+    // Query result
 
     if (error) {
-      console.error('Error fetching event:', error);
-      console.error('Error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
+      // Error fetching event
       
       if (error.code === 'PGRST116') {
         setError('Event not found. The event may have been deleted or the link is invalid.');
@@ -148,7 +135,7 @@ function RsvpContent() {
       }
       setEvent(null);
     } else if (data) {
-      console.log('Event found:', data);
+      // Event found
       setEvent(data);
       // Fetch tickets for this event
       const { data: ticketData, error: ticketError } = await supabase
@@ -157,7 +144,8 @@ function RsvpContent() {
         .eq('event_id', parseInt(id, 10));
       
       if (!ticketError && ticketData) {
-        // Calculate available quantities by subtracting RSVPs from total quantity
+        // Use the current quantity_available from the database (already decremented by atomic operations)
+        // Also fetch RSVP count for display purposes
         const ticketsWithAvailability = await Promise.all(
           ticketData.map(async (ticket) => {
             const { count: rsvpCount, error: rsvpError } = await supabase
@@ -166,12 +154,13 @@ function RsvpContent() {
               .eq('ticket_id', ticket.id);
             
             const usedQuantity = rsvpError ? 0 : (rsvpCount || 0);
-            const actualAvailable = Math.max(0, ticket.quantity_available - usedQuantity);
             
             return {
               ...ticket,
-              quantity_available: actualAvailable,
-              original_quantity: ticket.quantity_available,
+              // Use the actual current quantity_available (already decremented by atomic operations)
+              quantity_available: ticket.quantity_available,
+              // Store original quantity for reference (current + sold)
+              original_quantity: ticket.quantity_available + usedQuantity,
               rsvps_count: usedQuantity
             };
           })
@@ -210,7 +199,7 @@ function RsvpContent() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, !!session);
+      // Auth state changed
       if (session) {
         setSession(session.user);
         if (session.user.email) {
@@ -225,7 +214,7 @@ function RsvpContent() {
 
     // Initial session check - use getSession instead of getUser for better cookie handling
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', !!session);
+      // Initial session check
       if (session) {
         setSession(session.user);
         if (session.user.email) {
@@ -239,7 +228,7 @@ function RsvpContent() {
 
     // Get eventId from URL search params
     const idFromUrl = searchParams.get('event_id');
-    console.log('Event ID from URL:', idFromUrl);
+    // Event ID from URL
     if (idFromUrl) {
       setEventId(idFromUrl);
     }
@@ -258,7 +247,7 @@ function RsvpContent() {
       .single();
 
     if (profileError && profileError.code !== 'PGRST116') {
-      console.error('Error fetching profile:', profileError);
+      // Error fetching profile
     } else if (profileData && profileData.qr_code_data) {
       setQrCodeData(profileData.qr_code_data);
     } else {
@@ -280,7 +269,7 @@ function RsvpContent() {
   // Fetch event details when session becomes available
   useEffect(() => {
     if (session && eventId && !event && !eventLoading) {
-      console.log('Session available, fetching event details for ID:', eventId);
+      // Session available, fetching event details
       fetchEventDetails(eventId);
       // Also fetch QR code data
       fetchQRCodeData(session.id);
@@ -291,12 +280,12 @@ function RsvpContent() {
     e.preventDefault();
 
     if (!eventId) {
-      console.error('Event ID not found in URL.');
+      // Event ID not found in URL
       return;
     }
 
     if (!session) {
-      console.error('User not authenticated.');
+      // User not authenticated
       router.push('/api/auth/direct-google');
       return;
     }
@@ -306,24 +295,8 @@ function RsvpContent() {
       return;
     }
 
-    // Check if user already has an RSVP for this event
-    const { data: existingRsvp, error: checkError } = await supabase
-      .from('rsvps')
-      .select('id')
-      .eq('event_id', Number(eventId))
-      .eq('user_id', session.id)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error('Error checking existing RSVP:', checkError);
-      setError('Failed to check existing RSVP. Please try again.');
-      return;
-    }
-
-    if (existingRsvp) {
-      setError('You have already RSVP\'d to this event. Please check the "my rsvps" page.');
-      return;
-    }
+    // Note: Duplicate RSVP check is handled by the backend API
+    // Removing frontend check to avoid RLS permission issues
     
     // Check if ticket type is still available
     const ticketType = selectedTicketType;
@@ -340,6 +313,7 @@ function RsvpContent() {
     // Pick the first available ticket ID from this ticket type
     const availableTicketId = ticketType.ticket_ids[0];
 
+
     let paymentProofUrl = null;
 
     // Upload payment proof image if provided
@@ -352,7 +326,7 @@ function RsvpContent() {
         .upload(fileName, paymentImage);
 
       if (uploadError) {
-        console.error('Error uploading payment proof:', uploadError);
+        // Error uploading payment proof
         setError('Failed to upload payment proof. Please try again.');
         return;
       }
@@ -379,11 +353,15 @@ function RsvpContent() {
     const result = await response.json();
 
     if (!response.ok) {
-      console.error('RSVP API error:', result);
+      // RSVP API error
       
       // Handle specific error cases
       if (response.status === 409) {
-        setError(result.error || 'Ticket no longer available or you have already RSVP\'d.');
+        if (result.error?.includes('already RSVP')) {
+          setError('You have already RSVP\'d to this event. Check "My RSVPs" to view your existing RSVP.');
+        } else {
+          setError(result.error || 'Selected ticket is no longer available.');
+        }
       } else {
         setError(result.error || 'Failed to submit RSVP. Please try again.');
       }
@@ -391,7 +369,7 @@ function RsvpContent() {
     }
 
     // If RSVP was successful, show success state
-    console.log('RSVP submitted successfully:', result);
+    // RSVP submitted successfully
     setRsvpSubmitted(true);
     
     // Fetch QR code data if not already loaded
@@ -401,7 +379,7 @@ function RsvpContent() {
   };
 
   if (loading) {
-    console.log('RSVP Page: Loading state is true');
+    // RSVP Page: Loading state
     return (
       <div>
         <Header />
@@ -417,7 +395,7 @@ function RsvpContent() {
   }
 
   if (!session) {
-    console.log('RSVP Page: No session, should redirect to Google auth');
+    // RSVP Page: No session, should redirect to Google auth
     const eventIdParam = searchParams.get('event_id');
     return (
       <div>
@@ -432,7 +410,7 @@ function RsvpContent() {
                 onClick={() => {
                   const eventIdForRedirect = eventIdParam || eventId || '';
                   const currentUrl = `/rsvp?event_id=${eventIdForRedirect}`;
-                  console.log('Sign In button clicked, redirecting to:', `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`);
+                  // Sign In button clicked, redirecting
                   router.push(`/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`);
                 }}
                 className="w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
@@ -469,7 +447,7 @@ function RsvpContent() {
   }
 
   if (eventLoading) {
-    console.log('RSVP Page: Event loading state is true');
+    // RSVP Page: Event loading state
     return (
       <div>
         <Header />
@@ -817,7 +795,7 @@ function RsvpContent() {
                         window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
                       }, 100);
                     } catch (error) {
-                      console.error('Error during sign out:', error);
+                      // Error during sign out
                       // Fallback: force redirect anyway
                       const currentUrl = `/rsvp?event_id=${eventId || ''}`;
                       window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;

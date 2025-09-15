@@ -142,7 +142,7 @@ export default function CreateEvent() {
 
   // Track location state changes
   useEffect(() => {
-    console.log('📍 Location state changed to:', location);
+    // Location state tracking
   }, [location]);
 
   useEffect(() => {
@@ -155,11 +155,7 @@ export default function CreateEvent() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      console.log(
-        'Auth state changed:',
-        event,
-        session?.user?.email || 'no user'
-      );
+      // Auth state changed
 
       // Clear any pending redirect
       if (redirectTimeout) {
@@ -169,20 +165,18 @@ export default function CreateEvent() {
 
       setSessionLoading(false);
       if (session?.user) {
-        console.log('Session found from auth change:', session.user.email);
+        // Session found from auth change
         setSession(session.user);
       } else {
-        console.log('No session from auth state change');
+        // No session from auth state change
         setSession(null);
         // Only redirect on explicit sign out, not initial load
         if (event === 'SIGNED_OUT') {
-          console.log('User signed out, redirecting to Google auth');
+          // User signed out, redirecting to Google auth
           router.push('/api/auth/direct-google');
         } else if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           // For initial session or token refresh, if no user, set a delay before redirect
-          console.log(
-            'No user after initial session check, setting redirect timeout'
-          );
+          // No user after initial session check, setting redirect timeout
           redirectTimeout = setTimeout(() => {
             if (mounted) {
               // Check current session state before redirecting
@@ -190,9 +184,7 @@ export default function CreateEvent() {
                 .getSession()
                 .then(({ data: { session: currentSession } }) => {
                   if (!currentSession?.user && mounted) {
-                    console.log(
-                      'No session found after timeout, redirecting to Google auth'
-                    );
+                    // No session found after timeout, redirecting to Google auth
                     router.push('/api/auth/direct-google');
                   }
                 });
@@ -213,46 +205,41 @@ export default function CreateEvent() {
         if (!mounted) return;
 
         if (error) {
-          console.error('Initial session error:', error);
+          // Initial session error
           setSessionLoading(false);
           setSession(null);
           return;
         }
 
-        console.log(
-          'Initial session check:',
-          session?.user?.email || 'no session'
-        );
+        // Initial session check
         setSessionLoading(false);
 
         if (session?.user) {
-          console.log('Setting session for user:', session.user.email);
+          // Setting session for user
           setSession(session.user);
         } else {
-          console.log('No session found, will set redirect timeout');
+          // No session found, will set redirect timeout
           setSession(null);
           // Set a timeout to redirect if no session is established
           redirectTimeout = setTimeout(() => {
             if (mounted) {
-              console.log('Timeout reached, checking session one more time...');
+              // Timeout reached, checking session one more time
               // Double-check session state before redirecting
               supabase.auth
                 .getSession()
                 .then(({ data: { session: currentSession } }) => {
                   if (!currentSession?.user && mounted) {
-                    console.log('Confirmed no session, redirecting to Google auth');
+                    // Confirmed no session, redirecting to Google auth
                     router.push('/api/auth/direct-google');
                   } else if (currentSession?.user) {
-                    console.log(
-                      'Session found during timeout check, not redirecting'
-                    );
+                    // Session found during timeout check, not redirecting
                   }
                 });
             }
           }, 2000); // Reduced to 2 seconds
         }
       } catch (error) {
-        console.error('Failed to get initial session:', error);
+        // Failed to get initial session
         if (mounted) {
           setSessionLoading(false);
           setSession(null);
@@ -271,21 +258,38 @@ export default function CreateEvent() {
         .single();
 
       if (error) {
-        console.error('Error fetching event data:', error);
+        // Error fetching event data
         setError(error.message);
       } else if (data) {
-        setEventName(data.name);
-        setEventTheme(data.theme);
-        setStartDate(new Date(data.start_date));
-        setEndDate(new Date(data.end_date));
-        setTimeZone(data.time_zone);
+        setEventName(data.name || '');
+        setEventTheme(data.theme || '');
+        
+        // Parse dates and extract times
+        const startDateTime = new Date(data.start_date);
+        const endDateTime = new Date(data.end_date);
+        
+        setStartDate(startDateTime);
+        setEndDate(endDateTime);
+        
+        // Extract time portions in HH:MM format, with fallbacks
+        const startTimeStr = (!isNaN(startDateTime.getTime())) 
+          ? startDateTime.toTimeString().slice(0, 5) || '10:00'
+          : '10:00';
+        const endTimeStr = (!isNaN(endDateTime.getTime())) 
+          ? endDateTime.toTimeString().slice(0, 5) || '11:00'
+          : '11:00';
+        
+        setStartTime(startTimeStr);
+        setEndTime(endTimeStr);
+        setTimeZone(data.time_zone || 'America/Los_Angeles');
         setLocation(data.location || '');
+        
         const { baseInfo, venmo, zelle } = extractPaymentInfo(
           data.additional_info || ''
         );
-        setAdditionalInfo(baseInfo);
-        setVenmoHandle(venmo);
-        setZelleHandle(zelle);
+        setAdditionalInfo(baseInfo || '');
+        setVenmoHandle(venmo || '');
+        setZelleHandle(zelle || '');
       }
 
       // Load existing tickets for this event
@@ -336,24 +340,18 @@ export default function CreateEvent() {
   // Initialize Google Places Autocomplete
   useEffect(() => {
     const initAutocomplete = () => {
-      console.log('🔍 Initializing Google Places Autocomplete...');
-      console.log('📍 locationInputRef.current:', locationInputRef.current);
-      console.log('🌐 window.google:', window.google);
-      console.log(
-        '🔑 Google Maps API Key:',
-        process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Set' : 'Missing'
-      );
+      // Initializing Google Places Autocomplete
 
       // Check if Google Maps API is fully loaded
       if (!window.google || !window.google.maps || !window.google.maps.places) {
-        console.log('⏳ Google Maps API not fully loaded yet, retrying in 100ms...');
+        // Google Maps API not fully loaded yet, retrying in 100ms
         setTimeout(initAutocomplete, 100);
         return;
       }
 
       if (locationInputRef.current) {
         try {
-          console.log('✅ Creating Autocomplete widget...');
+          // Creating Autocomplete widget
           const autocomplete = new window.google.maps.places.Autocomplete(
             locationInputRef.current,
             {
@@ -362,27 +360,23 @@ export default function CreateEvent() {
             }
           );
 
-          console.log('✅ Autocomplete widget created successfully');
-          console.log('🎯 Setting up place_changed listener...');
+          // Autocomplete widget created successfully
 
           autocomplete.addListener('place_changed', () => {
-            console.log('🎉 Place selection triggered!');
+            // Place selection triggered
             const place = autocomplete.getPlace();
-            console.log('📋 Selected place data:', place);
 
             if (place.formatted_address) {
-              console.log('📍 Setting location to:', place.formatted_address);
+              // Setting location
               setLocation(place.formatted_address);
-              console.log('✅ Location updated successfully');
             } else {
-              console.log('⚠️ No formatted_address found in place data');
-              console.log('🔍 Available place data:', Object.keys(place));
+              // No formatted_address found in place data
             }
           });
 
-          console.log('✅ Place listener set up successfully');
+          // Place listener set up successfully
         } catch (error) {
-          console.error('❌ Error initializing autocomplete:', error);
+          // Error initializing autocomplete
           if (
             error instanceof Error &&
             error.message?.includes('InvalidKeyMapError')
@@ -393,20 +387,15 @@ export default function CreateEvent() {
           }
         }
       } else {
-        console.log('❌ Cannot initialize autocomplete:');
-        console.log(
-          '  - locationInputRef.current:',
-          !!locationInputRef.current
-        );
-        console.log('  - window.google:', !!window.google);
+        // Cannot initialize autocomplete
       }
     };
 
     if (window.google && window.google.maps && window.google.maps.places) {
-      console.log('🌐 Google Maps API already loaded');
+      // Google Maps API already loaded
       initAutocomplete();
     } else {
-      console.log('📡 Google Maps API not loaded, loading script...');
+      // Google Maps API not loaded, loading script
       // Load Google Maps API if not already loaded
       // SECURITY NOTE: This API key is exposed to the frontend.
       // Make sure to restrict it in Google Cloud Console:
@@ -419,7 +408,7 @@ export default function CreateEvent() {
         script.async = true;
         script.defer = true;
         script.onerror = error => {
-          console.error('❌ Failed to load Google Maps API script:', error);
+          // Failed to load Google Maps API script
           setError(
             'Failed to load Google Maps API. Please check your API key configuration.'
           );
@@ -427,14 +416,14 @@ export default function CreateEvent() {
         
         // Set up global callback
         (window as any).initGoogleMaps = () => {
-          console.log('✅ Google Maps API script loaded successfully');
+          // Google Maps API script loaded successfully
           initAutocomplete();
         };
         
         document.head.appendChild(script);
-        console.log('📡 Google Maps script added to DOM');
+        // Google Maps script added to DOM
       } else {
-        console.log('📡 Google Maps script already exists in DOM');
+        // Google Maps script already exists in DOM
         // If script exists but API isn't ready, wait for it
         setTimeout(initAutocomplete, 100);
       }
@@ -546,7 +535,7 @@ export default function CreateEvent() {
           .eq('id', eventId);
 
         if (error) {
-          console.error('Error updating event:', error);
+          // Error updating event
           setError(error.message);
           setLoading(false);
           return;
@@ -576,7 +565,7 @@ export default function CreateEvent() {
           .single();
 
         if (error) {
-          console.error('Error creating event:', error);
+          // Error creating event
           setError(error.message);
           setLoading(false);
           return;
@@ -713,7 +702,7 @@ export default function CreateEvent() {
         .eq('event_id', eventIdToUse);
 
       if (error) {
-        console.error('Error fetching RSVP counts:', error);
+        // Error fetching RSVP counts
         return;
       }
 
@@ -727,7 +716,7 @@ export default function CreateEvent() {
 
       setTicketRsvpCounts(counts);
     } catch (error) {
-      console.error('Error fetching ticket RSVP counts:', error);
+      // Error fetching ticket RSVP counts
     }
   };
 
@@ -795,7 +784,7 @@ export default function CreateEvent() {
       
       setInviteLink(`${window.location.origin}/rsvp?event_id=${eventIdToUse}`);
     } catch (error) {
-      console.error('Error saving tickets:', error);
+      // Error saving tickets
       setError(error instanceof Error ? error.message : 'Failed to save tickets');
     } finally {
       setIsSavingTickets(false);
@@ -1070,7 +1059,7 @@ export default function CreateEvent() {
                 id="location"
                 value={location}
                 onChange={e => {
-                  console.log('✏️ Manual location input:', e.target.value);
+                  // Manual location input
                   setLocation(e.target.value);
                 }}
                 className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"

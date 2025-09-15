@@ -78,11 +78,11 @@ export async function middleware(request: NextRequest) {
 
   // If there's a session error (like invalid refresh token), clear the session
   if (sessionError) {
-    console.log('Middleware - session error, clearing session:', sessionError.message);
+    // Middleware - session error, clearing session
     await supabase.auth.signOut();
   }
 
-  console.log('Middleware - pathname:', pathname, 'session:', !!session);
+  // Middleware - pathname and session check
 
   // Check if this is a protected route
   const isProtectedRoute = protectedRoutes.some(route => {
@@ -96,20 +96,20 @@ export async function middleware(request: NextRequest) {
     }
   });
 
-  console.log('Middleware - isProtectedRoute:', isProtectedRoute);
+  // Middleware - isProtectedRoute check
 
   // If the user is not logged in and is trying to access a protected route, redirect to direct Google OAuth
   if (!session && isProtectedRoute) {
     const authUrl = new URL('/api/auth/direct-google', request.url);
     // Preserve the current URL as the next parameter
     authUrl.searchParams.set('next', pathname + request.nextUrl.search);
-    console.log('Middleware - redirecting to direct Google auth with next:', pathname + request.nextUrl.search);
+    // Middleware - redirecting to direct Google auth with next
     return NextResponse.redirect(authUrl);
   }
 
   // If authenticated user somehow reaches /login, redirect to /event
   if (session && pathname === '/login') {
-    console.log('Middleware - authenticated user on login page, redirecting to /event');
+    // Middleware - authenticated user on login page, redirecting to /event
     return NextResponse.redirect(new URL('/event', request.url));
   }
   return response;

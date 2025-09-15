@@ -51,7 +51,7 @@ export default function Event() {
         });
 
       if (error) {
-        console.error('Error fetching events:', error);
+        // Error fetching events
         setError(error.message);
       } else {
         setEvents(data || []);
@@ -87,9 +87,9 @@ export default function Event() {
       // Remove event from local state
       setEvents(events.filter(e => e.id !== eventId));
       
-      console.log('Event deleted successfully:', result.message);
+      // Event deleted successfully
     } catch (err) {
-      console.error('Error deleting event:', err);
+      // Error deleting event
       setError(err instanceof Error ? err.message : 'Failed to delete event');
     } finally {
       setDeleting(null);

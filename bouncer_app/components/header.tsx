@@ -70,7 +70,7 @@ function HeaderContent() {
         fetchProfile(session.user);
       } else setProfile(null);
     } catch (error) {
-      console.error('Error checking session:', error);
+      // Error checking session
     }
   };
 
@@ -117,7 +117,7 @@ function HeaderContent() {
         window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
       }, 100);
     } catch (error) {
-      console.error('Error during sign out:', error);
+      // Error during sign out
       // Fallback: force redirect anyway
       let currentUrl = pathname;
       if (typeof window !== 'undefined') {

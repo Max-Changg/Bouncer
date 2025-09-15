@@ -35,26 +35,16 @@ export default function Home() {
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         const element = entry.target as HTMLElement;
-        console.log('Intersection detected:', {
-          element: element.textContent?.slice(0, 20),
-          isIntersecting: entry.isIntersecting,
-          intersectionRatio: entry.intersectionRatio,
-        });
+        // Intersection detected
 
         if (entry.isIntersecting) {
           // Add animate class to trigger the transition
           element.classList.add('animate');
-          console.log(
-            'Added animate class to:',
-            element.textContent?.slice(0, 20)
-          );
+          // Added animate class
         } else {
           // Remove animate class to reset
           element.classList.remove('animate');
-          console.log(
-            'Removed animate class from:',
-            element.textContent?.slice(0, 20)
-          );
+          // Removed animate class
         }
       });
     }, observerOptions);
@@ -70,15 +60,12 @@ export default function Home() {
       clientHomeRef.current,
     ];
 
-    console.log(
-      'Elements to observe:',
-      elementsToObserve.map(el => el?.textContent?.slice(0, 20))
-    );
+    // Elements to observe
 
     elementsToObserve.forEach(element => {
       if (element) {
         observer.observe(element);
-        console.log('Observing element:', element.textContent?.slice(0, 20));
+        // Observing element
       }
     });
 
@@ -87,13 +74,10 @@ export default function Home() {
       const fallbackElements = document.querySelectorAll(
         '.opacity-0.transform.translate-y-8'
       );
-      console.log('Fallback elements found:', fallbackElements.length);
+      // Fallback elements found
       fallbackElements.forEach(element => {
         observer.observe(element);
-        console.log(
-          'Observing fallback element:',
-          element.textContent?.slice(0, 20)
-        );
+        // Observing fallback element
       });
     }, 1000);
 
