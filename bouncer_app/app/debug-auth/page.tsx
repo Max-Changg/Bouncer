@@ -1,6 +1,6 @@
 'use client';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 import { createBrowserClient } from '@supabase/ssr';
 import { useState, useEffect } from 'react';
@@ -75,7 +75,18 @@ export default function DebugAuth() {
             SUPABASE_ANON_KEY:{' '}
             {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing'}
           </p>
-          <p>BASE_URL: {process.env.NEXT_PUBLIC_BASE_URL || 'Not set'}</p>
+          <p>
+            BASE_URL:{' '}
+            {typeof window !== 'undefined'
+              ? window.location.origin
+              : process.env.NEXT_PUBLIC_BASE_URL || 'Not set'}
+          </p>
+          <p>
+            NEXTAUTH_URL:{' '}
+            {typeof window !== 'undefined'
+              ? window.location.origin
+              : process.env.NEXTAUTH_URL || 'Not set'}
+          </p>
         </div>
 
         <div>
@@ -117,7 +128,10 @@ export default function DebugAuth() {
           <h3 className="font-bold">Auth Flow Test:</h3>
           <p>
             Go to{' '}
-            <a href="/api/auth/direct-google" className="text-blue-500 underline">
+            <a
+              href="/api/auth/direct-google"
+              className="text-blue-500 underline"
+            >
               /api/auth/direct-google
             </a>{' '}
             to test Google OAuth
