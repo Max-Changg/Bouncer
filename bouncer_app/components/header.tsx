@@ -127,16 +127,9 @@ function HeaderContent() {
   return (
     <div className="sticky top-0 z-50 bg-white/85 backdrop-blur-md">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        {/* Wordmark only shows once the menu is expanded */}
         <a
           href="/"
-          className={`text-2xl font-extrabold tracking-tight text-primary transition-all duration-300 md:text-3xl ${
-            menuOpen
-              ? 'translate-y-0 opacity-100'
-              : 'pointer-events-none -translate-y-1 opacity-0'
-          }`}
-          aria-hidden={!menuOpen}
-          tabIndex={menuOpen ? 0 : -1}
+          className="text-2xl font-extrabold tracking-tight text-primary md:text-3xl"
         >
           Bouncer
         </a>
@@ -230,7 +223,10 @@ export default function Header() {
     <Suspense
       fallback={
         <div className="sticky top-0 z-50 bg-white/85 backdrop-blur-md">
-          <header className="mx-auto flex max-w-7xl items-center justify-end px-4 py-4 sm:px-6 lg:px-8">
+          <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+            <span className="text-2xl font-extrabold tracking-tight text-primary md:text-3xl">
+              Bouncer
+            </span>
             <div className="flex h-10 w-10 items-center justify-center text-foreground">
               <Menu className="h-6 w-6" />
             </div>
