@@ -109,8 +109,8 @@ export default function LandingHero() {
 
   return (
     <section ref={ref} className="hero-root relative h-[260svh]" data-phase="intro">
-      <div className="sticky top-0 flex h-svh flex-col items-center justify-center overflow-hidden px-6">
-        <div className="hero-intro flex flex-col items-center gap-6 pt-6 sm:gap-9">
+      <div className="sticky top-0 flex h-svh flex-col items-center justify-center overflow-hidden px-6 pb-24">
+        <div className="hero-intro flex flex-col items-center gap-6 sm:gap-9">
           <HeroCopy />
           <div className="hero-pass-wrap relative">
             {/* Soft brand glow behind the pass */}
@@ -172,7 +172,8 @@ export default function LandingHero() {
           <Mosaic withScrollClasses />
         </div>
 
-        <div className="hero-hint pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-[0.2em] text-[var(--muted-foreground)]">
+        {/* bottom-24 ≈ header height (72px) + 24px, so the hint clears the fold at load */}
+        <div className="hero-hint pointer-events-none absolute bottom-24 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-[0.2em] text-[var(--muted-foreground)]">
           SCROLL
         </div>
       </div>
