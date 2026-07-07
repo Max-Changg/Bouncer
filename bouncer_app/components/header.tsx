@@ -4,21 +4,20 @@ import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 // Using native anchors for consistent full navigations through middleware
 import { useState, useEffect, Suspense } from 'react';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+import { Menu, X } from 'lucide-react';
 import type { Database } from '@/lib/database.types';
 import type { User } from '@supabase/supabase-js';
+
+const NAV_LINKS = [
+  { href: '/event', label: 'My Events' },
+  { href: '/my-rsvps', label: 'My RSVPs' },
+  { href: '/qr-code', label: 'My QR Code' },
+];
 
 function HeaderContent() {
   const [session, setSession] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
-  // Dropdown handled by shadcn menu
+  const [menuOpen, setMenuOpen] = useState(false);
   const supabase = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -39,8 +38,6 @@ function HeaderContent() {
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  // Removed manual outside-click logic; Radix handles it
 
   const fetchProfile = async (user: User) => {
     try {
@@ -97,11 +94,11 @@ function HeaderContent() {
     try {
       // Sign out and clear all session data
       await supabase.auth.signOut({ scope: 'global' });
-      
+
       // Clear any cached authentication state
       setSession(null);
       setProfile(null);
-      
+
       // Get current URL for redirect
       let currentUrl = pathname;
       if (typeof window !== 'undefined') {
@@ -111,7 +108,7 @@ function HeaderContent() {
           pathname +
           (searchParams.toString() ? `?${searchParams.toString()}` : '');
       }
-      
+
       // Small delay to ensure cleanup, then force redirect
       setTimeout(() => {
         window.location.href = `/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`;
@@ -128,104 +125,119 @@ function HeaderContent() {
   };
 
   return (
-    <div className="sticky top-0 z-50">
-      <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 md:py-5 flex items-center justify-between bg-black/25 backdrop-blur-md border-b border-white/10 rounded-b-2xl">
-        <a href="/" className="relative font-extrabold tracking-tight text-white text-2xl md:text-3xl">
-          <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-purple-200 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(168,85,247,0.25)]">
-            Bouncer
-          </span>
+    <div className="sticky top-0 z-50 bg-white/85 backdrop-blur-md">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        {/* Wordmark only shows once the menu is expanded */}
+        <a
+          href="/"
+          className={`text-2xl font-extrabold tracking-tight text-primary transition-all duration-300 md:text-3xl ${
+            menuOpen
+              ? 'translate-y-0 opacity-100'
+              : 'pointer-events-none -translate-y-1 opacity-0'
+          }`}
+          aria-hidden={!menuOpen}
+          tabIndex={menuOpen ? 0 : -1}
+        >
+          Bouncer
         </a>
-        <nav>
-          <ul className="flex items-center gap-2 sm:gap-3 md:gap-4">
 
-            <li>
-              <a href="/event" className="group relative inline-flex items-center px-3 py-2 text-sm md:text-base text-gray-300 hover:text-white transition-colors">
-                <span>My Events</span>
-                <span className="pointer-events-none absolute inset-0 rounded-md bg-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></span>
-                <span className="pointer-events-none absolute left-1/2 -bottom-0.5 h-[2px] w-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300 group-hover:left-0 group-hover:w-full"></span>
-              </a>
-            </li>
-            <li>
-              <a href="/my-rsvps" className="group relative inline-flex items-center px-3 py-2 text-sm md:text-base text-gray-300 hover:text-white transition-colors">
-                <span>My RSVPs</span>
-                <span className="pointer-events-none absolute inset-0 rounded-md bg-white/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></span>
-                <span className="pointer-events-none absolute left-1/2 -bottom-0.5 h-[2px] w-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300 group-hover:left-0 group-hover:w-full"></span>
-              </a>
-            </li>
-            <li className="relative ml-1 md:ml-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="group flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white ring-1 ring-white/10 transition-all hover:bg-white/10 hover:ring-purple-500/30"
-                    aria-label="User menu"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 32 32"
-                      className="h-6 w-6 transition-transform group-hover:scale-105"
-                      xmlSpace="preserve"
-                    >
-                      <path d="M16 31C7.729 31 1 24.271 1 16S7.729 1 16 1s15 6.729 15 15-6.729 15-15 15zm0-28C8.832 3 3 8.832 3 16s5.832 13 13 13 13-5.832 13-13S23.168 3 16 3z" fill="currentColor"/>
-                      <circle cx="16" cy="11.368" r="3.368" fill="currentColor"/>
-                      <path d="M20.673 24h-9.346c-.83 0-1.502-.672-1.502-1.502v-.987a5.404 5.404 0 0 1 5.403-5.403h1.544a5.404 5.404 0 0 1 5.403 5.403v.987c0 .83-.672 1.502-1.502 1.502z" fill="currentColor"/>
-                    </svg>
-                    <span className="absolute -inset-px rounded-full bg-gradient-to-r from-purple-500/0 via-indigo-500/0 to-purple-500/0 opacity-0 blur transition-opacity duration-300 group-hover:opacity-20" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-black/85 text-white border border-white/10 backdrop-blur-md min-w-[12rem]">
-                  {session ? (
-                    <>
-                      <DropdownMenuLabel className="text-white/80">
-                        <div className="font-semibold">{profile?.full_name || 'User'}</div>
-                        <div className="truncate text-xs text-white/60">{session.email}</div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator className="bg-white/10" />
-                      <DropdownMenuItem onSelect={() => (window.location.href = '/event')}>
-                        My Events
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => (window.location.href = '/my-rsvps')}>
-                        My RSVPs
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => (window.location.href = '/qr-code')}>
-                        My QR Code
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-white/10" />
-                      <DropdownMenuItem onSelect={handleSignInDifferent}>
-                        Switch Account
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={handleSignOut} data-variant="destructive">
-                        Sign out
-                      </DropdownMenuItem>
-                    </>
-                  ) : (
-                    <DropdownMenuItem onSelect={handleSignIn}>Sign in with Google</DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </li>
-          </ul>
-        </nav>
+        {/* Menu opener — nav stays hidden behind this at every screen size */}
+        <button
+          type="button"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground transition-colors hover:bg-black/[0.04]"
+          aria-expanded={menuOpen}
+          aria-controls="main-menu"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          onClick={() => setMenuOpen(open => !open)}
+        >
+          {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
       </header>
+
+      {/* Menu panel — animates open/closed, items sit right under the opener */}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+          menuOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+        }`}
+      >
+        <nav
+          id="main-menu"
+          aria-label="Main"
+          aria-hidden={!menuOpen}
+          className={`overflow-hidden transition-[visibility] duration-300 ${
+            menuOpen ? 'visible' : 'invisible'
+          }`}
+        >
+          <div className="mx-auto flex max-w-7xl flex-col items-end gap-0.5 px-4 pb-6 pt-1 sm:px-6 lg:px-8">
+            {session && (
+              <div className="px-3 pb-2 text-right">
+                <div className="text-sm font-semibold text-foreground">
+                  {profile?.full_name || 'User'}
+                </div>
+                <div className="truncate font-mono text-[11px] text-muted-foreground">
+                  {session.email}
+                </div>
+              </div>
+            )}
+            {NAV_LINKS.map(link => (
+              <a
+                key={link.href}
+                href={link.href}
+                tabIndex={menuOpen ? 0 : -1}
+                className="rounded-lg px-3 py-2 text-right text-base text-foreground transition-colors hover:bg-muted"
+              >
+                {link.label}
+              </a>
+            ))}
+            {session ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSignInDifferent}
+                  tabIndex={menuOpen ? 0 : -1}
+                  className="rounded-lg px-3 py-2 text-right text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  Switch Account
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  tabIndex={menuOpen ? 0 : -1}
+                  className="rounded-lg px-3 py-2 text-right text-sm text-red-600 transition-colors hover:bg-red-50"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSignIn}
+                tabIndex={menuOpen ? 0 : -1}
+                className="rounded-lg px-3 py-2 text-right text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                Sign in with Google
+              </button>
+            )}
+          </div>
+        </nav>
+      </div>
     </div>
   );
 }
 
 export default function Header() {
   return (
-    <Suspense fallback={
-      <div className="bg-white shadow-sm">
-        <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <h1 className="text-xl font-bold text-gray-900">Bouncer</h1>
-              </div>
+    <Suspense
+      fallback={
+        <div className="sticky top-0 z-50 bg-white/85 backdrop-blur-md">
+          <header className="mx-auto flex max-w-7xl items-center justify-end px-4 py-4 sm:px-6 lg:px-8">
+            <div className="flex h-10 w-10 items-center justify-center text-foreground">
+              <Menu className="h-6 w-6" />
             </div>
-          </div>
-        </header>
-      </div>
-    }>
+          </header>
+        </div>
+      }
+    >
       <HeaderContent />
     </Suspense>
   );

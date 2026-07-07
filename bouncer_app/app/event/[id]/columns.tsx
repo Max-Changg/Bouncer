@@ -54,7 +54,7 @@ const EditableAmountInput = ({
         onChange={e => setValue(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className="w-20 h-8 text-sm bg-gray-700 border-gray-600 text-white"
+        className="h-8 w-24 font-mono text-sm"
         autoFocus
       />
     );
@@ -62,7 +62,7 @@ const EditableAmountInput = ({
 
   return (
     <span
-      className="text-green-400 font-medium cursor-pointer hover:text-green-300 transition-colors"
+      className="cursor-pointer font-mono text-sm text-foreground underline decoration-border decoration-dotted underline-offset-4 transition-colors hover:text-primary hover:decoration-primary"
       onClick={() => setIsEditing(true)}
     >
       {formatDisplayValue(value)}
@@ -102,17 +102,27 @@ export const createColumns = (
   {
     accessorKey: 'name',
     header: 'Name',
+    cell: ({ row }) => (
+      <span className="font-medium text-foreground">{row.original.name}</span>
+    ),
   },
   {
     accessorKey: 'email',
     header: 'Email',
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.original.email}</span>
+    ),
   },
   {
     accessorKey: 'ticket_name',
     header: 'Ticket Type',
     cell: ({ row }) => {
       const ticketName = row.original.ticket_name;
-      return <span className="text-gray-300">{ticketName || 'Unknown'}</span>;
+      return (
+        <span className="text-sm text-foreground">
+          {ticketName || 'Unknown'}
+        </span>
+      );
     },
   },
   {
@@ -121,7 +131,7 @@ export const createColumns = (
     cell: ({ row }) => {
       const ticketPrice = row.original.ticket_price;
       return (
-        <span className="text-green-400 font-medium">
+        <span className="font-mono text-sm text-foreground">
           {ticketPrice != null ? `$${ticketPrice.toFixed(2)}` : '$0.00'}
         </span>
       );
@@ -144,7 +154,11 @@ export const createColumns = (
     header: 'Payment Proof',
     cell: ({ row }) => {
       if (!row.original.payment_proof_url) {
-        return <span className="text-gray-500 text-sm">No proof</span>;
+        return (
+          <span className="rounded-md bg-muted px-2 py-1 font-mono text-[10px] tracking-wide text-muted-foreground">
+            NO PROOF
+          </span>
+        );
       }
       return (
         <Button
@@ -158,9 +172,9 @@ export const createColumns = (
               );
             }
           }}
-          className="bg-blue-800/20 border-blue-500/50 text-blue-300 hover:bg-blue-800/40 hover:text-white flex items-center space-x-1"
+          className="gap-1.5"
         >
-          <EyeIcon className="w-4 h-4" />
+          <EyeIcon className="h-4 w-4" />
           <span>View</span>
         </Button>
       );
@@ -171,9 +185,9 @@ export const createColumns = (
   {
     id: 'verified',
     header: () => (
-      <div className="flex items-center space-x-2">
-        <span>Verified?</span>
-        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+      <div className="flex items-center gap-2">
+        <span>Verified</span>
+        <span className="h-1.5 w-1.5 rounded-full bg-[#067a53]"></span>
       </div>
     ),
     cell: ({ row }) => (
@@ -186,7 +200,7 @@ export const createColumns = (
             }
           }}
           aria-label={`Verify RSVP for ${row.original.name}`}
-          className="w-5 h-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 border-2 border-gray-400 hover:border-green-500 transition-colors"
+          className="h-5 w-5 data-[state=checked]:border-[#067a53] data-[state=checked]:bg-[#067a53]"
         />
       </div>
     ),

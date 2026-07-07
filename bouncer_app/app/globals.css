@@ -45,24 +45,24 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #000;
-  --foreground: #d1d5db; /* Tailwind gray-300 */
-  --primary: #A259FF;
+  --background: #ffffff;
+  --foreground: #141318;
+  --primary: #6d28d9;
   --primary-foreground: #fff;
-  --card: #18181b;
-  --card-foreground: #d1d5db;
-  --popover: #18181b;
-  --popover-foreground: #d1d5db;
-  --secondary: #23272f;
-  --secondary-foreground: #d1d5db;
-  --muted: #23272f;
-  --muted-foreground: #a1a1aa;
-  --accent: #A259FF;
-  --accent-foreground: #fff;
-  --destructive: #ef4444;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #A259FF;
+  --card: #ffffff;
+  --card-foreground: #141318;
+  --popover: #ffffff;
+  --popover-foreground: #141318;
+  --secondary: #f7f7f9;
+  --secondary-foreground: #141318;
+  --muted: #f7f7f9;
+  --muted-foreground: #5f5d68;
+  --accent: #f4f1fb;
+  --accent-foreground: #141318;
+  --destructive: #dc2626;
+  --border: #e7e6ec;
+  --input: #e7e6ec;
+  --ring: #6d28d9;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -117,115 +117,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-gray-300;
+    @apply bg-background text-foreground;
   }
 }
 
-/* Custom fade-in animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 1s ease-out forwards;
-}
-
-.animate-fade-in-up-delay-1 {
-  animation: fadeInUp 1s ease-out 0.3s forwards;
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-.animate-fade-in-up-delay-2 {
-  animation: fadeInUp 1s ease-out 0.6s forwards;
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-.animate-fade-in-up-delay-3 {
-  animation: fadeInUp 1s ease-out 0.9s forwards;
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-/* Smooth scroll-triggered transitions using CSS custom properties */
-.opacity-0.transform.translate-y-8 {
-  --scroll-opacity: 0;
-  --scroll-transform: translateY(32px);
-  opacity: var(--scroll-opacity);
-  transform: var(--scroll-transform);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-/* Oscillating button animation */
-@keyframes oscillate {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.oscillate-button {
-  animation: oscillate 2s ease-in-out infinite;
-}
-
-/* Scroll-triggered animation class */
-.animate {
-  opacity: 1 !important;
-  transform: translateY(0) !important;
-}
-
-/* Ensure orange background beams are completely static */
-.bg-gradient-to-b.from-orange-500\/50,
-.bg-gradient-to-b.from-orange-600\/40,
-.bg-gradient-to-b.from-orange-400\/35,
-.bg-gradient-to-b.from-orange-500\/30 {
-  animation: none !important;
-  transition: none !important;
-  transform-style: preserve-3d;
-  will-change: auto;
-}
-
-/* Static beam class to prevent any movement */
-.static-beam {
-  animation: none !important;
-  transition: none !important;
-  transform-style: preserve-3d;
-  will-change: auto;
-  position: absolute !important;
-}
-
-@keyframes fadeInOnly {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.animate-fade-in-only {
-  animation: fadeInOnly 2s ease-out forwards;
-}
-
-@keyframes wiggleWithPause {
-  0%   { transform: rotate(0deg); }
-  8%   { transform: rotate(-2deg); }
-  16%  { transform: rotate(2deg); }
-  24%  { transform: rotate(-2deg); }
-  32%  { transform: rotate(2deg); }
-  40%  { transform: rotate(0deg); }
-  100% { transform: none; }
-}
-
-.hover\:animate-wiggle:hover {
-  animation: wiggleWithPause 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-}
 .hover\:animate-grow {
   transition: transform 0.2s ease-in-out;
 }
@@ -251,16 +146,183 @@
   transform: rotateY(180deg);
 }
 
-@keyframes movingGradient {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 100% 50%; }
+/* ===== Landing page (light theme, scoped — interior pages stay dark) ===== */
+.landing {
+  --paper: #ffffff;
+  --surface: #f7f7f9;
+  --ink: #141318;
+  --line: #e7e6ec;
+  --violet: #6d28d9;
+  --ok: #067a53;
+  --ok-bg: #e4f5ec;
+  background: var(--paper);
+  color: var(--ink);
 }
 
-.moving-gradient-text {
-  background: linear-gradient(90deg, #A259FF, #FF6B35, #A259FF, #FF6B35);
-  background-size: 300% 100%;
-  animation: movingGradient 4s linear infinite;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.landing ::selection {
+  background: #ede9fe;
+  color: var(--ink);
+}
+
+html:has(.landing) {
+  scroll-behavior: smooth;
+}
+
+/* Overscroll rubber-banding should reveal white, not the app's dark body background */
+html:has(.landing),
+html:has(.landing) body {
+  background: #ffffff;
+}
+
+/* Entrance sequence on page load */
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-rise {
+  opacity: 0;
+  animation: landing-rise 0.65s cubic-bezier(0.2, 0.7, 0.2, 1) var(--rise-delay, 0s) forwards;
+}
+
+@keyframes stamp-land {
+  0% {
+    opacity: 0;
+    transform: scale(1.8) rotate(-14deg);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(0.94) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-7deg);
+  }
+}
+
+.stamp-land {
+  opacity: 0;
+  animation: stamp-land 0.4s cubic-bezier(0.2, 0.7, 0.3, 1.2) 0.9s forwards;
+}
+
+/* Hero scroll choreography — driven by --p (0–1) set on .hero-root each frame */
+.hero-copy {
+  opacity: clamp(0, calc(1 - var(--p, 0) * 3.2), 1);
+  transform: translateY(calc(var(--p, 0) * -70px));
+}
+
+.hero-pass-wrap {
+  opacity: clamp(0, calc(1 - (var(--p, 0) - 0.2) * 6), 1);
+  transform: scale(calc(1 - var(--p, 0) * 0.18)) translateY(calc(var(--p, 0) * -40px));
+}
+
+/* Once the intro has fully faded, drop it from hit-testing so its links can't be clicked */
+.hero-root[data-phase='list'] .hero-intro {
+  visibility: hidden;
+}
+
+/* Keep the whole intro (copy + pass) inside one viewport on shorter screens */
+.hero-intro {
+  transform-origin: center;
+}
+
+@media (max-height: 1000px) {
+  .hero-intro {
+    transform: scale(0.88);
+  }
+}
+
+@media (max-height: 760px) {
+  .hero-intro {
+    transform: scale(0.78);
+  }
+}
+
+.hero-mosaic {
+  --m: clamp(0, calc((var(--p, 0) - 0.24) * 3.3), 1);
+  opacity: var(--m);
+  transform: scale(calc(0.95 + 0.05 * var(--m)));
+}
+
+.hero-tile {
+  --t: clamp(0, calc((var(--p, 0) - 0.28 - var(--i, 0) * 0.04) * 6), 1);
+  opacity: var(--t);
+  transform: translateY(calc((1 - var(--t)) * 24px)) scale(calc(0.94 + var(--t) * 0.06));
+}
+
+.hero-caption {
+  --c: clamp(0, calc((var(--p, 0) - 0.72) * 6), 1);
+  opacity: var(--c);
+  transform: translateY(calc((1 - var(--c)) * 16px));
+}
+
+.hero-hint {
+  opacity: clamp(0, calc(1 - var(--p, 0) * 6), 1);
+}
+
+/* Steps section — progress rail fill and text swap */
+.steps-rail-fill {
+  width: calc(var(--p, 0) * 100%);
+}
+
+@keyframes step-swap {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-swap {
+  animation: step-swap 0.35s ease-out;
+}
+
+/* Receipt stagger reveal */
+.receipt-row {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.45s ease calc(var(--i, 0) * 90ms),
+    transform 0.45s ease calc(var(--i, 0) * 90ms);
+}
+
+.receipt-in .receipt-row {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.landing) {
+    scroll-behavior: auto;
+  }
+  .landing-rise,
+  .stamp-land {
+    animation: none;
+    opacity: 1;
+  }
+  .stamp-land {
+    transform: rotate(-7deg);
+  }
+  .hero-copy,
+  .hero-pass-wrap,
+  .hero-mosaic,
+  .hero-tile,
+  .hero-caption,
+  .receipt-row {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .step-swap {
+    animation: none;
+  }
 }

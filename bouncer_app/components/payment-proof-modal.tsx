@@ -57,41 +57,45 @@ export default function PaymentProofModal({ isOpen, onClose, imageUrl, guestName
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop with blur effect */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Dim page overlay */}
+      <div
+        className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
-      
+
       {/* Modal content */}
-      <div className="relative z-10 bg-gray-800/95 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-2xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden">
+      <div className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-border bg-white shadow-[0_24px_48px_-20px_rgba(20,19,24,0.28)]">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700/50">
+        <div className="flex items-center justify-between border-b border-border p-6">
           <div>
-            <h3 className="text-xl font-bold text-white">Payment Proof</h3>
-            <p className="text-gray-300 text-sm mt-1">Submitted by: {guestName}</p>
+            <div className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
+              Payment Proof
+            </div>
+            <h3 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
+              Submitted by: {guestName}
+            </h3>
           </div>
           <Button
             onClick={onClose}
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+            aria-label="Close"
           >
-            <XMarkIcon className="w-5 h-5" />
+            <XMarkIcon className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Image content */}
         <div className="p-6">
           {imageLoadError ? (
-            <div className="flex items-center justify-center h-64 bg-gray-700/30 rounded-lg">
+            <div className="flex h-64 items-center justify-center rounded-lg bg-muted">
               <div className="text-center">
-                <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <XMarkIcon className="w-8 h-8 text-red-400" />
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+                  <XMarkIcon className="h-8 w-8 text-red-600" />
                 </div>
-                <p className="text-red-300 font-medium">Failed to load image</p>
-                <p className="text-gray-400 text-sm mt-1">The payment proof image could not be loaded</p>
+                <p className="font-medium text-red-600">Failed to load image</p>
+                <p className="mt-1 text-sm text-muted-foreground">The payment proof image could not be loaded</p>
               </div>
             </div>
           ) : fullImageUrl ? (
@@ -99,29 +103,26 @@ export default function PaymentProofModal({ isOpen, onClose, imageUrl, guestName
               <img
                 src={fullImageUrl}
                 alt={`Payment proof from ${guestName}`}
-                className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg"
+                className="max-h-[60vh] max-w-full rounded-lg border border-border object-contain shadow-sm"
                 onError={() => setImageLoadError(true)}
                 onLoad={() => setImageLoadError(false)}
               />
             </div>
           ) : (
-            <div className="flex items-center justify-center h-64 bg-gray-700/30 rounded-lg">
+            <div className="flex h-64 items-center justify-center rounded-lg bg-muted">
               <div className="text-center">
-                <div className="w-16 h-16 bg-gray-600/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="w-8 h-8 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary"></div>
                 </div>
-                <p className="text-gray-400 font-medium">Loading image...</p>
+                <p className="font-medium text-muted-foreground">Loading image...</p>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end p-6 border-t border-gray-700/50">
-          <Button
-            onClick={onClose}
-            className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
-          >
+        <div className="flex justify-end border-t border-border p-6">
+          <Button onClick={onClose} variant="outline">
             Close
           </Button>
         </div>

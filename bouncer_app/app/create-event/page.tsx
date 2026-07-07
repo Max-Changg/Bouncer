@@ -814,10 +814,10 @@ export default function CreateEvent() {
 
   if (sessionLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading...</p>
+          <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-4 border-primary/20 border-t-primary"></div>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -825,233 +825,223 @@ export default function CreateEvent() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Checking authentication...</p>
+          <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-4 border-primary/20 border-t-primary"></div>
+          <p className="text-muted-foreground">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-      {/* Extended Hero Section with Header */}
-      <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
-        {/* Background: subtle beams + dotted grid */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Thin rave-style light beams */}
-          <div
-            className="absolute top-0 left-1/2 w-32 h-full bg-gradient-to-b from-purple-600/50 via-purple-600/25 to-transparent transform -translate-x-[460px] skew-x-16"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-24 h-full bg-gradient-to-b from-orange-400/60 via-orange-500/30 to-transparent transform -translate-x-[200px]"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-28 h-full bg-gradient-to-b from-purple-400/55 via-purple-500/28 to-transparent transform -skew-x-16 translate-x-[60px]"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-20 h-full bg-gradient-to-b from-orange-600/45 via-orange-600/20 to-transparent transform translate-x-[300px] skew-x-12"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-16 h-full bg-gradient-to-b from-purple-500/40 via-purple-500/18 to-transparent transform -translate-x-[600px] -skew-x-8"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-18 h-full bg-gradient-to-b from-orange-400/40 via-orange-400/18 to-transparent transform translate-x-[500px] skew-x-8"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          {/* Dotted grid overlay */}
-          <div className="absolute inset-0 opacity-[0.14]" style={{
-            backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
-            color: '#ffffff',
-            backgroundSize: '22px 22px',
-            backgroundPosition: '0 0, 11px 11px',
-          }}></div>
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
+
+      <div className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
+        {/* Page header */}
+        <div className="mb-8">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
+            {eventId ? 'Edit Event' : 'Create Event'}
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            {eventId ? 'Edit Your Event' : 'Create Your Event'}
+          </h1>
+          <p className="mt-3 max-w-2xl text-muted-foreground">
+            {eventId
+              ? 'Update your event details and manage tickets'
+              : 'Bring your vision to life. Create an unforgettable experience for your guests.'}
+          </p>
         </div>
-
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-800/15 via-transparent to-indigo-800/25"></div>
-
-        {/* Header integrated into hero */}
-        <div className="relative z-20">
-          <Header />
-        </div>
-
-        {/* Hero content */}
-        <div className="relative px-6 py-16 sm:px-8 lg:px-12">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-              {eventId ? 'Edit Your Event' : 'Create Your Event'}
-            </h1>
-            <p className="text-xl text-gray-300 max-w-2xl">
-              {eventId
-                ? 'Update your event details and manage tickets'
-                : 'Bring your vision to life. Create an unforgettable experience for your guests.'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-6 py-12 sm:px-8 lg:px-12">
         {error && (
-          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-8">
-            <p className="text-red-300 text-sm">{error}</p>
+          <div className="mb-8 rounded-lg border border-red-200 bg-red-50 p-4">
+            <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
-        {/* Main Form Card */}
-        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Event Details</h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label
-                  htmlFor="eventName"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Event Name
-                </label>
-                <input
-                  type="text"
-                  id="eventName"
-                  value={eventName}
-                  onChange={e => setEventName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
-                  placeholder="Enter your event name"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="eventTheme"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Event Theme <span className="text-gray-500 font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  id="eventTheme"
-                  value={eventTheme}
-                  onChange={e => setEventTheme(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
-                  placeholder="Optional: e.g., Birthday Party, Corporate Event"
-                />
-              </div>
-            </div>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <Label
-                  htmlFor="start-date-picker"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Start Date and Time <span className="text-gray-500 font-normal">(Optional)</span>
-                </Label>
-                <div className="flex gap-3">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        id="start-date-picker"
-                        className="flex-1 justify-between font-normal bg-gray-700/50 border-gray-600 text-white hover:bg-gray-600"
-                      >
-                        {startDate
-                          ? startDate.toLocaleDateString()
-                          : 'Select date'}
-                        <ChevronDownIcon className="text-purple-300" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto overflow-hidden p-0 bg-gray-800 border-gray-600"
-                      align="start"
-                    >
-                      <Calendar
-                        mode="single"
-                        selected={startDate || undefined}
-                        onSelect={date => setStartDate(date || null)}
-                        className="text-white"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Input
-                    type="time"
-                    value={startTime}
-                    onChange={e => setStartTime(e.target.value)}
-                    step="60"
-                    className="w-32 bg-gray-700/50 border-gray-600 text-white focus:border-purple-500 focus:ring-purple-500/20 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+        {/* Main Form */}
+        <form onSubmit={handleSubmit}>
+          {/* Event details */}
+          <div className="mb-6 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+            <p className="mb-5 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+              Event Details
+            </p>
+            <div className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="eventName"
+                    className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+                  >
+                    Event Name
+                  </label>
+                  <input
+                    type="text"
+                    id="eventName"
+                    value={eventName}
+                    onChange={e => setEventName(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="Enter your event name"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="eventTheme"
+                    className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+                  >
+                    Event Theme <span className="text-muted-foreground/60">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="eventTheme"
+                    value={eventTheme}
+                    onChange={e => setEventTheme(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="Optional: e.g., Birthday Party, Corporate Event"
                   />
                 </div>
               </div>
               <div>
-                <Label
-                  htmlFor="end-date-picker"
-                  className="block text-sm font-medium text-gray-300 mb-2"
+                <label
+                  htmlFor="additionalInfo"
+                  className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
                 >
-                  End Date and Time <span className="text-gray-500 font-normal">(Optional)</span>
-                </Label>
-                <div className="flex gap-3">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        id="end-date-picker"
-                        className="flex-1 justify-between font-normal bg-gray-700/50 border-gray-600 text-white hover:bg-gray-600"
-                      >
-                        {endDate ? endDate.toLocaleDateString() : 'Select date'}
-                        <ChevronDownIcon className="text-purple-300" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto overflow-hidden p-0 bg-gray-800 border-gray-600"
-                      align="start"
-                    >
-                      <Calendar
-                        mode="single"
-                        selected={endDate || undefined}
-                        onSelect={date => setEndDate(date || null)}
-                        className="text-white"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Input
-                    type="time"
-                    value={endTime}
-                    onChange={e => setEndTime(e.target.value)}
-                    step="60"
-                    className="w-32 bg-gray-700/50 border-gray-600 text-white focus:border-purple-500 focus:ring-purple-500/20 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-                  />
-                </div>
+                  Description <span className="text-muted-foreground/60">(Optional)</span>
+                </label>
+                <textarea
+                  id="additionalInfo"
+                  value={additionalInfo}
+                  onChange={e => setAdditionalInfo(e.target.value)}
+                  rows={4}
+                  className="w-full resize-none rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Optional: Address details, dress code, what to bring, parking info..."
+                />
               </div>
             </div>
-            <div>
-              <label
-                htmlFor="timeZone"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Time Zone
-              </label>
-              <select
-                id="timeZone"
-                value={timeZone}
-                onChange={e => setTimeZone(e.target.value)}
-                className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
-              >
-                <option value="America/Los_Angeles">Pacific Time</option>
-                <option value="America/New_York">Eastern Time</option>
-                <option value="America/Chicago">Central Time</option>
-                <option value="America/Denver">Mountain Time</option>
-                <option value="Europe/London">Greenwich Mean Time</option>
-              </select>
+          </div>
+
+          {/* Date & time */}
+          <div className="mb-6 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+            <p className="mb-5 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+              Date &amp; Time
+            </p>
+            <div className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div>
+                  <Label
+                    htmlFor="start-date-picker"
+                    className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+                  >
+                    Start Date and Time <span className="text-muted-foreground/60">(Optional)</span>
+                  </Label>
+                  <div className="flex gap-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          id="start-date-picker"
+                          className="flex-1 justify-between font-normal"
+                        >
+                          {startDate
+                            ? startDate.toLocaleDateString()
+                            : 'Select date'}
+                          <ChevronDownIcon className="text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto overflow-hidden p-0"
+                        align="start"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={startDate || undefined}
+                          onSelect={date => setStartDate(date || null)}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      value={startTime}
+                      onChange={e => setStartTime(e.target.value)}
+                      step="60"
+                      className="w-32 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label
+                    htmlFor="end-date-picker"
+                    className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+                  >
+                    End Date and Time <span className="text-muted-foreground/60">(Optional)</span>
+                  </Label>
+                  <div className="flex gap-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          id="end-date-picker"
+                          className="flex-1 justify-between font-normal"
+                        >
+                          {endDate ? endDate.toLocaleDateString() : 'Select date'}
+                          <ChevronDownIcon className="text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto overflow-hidden p-0"
+                        align="start"
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={endDate || undefined}
+                          onSelect={date => setEndDate(date || null)}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      value={endTime}
+                      onChange={e => setEndTime(e.target.value)}
+                      step="60"
+                      className="w-32 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="timeZone"
+                  className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+                >
+                  Time Zone
+                </label>
+                <select
+                  id="timeZone"
+                  value={timeZone}
+                  onChange={e => setTimeZone(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="America/Los_Angeles">Pacific Time</option>
+                  <option value="America/New_York">Eastern Time</option>
+                  <option value="America/Chicago">Central Time</option>
+                  <option value="America/Denver">Mountain Time</option>
+                  <option value="Europe/London">Greenwich Mean Time</option>
+                </select>
+              </div>
             </div>
+          </div>
+
+          {/* Venue */}
+          <div className="mb-6 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+            <p className="mb-5 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+              Venue
+            </p>
             <div>
               <label
                 htmlFor="location"
-                className="block text-sm font-medium text-gray-300 mb-2"
+                className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
               >
-                Event Location <span className="text-gray-500 font-normal">(Optional)</span>
+                Event Location <span className="text-muted-foreground/60">(Optional)</span>
               </label>
               <input
                 ref={locationInputRef}
@@ -1062,78 +1052,64 @@ export default function CreateEvent() {
                   // Manual location input
                   setLocation(e.target.value);
                 }}
-                className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 placeholder="Optional: Start typing to search for a location..."
               />
             </div>
-            <div>
-              <label
-                htmlFor="additionalInfo"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Description <span className="text-gray-500 font-normal">(Optional)</span>
-              </label>
-              <textarea
-                id="additionalInfo"
-                value={additionalInfo}
-                onChange={e => setAdditionalInfo(e.target.value)}
-                rows={4}
-                className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors resize-none"
-                placeholder="Optional: Address details, dress code, what to bring, parking info..."
-              />
-            </div>
-          </form>
-        </div>
+          </div>
+        </form>
 
-        {/* Ticket Management Section */}
-        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
-          <h3 className="text-2xl font-bold text-white mb-6">Event Tickets</h3>
+        {/* Tickets & pricing */}
+        <div className="mb-6 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+          <p className="mb-5 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+            Tickets &amp; Pricing
+          </p>
           <div className="mb-6">
-            <div className="flex items-start gap-3 mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-              <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mb-4 flex items-start gap-3 rounded-lg border border-border bg-muted p-4">
+              <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <svg className="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <p className="text-blue-200 font-medium">Required: At least one ticket type</p>
-                <p className="text-blue-300 text-sm mt-1">
+                <p className="text-sm font-medium text-foreground">Required: At least one ticket type</p>
+                <p className="mt-1 text-sm text-muted-foreground">
                   Every event must have at least one valid ticket to control capacity and prevent unlimited attendance.
                 </p>
               </div>
             </div>
-            <p className="text-gray-300 mb-6">
+            <p className="mb-6 text-sm text-muted-foreground">
               Manage up to 5 different ticket types for your event. Each ticket
               type can have its own price, quantity, and purchase deadline. You can edit tickets again after the event is created.
               {!eventId && (
-                <span className="block mt-2 text-sm text-orange-300">
-                  💡 Tickets will be saved when you create the event
+                <span className="mt-2 block text-sm text-foreground">
+                  Tickets will be saved when you create the event
                 </span>
               )}
             </p>
 
             {/* Ticket count indicator */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-400">Ticket Types:</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  getValidTicketsCount() === 0 
-                    ? 'bg-red-900/30 text-red-300 border border-red-500/30'
-                    : 'bg-green-900/30 text-green-300 border border-green-500/30'
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Ticket Types</span>
+                <span className={`rounded-full px-3 py-1 font-mono text-xs font-medium ${
+                  getValidTicketsCount() === 0
+                    ? 'border border-red-200 bg-red-50 text-red-600'
+                    : 'bg-[#e4f5ec] text-[#067a53]'
                 }`}>
                   {getValidTicketsCount()} valid of {tickets.length} total
                 </span>
               </div>
               {getValidTicketsCount() === 0 && (
-                <span className="text-sm text-red-300 font-medium">⚠️ At least 1 required</span>
+                <span className="text-sm font-medium text-red-600">At least 1 required</span>
               )}
             </div>
 
             {tickets.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-red-500/50 rounded-2xl bg-red-900/10">
-                <div className="w-16 h-16 bg-red-800/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="rounded-2xl border-2 border-dashed border-red-200 bg-red-50/50 py-12 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
                   <svg
-                    className="w-8 h-8 text-red-300"
+                    className="h-8 w-8 text-red-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1146,20 +1122,17 @@ export default function CreateEvent() {
                     />
                   </svg>
                 </div>
-                <p className="text-red-300 font-medium mb-2">No tickets created</p>
-                <p className="text-red-200 mb-6">Your event needs at least one ticket type to control capacity.</p>
-                <Button
-                  onClick={addTicket}
-                  className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg hover:shadow-red-800/50 transition-all duration-200"
-                >
+                <p className="mb-2 font-medium text-red-600">No tickets created</p>
+                <p className="mb-6 text-sm text-muted-foreground">Your event needs at least one ticket type to control capacity.</p>
+                <Button onClick={addTicket}>
                   Create First Ticket Type
                 </Button>
               </div>
             ) : getValidTicketsCount() === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-orange-500/50 rounded-2xl bg-orange-900/10 mb-4">
-                <div className="w-12 h-12 bg-orange-800/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="mb-4 rounded-2xl border-2 border-dashed border-red-200 bg-red-50/50 py-8 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                   <svg
-                    className="w-6 h-6 text-orange-300"
+                    className="h-6 w-6 text-red-600"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1172,12 +1145,9 @@ export default function CreateEvent() {
                     />
                   </svg>
                 </div>
-                <p className="text-orange-300 font-medium mb-2">No valid tickets</p>
-                <p className="text-orange-200 mb-4 text-sm">All tickets need a name, price, and quantity greater than 0.</p>
-                <Button
-                  onClick={addTicket}
-                  className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-700 hover:to-yellow-700 shadow-lg hover:shadow-orange-800/50 transition-all duration-200"
-                >
+                <p className="mb-2 font-medium text-red-600">No valid tickets</p>
+                <p className="mb-4 text-sm text-muted-foreground">All tickets need a name, price, and quantity greater than 0.</p>
+                <Button onClick={addTicket}>
                   Add Valid Ticket
                 </Button>
               </div>
@@ -1190,24 +1160,24 @@ export default function CreateEvent() {
                   return (
                     <div
                       key={index}
-                      className={`flex items-center justify-between p-6 border rounded-xl backdrop-blur-sm transition-colors ${
-                        canEdit 
-                          ? 'border-gray-600/50 bg-gray-700/30 hover:bg-gray-700/50' 
-                          : 'border-orange-500/30 bg-orange-900/10'
+                      className={`flex flex-col gap-4 rounded-xl border p-4 transition-colors sm:flex-row sm:items-center sm:justify-between sm:p-5 ${
+                        canEdit
+                          ? 'border-border bg-white hover:bg-muted/50'
+                          : 'border-border bg-muted'
                       }`}
                     >
                       <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-white text-lg">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h3 className="text-base font-semibold text-foreground">
                             {ticket.name || 'Untitled Ticket'}
                           </h3>
                           {!canEdit && (
-                            <span className="px-2 py-1 text-xs bg-orange-500/20 text-orange-300 rounded-full border border-orange-500/30">
-                              🔒 {rsvpCount} RSVP{rsvpCount !== 1 ? 's' : ''}
+                            <span className="rounded-full border border-border bg-white px-2 py-1 font-mono text-[10px] tracking-wide text-muted-foreground">
+                              {rsvpCount} RSVP{rsvpCount !== 1 ? 's' : ''}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-300 mt-1">
+                        <p className="mt-1 font-mono text-xs text-muted-foreground">
                           ${ticket.price} • {ticket.quantity_available} available
                           {ticket.purchase_deadline && (
                             <span>
@@ -1218,8 +1188,8 @@ export default function CreateEvent() {
                           )}
                         </p>
                         {!canEdit && (
-                          <p className="text-xs text-orange-300 mt-2">
-                            Cannot edit - people have already RSVP'd to this ticket
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Cannot edit - people have already RSVP&#x27;d to this ticket
                           </p>
                         )}
                       </div>
@@ -1228,11 +1198,7 @@ export default function CreateEvent() {
                           onClick={() => openTicketEditor(index)}
                           variant="outline"
                           disabled={!canEdit}
-                          className={`px-4 py-2 text-sm ${
-                            canEdit
-                              ? 'bg-purple-800/20 border-purple-500/50 text-purple-300 hover:bg-purple-800/40 hover:text-white'
-                              : 'bg-gray-800/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
-                          }`}
+                          className="px-4 py-2 text-sm"
                         >
                           Edit
                         </Button>
@@ -1240,11 +1206,7 @@ export default function CreateEvent() {
                           onClick={() => removeTicket(index)}
                           variant="outline"
                           disabled={!canEdit}
-                          className={`px-4 py-2 text-sm ${
-                            canEdit
-                              ? 'bg-red-800/20 border-red-500/50 text-red-300 hover:bg-red-800/40 hover:text-white'
-                              : 'bg-gray-800/20 border-gray-600/30 text-gray-500 cursor-not-allowed'
-                          }`}
+                          className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-600"
                         >
                           Remove
                         </Button>
@@ -1257,7 +1219,7 @@ export default function CreateEvent() {
                   <Button
                     onClick={addTicket}
                     variant="outline"
-                    className="w-full py-4 border-2 border-dashed border-gray-600/50 rounded-xl text-gray-300 hover:border-purple-500/50 hover:text-purple-300 hover:bg-purple-800/10 transition-all"
+                    className="w-full rounded-xl border-2 border-dashed border-border py-4 text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
                   >
                     + Add Another Ticket Type
                   </Button>
@@ -1269,43 +1231,45 @@ export default function CreateEvent() {
 
         {/* Payment handles if any ticket is paid */}
         {tickets.some(t => t.price > 0) && (
-          <div className="mt-4 rounded-2xl border border-fuchsia-600/30 bg-fuchsia-900/10 p-6">
-            <h4 className="text-lg font-semibold text-white mb-4">Payment Details for Paid Tickets</h4>
-            <p className="text-sm text-fuchsia-200 mb-4">
+          <div className="mb-6 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Payment Details
+            </p>
+            <h4 className="mb-2 text-lg font-semibold text-foreground">Payment Details for Paid Tickets</h4>
+            <p className="mb-4 text-sm text-muted-foreground">
               Add your payment handle(s) so guests can send payment after selecting a paid ticket.
             </p>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Venmo Username</label>
+                <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Venmo Username</label>
                 <input
                   type="text"
                   value={venmoHandle}
                   onChange={e => setVenmoHandle(e.target.value)}
                   placeholder="e.g., @yourname"
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 focus:outline-none transition-colors"
+                  className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Zelle (phone or email)</label>
+                <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Zelle (phone or email)</label>
                 <input
                   type="text"
                   value={zelleHandle}
                   onChange={e => setZelleHandle(e.target.value)}
                   placeholder="e.g., 555-123-4567 or you@email.com"
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 focus:outline-none transition-colors"
+                  className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-3">These will be shown on the RSVP page under Additional Info.</p>
+            <p className="mt-3 text-xs text-muted-foreground">These will be shown on the RSVP page under Additional Info.</p>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
           <Button
             onClick={() => router.push('/event')}
             variant="outline"
-            className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
           >
             Cancel
           </Button>
@@ -1313,7 +1277,6 @@ export default function CreateEvent() {
             <Button
               type="submit"
               onClick={handleSubmit}
-              className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
               disabled={loading}
             >
               {eventId ? 'Update Event' : 'Create Event'}
@@ -1323,11 +1286,11 @@ export default function CreateEvent() {
 
         {/* Success Section - Show invite link after event creation */}
         {inviteLink && (
-          <div className="bg-green-900/20 backdrop-blur-sm rounded-3xl border border-green-500/30 shadow-xl shadow-black/50 p-8 mt-8">
-            <div className="flex items-center mb-4">
-              <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
+          <div className="mt-8 rounded-2xl border border-[#067a53]/25 bg-[#e4f5ec] p-6 sm:p-8">
+            <div className="mb-4 flex items-center">
+              <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-white">
                 <svg
-                  className="w-5 h-5 text-green-400"
+                  className="h-5 w-5 text-[#067a53]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1340,30 +1303,28 @@ export default function CreateEvent() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-green-400">
+              <h3 className="text-xl font-semibold text-[#067a53]">
                 Event {eventId ? 'Updated' : 'Created'} Successfully!
               </h3>
             </div>
-            <p className="text-green-300 mb-6">
+            <p className="mb-6 text-sm text-[#067a53]">
               Share this link with your guests:
             </p>
             <input
               type="text"
               value={inviteLink}
               readOnly
-              className="block w-full rounded-lg border border-green-500/30 bg-green-900/20 px-4 py-3 text-green-100 shadow-sm focus:border-green-400 focus:ring-2 focus:ring-green-400/20 focus:outline-none"
+              className="block w-full rounded-lg border border-[#067a53]/25 bg-white px-4 py-3 font-mono text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-[#067a53]/20"
             />
-            <div className="flex gap-3 mt-6">
+            <div className="mt-6 flex flex-wrap gap-3">
               <Button
                 onClick={() => navigator.clipboard.writeText(inviteLink)}
-                className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200"
               >
                 Copy Invite Link
               </Button>
               <Button
                 onClick={() => router.push('/event')}
                 variant="outline"
-                className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
               >
                 Go to My Events
               </Button>
@@ -1373,15 +1334,18 @@ export default function CreateEvent() {
 
         {/* Ticket Sidebar for Edit Form */}
         {showTicketSidebar && selectedTicketIndex !== null && editingTicket && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gray-800/95 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-2xl p-8 w-full max-w-md mx-4">
-              <h3 className="text-xl font-bold text-white mb-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-xl sm:p-8">
+              <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Ticket
+              </p>
+              <h3 className="mb-6 text-xl font-semibold text-foreground">
                 {tickets[selectedTicketIndex].id ? 'Edit' : 'Create'} Ticket
               </h3>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     Ticket Name
                   </label>
                   <input
@@ -1390,13 +1354,13 @@ export default function CreateEvent() {
                     onChange={e =>
                       setEditingTicket(prev => prev ? {...prev, name: e.target.value} : null)
                     }
-                    className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     placeholder="e.g., Early Bird, VIP, General"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     Price ($)
                   </label>
                   <input
@@ -1411,13 +1375,13 @@ export default function CreateEvent() {
                         setEditingTicket(prev => prev ? {...prev, price: numValue} : null);
                       }
                     }}
-                    className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     placeholder="Enter price (default $0)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     Quantity Available
                   </label>
                   <input
@@ -1431,13 +1395,13 @@ export default function CreateEvent() {
                         setEditingTicket(prev => prev ? {...prev, quantity_available: numValue} : null);
                       }
                     }}
-                    className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     placeholder="Enter quantity (minimum 1)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                     Purchase Deadline (Optional)
                   </label>
                   <input
@@ -1453,22 +1417,20 @@ export default function CreateEvent() {
                         purchase_deadline: e.target.value ? new Date(e.target.value) : null
                       } : null)
                     }
-                    className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-colors"
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-center gap-3 mt-8">
+              <div className="mt-8 flex justify-end gap-3">
                 <Button
                   onClick={closeTicketEditor}
                   variant="outline"
-                  className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={saveTicketChanges}
-                  className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
                 >
                   Done
                 </Button>

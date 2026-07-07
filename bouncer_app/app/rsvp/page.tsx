@@ -111,9 +111,9 @@ function RsvpContent() {
   const fetchEventDetails = async (id: string) => {
     setEventLoading(true);
     setError(null);
-    
+
     // Fetching event details
-    
+
     // Use the same approach as event/[id]/page.tsx
     const { data, error } = await supabase
       .from('Events')
@@ -125,7 +125,7 @@ function RsvpContent() {
 
     if (error) {
       // Error fetching event
-      
+
       if (error.code === 'PGRST116') {
         setError('Event not found. The event may have been deleted or the link is invalid.');
       } else if (error.code === '42501') {
@@ -142,7 +142,7 @@ function RsvpContent() {
         .from('tickets')
         .select('*')
         .eq('event_id', parseInt(id, 10));
-      
+
       if (!ticketError && ticketData) {
         // Use the current quantity_available from the database (already decremented by atomic operations)
         // Also fetch RSVP count for display purposes
@@ -152,9 +152,9 @@ function RsvpContent() {
               .from('rsvps')
               .select('*', { count: 'exact', head: true })
               .eq('ticket_id', ticket.id);
-            
+
             const usedQuantity = rsvpError ? 0 : (rsvpCount || 0);
-            
+
             return {
               ...ticket,
               // Use the actual current quantity_available (already decremented by atomic operations)
@@ -165,7 +165,7 @@ function RsvpContent() {
             };
           })
         );
-        
+
         // Group tickets by name and price (ticket type)
         const ticketTypes = new Map();
         ticketsWithAvailability.forEach(ticket => {
@@ -183,7 +183,7 @@ function RsvpContent() {
             });
           }
         });
-        
+
         // Convert back to array
         const groupedTickets = Array.from(ticketTypes.values());
         setTickets(groupedTickets);
@@ -297,7 +297,7 @@ function RsvpContent() {
 
     // Note: Duplicate RSVP check is handled by the backend API
     // Removing frontend check to avoid RLS permission issues
-    
+
     // Check if ticket type is still available
     const ticketType = selectedTicketType;
     // If ticket has a cost, require payment proof image to be uploaded
@@ -320,7 +320,7 @@ function RsvpContent() {
     if (paymentImage && ticketType.price > 0) {
       const fileExt = paymentImage.name.split('.').pop();
       const fileName = `${session.id}-${eventId}-${Date.now()}.${fileExt}`;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('payment-proofs')
         .upload(fileName, paymentImage);
@@ -354,7 +354,7 @@ function RsvpContent() {
 
     if (!response.ok) {
       // RSVP API error
-      
+
       // Handle specific error cases
       if (response.status === 409) {
         if (result.error?.includes('already RSVP')) {
@@ -371,7 +371,7 @@ function RsvpContent() {
     // If RSVP was successful, show success state
     // RSVP submitted successfully
     setRsvpSubmitted(true);
-    
+
     // Fetch QR code data if not already loaded
     if (session && !qrCodeData) {
       await fetchQRCodeData(session.id);
@@ -381,13 +381,14 @@ function RsvpContent() {
   if (loading) {
     // RSVP Page: Loading state
     return (
-      <div>
+      <div className="flex min-h-screen flex-col bg-muted">
         <Header />
-        <div className="flex min-h-screen flex-col items-center justify-center py-2">
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Loading...</h1>
-            <p>Please wait while we authenticate you.</p>
-            <p className="text-sm text-gray-500 mt-2">Debug: Loading authentication...</p>
+            <div className="mx-auto mb-5 h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Loading...</h1>
+            <p className="mt-2 text-muted-foreground">Please wait while we authenticate you.</p>
+            <p className="mt-3 font-mono text-[10px] tracking-[0.14em] text-muted-foreground">Debug: Loading authentication...</p>
           </div>
         </div>
       </div>
@@ -398,14 +399,17 @@ function RsvpContent() {
     // RSVP Page: No session, should redirect to Google auth
     const eventIdParam = searchParams.get('event_id');
     return (
-      <div>
+      <div className="flex min-h-screen flex-col bg-muted">
         <Header />
-        <div className="flex min-h-screen flex-col items-center justify-center py-2">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
-            <p className="text-gray-300 mb-6">You need to be signed in with Google to RSVP to this event.</p>
-            
-            <div className="space-y-4">
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 text-center shadow-sm sm:p-8">
+            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+              RSVP
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">Authentication Required</h1>
+            <p className="mt-2 text-sm text-muted-foreground">You need to be signed in with Google to RSVP to this event.</p>
+
+            <div className="mt-6 space-y-4">
               <Button
                 onClick={() => {
                   const eventIdForRedirect = eventIdParam || eventId || '';
@@ -413,7 +417,7 @@ function RsvpContent() {
                   // Sign In button clicked, redirecting
                   router.push(`/api/auth/direct-google?next=${encodeURIComponent(currentUrl)}`);
                 }}
-                className="w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                className="w-full"
               >
                 <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                   <path
@@ -435,8 +439,8 @@ function RsvpContent() {
                 </svg>
                 Continue with Google
               </Button>
-              
-              <p className="text-sm text-gray-400 text-center">
+
+              <p className="text-sm text-muted-foreground text-center">
                 Sign in to secure your spot at this event
               </p>
             </div>
@@ -449,13 +453,14 @@ function RsvpContent() {
   if (eventLoading) {
     // RSVP Page: Event loading state
     return (
-      <div>
+      <div className="flex min-h-screen flex-col bg-muted">
         <Header />
-        <div className="flex min-h-screen flex-col items-center justify-center py-2">
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Loading Event...</h1>
-            <p>Please wait while we fetch event details.</p>
-            <p className="text-sm text-gray-500 mt-2">Debug: Loading event ID {eventId}</p>
+            <div className="mx-auto mb-5 h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Loading Event...</h1>
+            <p className="mt-2 text-muted-foreground">Please wait while we fetch event details.</p>
+            <p className="mt-3 font-mono text-[10px] tracking-[0.14em] text-muted-foreground">Debug: Loading event ID {eventId}</p>
           </div>
         </div>
       </div>
@@ -464,15 +469,15 @@ function RsvpContent() {
 
   if (error) {
     return (
-      <div>
+      <div className="flex min-h-screen flex-col bg-muted">
         <Header />
-        <div className="flex min-h-screen flex-col items-center justify-center py-2">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4 text-red-600">Error</h1>
-            <p className="text-red-500">{error}</p>
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 text-center shadow-sm sm:p-8">
+            <h1 className="text-2xl font-semibold tracking-tight text-red-600">Error</h1>
+            <p className="mt-2 text-sm text-red-600">{error}</p>
             <Button
               onClick={() => router.push('/event')}
-              className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+              className="mt-6 w-full"
             >
               Go to Events
             </Button>
@@ -484,15 +489,15 @@ function RsvpContent() {
 
   if (!event) {
     return (
-      <div>
+      <div className="flex min-h-screen flex-col bg-muted">
         <Header />
-        <div className="flex min-h-screen flex-col items-center justify-center py-2">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Event Not Found</h1>
-            <p>The event you're looking for doesn't exist or you don't have permission to view it.</p>
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-16">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 text-center shadow-sm sm:p-8">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Event Not Found</h1>
+            <p className="mt-2 text-sm text-muted-foreground">The event you&#x27;re looking for doesn&#x27;t exist or you don&#x27;t have permission to view it.</p>
             <Button
               onClick={() => router.push('/event')}
-              className="mt-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+              className="mt-6 w-full"
             >
               Go to Events
             </Button>
@@ -503,93 +508,104 @@ function RsvpContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-      {/* Unique party background (no light beams): neon rings + soft glow */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-28 right-[-120px] w-[520px] h-[520px] rounded-full bg-fuchsia-700/25 blur-3xl mix-blend-screen"></div>
-        <div className="absolute bottom-[-140px] -left-24 w-[560px] h-[560px] rounded-full bg-cyan-500/20 blur-3xl mix-blend-screen"></div>
-        <div className="absolute inset-0 opacity-[0.10]"
-             style={{
-               backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
-               color: '#ffffff',
-               backgroundSize: '20px 20px',
-               backgroundPosition: '0 0, 10px 10px',
-             }}></div>
-      </div>
+    <div className="flex min-h-screen flex-col bg-muted">
+      <Header />
 
-      {/* Header */}
-      <div className="relative z-20">
-        <Header />
-      </div>
-
-      {/* Hero */}
-      <div className="relative z-10 px-6 py-12 sm:px-8 lg:px-12">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-white to-fuchsia-200 bg-clip-text text-transparent">
+      <main className="flex-1 px-4 pb-16 pt-10 sm:px-6">
+        <div className="mx-auto w-full max-w-lg">
+          {/* Hero */}
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             RSVP
           </h1>
-          <p className="text-lg text-gray-300 max-w-2xl">
-            You're almost in. Confirm your spot and we'll save you on the list.
+          <p className="mt-2 text-muted-foreground">
+            You&#x27;re almost in. Confirm your spot and we&#x27;ll save you on the list.
           </p>
-        </div>
-      </div>
 
-      {/* Content card */}
-      <div className="relative z-10 max-w-4xl mx-auto px-6 pb-16 sm:px-8 lg:px-12">
-        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-6 sm:p-8">
-          {/* Event summary */}
-          <div className="mb-6 rounded-2xl border border-gray-700/50 bg-gray-800/60 p-5">
-            <h2 className="text-2xl font-semibold text-white">{event?.name}</h2>
-            <div className="mt-2 text-gray-300">
-              {event?.theme && <p>Theme: {event.theme}</p>}
-              <p>Start: {event ? new Date(event.start_date).toLocaleString() : ''}</p>
-              <p>End: {event ? new Date(event.end_date).toLocaleString() : ''}</p>
-              {event?.additional_info && (
-                <div className="text-gray-400 whitespace-pre-line">
-                  <p className="font-medium text-gray-300 mb-1">Additional Info:</p>
-                  <p>{event.additional_info}</p>
-                </div>
-              )}
+          {/* Event summary — pass-style card */}
+          <div className="relative mt-8 overflow-hidden rounded-2xl border border-border bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              <span className="text-primary">BOUNCER PASS</span>
+              <span>EVENT № {eventId}</span>
             </div>
+
+            <h2 className="mt-3 text-xl font-semibold tracking-tight text-foreground">{event?.name}</h2>
+            {event?.theme && (
+              <p className="mt-1 text-sm text-muted-foreground">Theme: {event.theme}</p>
+            )}
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">START</div>
+                <div className="mt-1 font-mono text-xs text-foreground">
+                  {event ? new Date(event.start_date).toLocaleString() : ''}
+                </div>
+              </div>
+              <div>
+                <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">END</div>
+                <div className="mt-1 font-mono text-xs text-foreground">
+                  {event ? new Date(event.end_date).toLocaleString() : ''}
+                </div>
+              </div>
+            </div>
+
+            {event?.additional_info && (
+              <>
+                {/* Perforation divider with punched side notches */}
+                <div className="relative mt-5">
+                  <div className="border-t border-dashed border-border" />
+                  <span className="absolute -left-[34px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-border bg-muted" />
+                  <span className="absolute -right-[34px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-border bg-muted" />
+                </div>
+                <div className="mt-4">
+                  <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">ADDITIONAL INFO</div>
+                  <p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{event.additional_info}</p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Success state or RSVP form */}
           {rsvpSubmitted ? (
             // Success State
-            <div className="text-center space-y-6">
+            <div className="mt-6 space-y-6 rounded-2xl border border-border bg-white p-6 text-center shadow-sm sm:p-8">
               <div className="flex justify-center">
-                <CheckCircleIcon className="w-16 h-16 text-green-400" />
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#e4f5ec]">
+                  <CheckCircleIcon className="h-9 w-9 text-[#067a53]" />
+                </span>
               </div>
-              
+
               <div>
-                <h3 className="text-2xl font-bold text-white mb-2">RSVP Submitted Successfully!</h3>
-                <p className="text-gray-300">You're all set! We'll see you at the event.</p>
+                <div className="inline-block rounded-md border-2 border-[#067a53] bg-[#e4f5ec] px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.16em] text-[#067a53]">
+                  CONFIRMED
+                </div>
+                <h3 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">RSVP Submitted Successfully!</h3>
+                <p className="mt-1 text-muted-foreground">You&#x27;re all set! We&#x27;ll see you at the event.</p>
               </div>
 
               {/* QR Code Section */}
               {qrCodeData && (
-                <div className="bg-gray-700/30 rounded-2xl p-6">
-                  <h4 className="text-lg font-semibold text-white mb-4">Your Check-in QR Code</h4>
-                  <div className="flex justify-center mb-4">
-                    <div className="qr-code-container p-4 bg-white rounded-xl">
+                <div className="rounded-xl bg-muted p-6">
+                  <h4 className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Your Check-in QR Code</h4>
+                  <div className="mt-4 mb-4 flex justify-center">
+                    <div className="qr-code-container rounded-xl border border-border bg-white p-4">
                       <QRCode value={qrCodeData} size={200} level="H" title="Event QR Code" />
                     </div>
                   </div>
-                  <p className="text-sm text-gray-400 mb-4">
+                  <p className="mb-4 text-sm text-muted-foreground">
                     Use this QR code to check in at the event. Save it to your phone or download it below.
                   </p>
-                  
+
                   <div className="space-y-3">
-                    <Button 
+                    <Button
                       onClick={handleDownloadQr}
-                      className="w-full bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/40 transition-all duration-200"
+                      className="w-full"
                     >
                       <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
                       Download QR Code
                     </Button>
-                    
-                    <p className="text-xs text-gray-500">
-                      💡 You can access your QR code anytime by logging in and going to your profile.
+
+                    <p className="text-xs text-muted-foreground">
+                      You can access your QR code anytime by logging in and going to your profile.
                     </p>
                   </div>
                 </div>
@@ -599,15 +615,15 @@ function RsvpContent() {
                 <Button
                   onClick={() => router.push('/event')}
                   variant="outline"
-                  className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                  className="w-full"
                 >
                   View My Events
                 </Button>
-                
+
                 <Button
                   onClick={() => router.push('/my-rsvps')}
                   variant="outline"
-                  className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                  className="w-full"
                 >
                   View My RSVPs
                 </Button>
@@ -615,29 +631,29 @@ function RsvpContent() {
             </div>
           ) : (
             // RSVP Form
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="mt-6 space-y-6 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <label htmlFor="name" className="text-sm text-gray-300">Name</label>
+                <label htmlFor="name" className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Name</label>
                 <input
                   id="name"
                   name="name"
                   type="text"
                   required
-                  className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-600"
+                  className="w-full rounded-lg border border-input bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-white"
                   placeholder="Your name"
                   onChange={e => setName(e.target.value)}
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label htmlFor="email" className="text-sm text-gray-300">Email</label>
+                <label htmlFor="email" className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Email</label>
                 <input
                   id="email"
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
-                  className="w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-fuchsia-600"
+                  className="w-full rounded-lg border border-input bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground read-only:bg-muted read-only:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-white"
                   placeholder="you@example.com"
                   value={email}
                   readOnly={!!session.email}
@@ -649,11 +665,11 @@ function RsvpContent() {
 
 
             <div>
-              <label className="block text-left font-medium text-gray-200 mb-4">Select Ticket Type</label>
+              <label className="mb-4 block text-left font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Select Ticket Type</label>
               <div className="space-y-3">
                 {tickets.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <div className="w-16 h-16 bg-gray-700/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="py-8 text-center text-muted-foreground">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                       </svg>
@@ -665,18 +681,18 @@ function RsvpContent() {
                   const soldOut = ticketType.quantity_available <= 0 || (ticketType.purchase_deadline && isAfter(new Date(), new Date(ticketType.purchase_deadline)));
                   const isPaid = ticketType.price > 0;
                   const isSelected = selectedTicketType?.id === ticketType.id;
-                  
+
                   return (
                     <label
                       key={`${ticketType.name}-${ticketType.price}-${index}`}
-                      className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
-                        soldOut 
-                          ? 'bg-gray-800/30 border-gray-700/50 text-gray-500 cursor-not-allowed' 
+                      className={`flex items-center justify-between gap-3 p-4 rounded-xl border cursor-pointer transition-colors ${
+                        soldOut
+                          ? 'bg-muted border-border text-muted-foreground cursor-not-allowed'
                           : isSelected
-                            ? 'bg-fuchsia-900/20 border-fuchsia-500 text-white'
-                            : 'bg-gray-800/50 border-gray-600 text-gray-200 hover:border-fuchsia-500/50 hover:bg-gray-800/70'
+                            ? 'bg-accent border-primary ring-1 ring-primary/25 text-foreground'
+                            : 'bg-white border-border text-foreground hover:border-primary/40 hover:bg-muted/60'
                       }`}
-                    > 
+                    >
                       <div className="flex items-center space-x-3">
                         <input
                           type="radio"
@@ -685,32 +701,32 @@ function RsvpContent() {
                           disabled={soldOut}
                           checked={isSelected}
                           onChange={() => setSelectedTicketType(ticketType)}
-                          className="w-4 h-4 text-fuchsia-600 border-gray-600 focus:ring-fuchsia-500 focus:ring-2"
+                          className="h-4 w-4 border-border text-primary accent-primary focus:ring-2 focus:ring-ring"
                         />
                         <div>
                           <div className="flex items-center space-x-2">
-                            <span className="font-semibold text-lg">{ticketType.name}</span>
+                            <span className="text-base font-semibold">{ticketType.name}</span>
                             {isPaid ? (
-                              <span className="text-amber-300 font-bold">${ticketType.price.toFixed(2)}</span>
+                              <span className="font-mono text-sm text-muted-foreground">${ticketType.price.toFixed(2)}</span>
                             ) : (
-                              <span className="text-green-400 font-bold">FREE</span>
+                              <span className="rounded bg-[#e4f5ec] px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-[0.14em] text-[#067a53]">FREE</span>
                             )}
                           </div>
                           {ticketType.purchase_deadline && (
-                            <div className="text-sm text-gray-400 mt-1">
+                            <div className="mt-1 font-mono text-[11px] text-muted-foreground">
                               Available until {new Date(ticketType.purchase_deadline).toLocaleDateString()}
                             </div>
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="text-right">
                         {soldOut ? (
-                          <span className="text-red-400 font-semibold text-sm">SOLD OUT</span>
+                          <span className="font-mono text-[11px] font-semibold tracking-[0.14em] text-red-600">SOLD OUT</span>
                         ) : (
-                          <div className={`text-sm font-medium ${
-                            ticketType.quantity_available > 10 ? 'text-green-400' : 
-                            ticketType.quantity_available > 5 ? 'text-amber-400' : 'text-red-400'
+                          <div className={`font-mono text-xs ${
+                            ticketType.quantity_available > 10 ? 'text-[#067a53]' :
+                            ticketType.quantity_available > 5 ? 'text-amber-600' : 'text-red-600'
                           }`}>
                             {ticketType.quantity_available} remaining
                           </div>
@@ -730,30 +746,30 @@ function RsvpContent() {
               return (
                 <>
                   {hasPaymentInfo && (
-                    <div className="rounded-2xl border border-fuchsia-600/30 bg-fuchsia-900/10 p-5">
-                      <h4 className="text-white font-semibold mb-2">Payment Information</h4>
-                      <ul className="text-sm text-fuchsia-100 list-disc pl-5 space-y-1">
-                        {payment.venmo && <li>Venmo: {payment.venmo}</li>}
-                        {payment.zelle && <li>Zelle: {payment.zelle}</li>}
+                    <div className="rounded-xl border border-border bg-muted p-5">
+                      <h4 className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Payment Information</h4>
+                      <ul className="mt-2 space-y-1 text-sm text-foreground">
+                        {payment.venmo && <li>Venmo: <span className="font-mono">{payment.venmo}</span></li>}
+                        {payment.zelle && <li>Zelle: <span className="font-mono">{payment.zelle}</span></li>}
                       </ul>
                     </div>
                   )}
                   {requiresProof && (
-                    <div className="rounded-2xl border border-amber-500/30 bg-amber-900/10 p-5">
-                      <label className="block text-sm font-medium text-amber-200 mb-2">
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+                      <label className="block text-sm font-medium text-amber-900 mb-2">
                         Upload payment confirmation (required for paid tickets)
                       </label>
-                      <p className="text-xs text-amber-200 mb-3">
+                      <p className="text-xs text-amber-800 mb-3">
                         Please upload a picture of the payment confirmation receipt with the correct ticket price amount.
                       </p>
                       <input
                         type="file"
                         accept="image/*"
                         onChange={e => setPaymentImage(e.target.files?.[0] || null)}
-                        className="block w-full text-sm text-gray-200 file:mr-4 file:rounded-md file:border-0 file:bg-amber-600 file:px-3 file:py-2 file:text-white hover:file:bg-amber-700"
+                        className="block w-full text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white hover:file:bg-[#5b21b6]"
                       />
                       {!paymentImage && (
-                        <p className="text-xs text-amber-300 mt-2">This is required to submit when selecting a paid ticket.</p>
+                        <p className="text-xs text-amber-800 mt-2">This is required to submit when selecting a paid ticket.</p>
                       )}
                     </div>
                   )}
@@ -764,7 +780,7 @@ function RsvpContent() {
             <div className="pt-2">
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-fuchsia-700 to-indigo-700 hover:from-fuchsia-800 hover:to-indigo-800 shadow-lg hover:shadow-fuchsia-800/40 transition-all duration-200"
+                className="w-full"
               >
                 Submit RSVP
               </Button>
@@ -774,21 +790,21 @@ function RsvpContent() {
 
           {/* Account management section - only show when not submitted */}
           {!rsvpSubmitted && (
-            <div className="mt-8 pt-6 border-t border-gray-700/50">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-400">
-                  Signed in as: <span className="text-gray-200 font-medium">{session?.email}</span>
+            <div className="mt-6 rounded-xl border border-border bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 text-sm text-muted-foreground">
+                  Signed in as: <span className="break-all font-mono text-xs text-foreground">{session?.email}</span>
                 </div>
                 <Button
                   onClick={async () => {
                     try {
                       // Sign out and clear all session data
                       await supabase.auth.signOut({ scope: 'global' });
-                      
+
                       // Clear any cached authentication state
                       setSession(null);
                       setEmail('');
-                      
+
                       // Small delay to ensure cleanup
                       setTimeout(() => {
                         const currentUrl = `/rsvp?event_id=${eventId || ''}`;
@@ -803,7 +819,7 @@ function RsvpContent() {
                   }}
                   variant="outline"
                   size="sm"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                  className="shrink-0 self-start sm:self-auto"
                 >
                   Switch Account
                 </Button>
@@ -811,7 +827,7 @@ function RsvpContent() {
             </div>
           )}
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );
@@ -820,12 +836,10 @@ function RsvpContent() {
 export default function Rsvp() {
   return (
     <Suspense fallback={
-      <div>
+      <div className="flex min-h-screen flex-col bg-muted">
         <Header />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-center">
-            <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-          </div>
+        <div className="flex flex-1 items-center justify-center px-4 py-8">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary"></div>
         </div>
         <Footer />
       </div>

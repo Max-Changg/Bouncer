@@ -92,11 +92,30 @@ export default function QRCodePage() {
   }, [session, fetchQRCodeData]);
 
   if (loading) {
-    return <div>Loading QR Code...</div>;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary"
+          aria-hidden="true"
+        ></div>
+        <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          Loading QR Code...
+        </p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="w-full max-w-md rounded-xl border border-border bg-white p-6 text-center shadow-sm">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Something went wrong
+          </p>
+          <p className="mt-2 text-sm text-foreground">Error: {error}</p>
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
@@ -160,50 +179,75 @@ export default function QRCodePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden flex flex-col">
-      {/* Neon arcs & dotted grid */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 right-[-120px] w-[520px] h-[520px] rounded-full bg-purple-700/25 blur-3xl mix-blend-screen"></div>
-        <div className="absolute bottom-[-140px] -left-24 w-[560px] h-[560px] rounded-full bg-indigo-600/20 blur-3xl mix-blend-screen"></div>
-        <div className="absolute inset-0 opacity-[0.14]"
-             style={{
-               backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
-               color: '#ffffff',
-               backgroundSize: '22px 22px',
-               backgroundPosition: '0 0, 11px 11px',
-             }}></div>
-      </div>
-
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <div className="relative z-20">
-        <Header />
-      </div>
+      <Header />
 
       {/* Content */}
       <div className="flex-1">
-        <div className="relative max-w-7xl mx-auto px-6 pb-16 sm:px-8 lg:px-12">
-          <h1 className="text-5xl font-bold mb-12 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-            Your QR Code
-          </h1>
+        <div className="mx-auto max-w-2xl px-6 pb-16 pt-10 sm:px-8">
+          <div className="text-center">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+              Check-in
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+              Your QR Code
+            </h1>
+          </div>
 
-          <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-6 sm:p-8">
-            {qrCodeData ? (
-              <div className="flex flex-col items-center">
-                <div ref={qrContainerRef} className="p-4 bg-white rounded-xl">
+          {qrCodeData ? (
+            <div className="mt-10 flex flex-col items-center">
+              {/* Pass card */}
+              <div className="relative w-full max-w-[340px] rounded-2xl border border-border bg-white p-6 text-left shadow-sm">
+                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <span className="text-primary">BOUNCER PASS</span>
+                  <span>№ {session.id.slice(0, 4).toUpperCase()}</span>
+                </div>
+
+                <div
+                  ref={qrContainerRef}
+                  className="mt-4 flex justify-center rounded-xl bg-accent px-4 py-5 [&_svg]:h-auto [&_svg]:max-w-full"
+                >
                   <QRCode value={qrCodeData} size={256} level="H" title="Event QR Code" />
                 </div>
-                <p className="mt-4 text-gray-300">After rsvping and filling out necessary payments, use this QR code to check in!</p>
-                <div className="mt-6">
-                  <Button onClick={handleDownloadQr} className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/40 transition-all duration-200">
-                    <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
-                    Download QR Code
-                  </Button>
+
+                {/* Perforation divider with punched side notches */}
+                <div className="relative mt-5">
+                  <div className="border-t border-dashed border-border" />
+                  <span className="absolute -left-[34px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-border bg-background" />
+                  <span className="absolute -right-[34px] top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-border bg-background" />
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                      GUEST
+                    </div>
+                    <div className="truncate text-sm font-semibold text-foreground">
+                      {session.user_metadata?.full_name ?? session.email}
+                    </div>
+                  </div>
+                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                    ENTRY
+                  </span>
                 </div>
               </div>
-            ) : (
-              <p className="text-gray-300">No QR code available.</p>
-            )}
-          </div>
+
+              <p className="mt-6 max-w-sm text-center text-sm text-muted-foreground">
+                After rsvping and filling out necessary payments, use this QR code to check in!
+              </p>
+              <div className="mt-6">
+                <Button onClick={handleDownloadQr}>
+                  <ArrowDownTrayIcon className="mr-2 h-4 w-4" />
+                  Download QR Code
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-10 text-center text-sm text-muted-foreground">
+              No QR code available.
+            </p>
+          )}
         </div>
       </div>
       <Footer />

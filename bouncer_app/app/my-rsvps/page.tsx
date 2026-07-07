@@ -61,105 +61,101 @@ export default function MyRsvps() {
     });
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden flex flex-col">
-      {/* Neon orbs background (unique, no light beams) */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full bg-purple-700/30 blur-3xl mix-blend-screen"></div>
-        <div className="absolute top-32 -right-24 w-[380px] h-[380px] rounded-full bg-indigo-600/25 blur-3xl mix-blend-screen"></div>
-        <div className="absolute bottom-[-80px] left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full bg-pink-600/20 blur-3xl mix-blend-screen"></div>
-        {/* dotted grid overlay */}
-        <div className="absolute inset-0 opacity-[0.12]"
-             style={{
-               backgroundImage:
-                 "radial-gradient(currentColor 1px, transparent 1px)",
-               color: "#ffffff",
-               backgroundSize: "22px 22px",
-               backgroundPosition: "0 0, 11px 11px",
-             }}></div>
-      </div>
+  const isGoing = (status: string | null | undefined) =>
+    typeof status === "string" && /going|yes|approved|confirmed/i.test(status);
 
-      {/* Header on top */}
-      <div className="relative z-20">
-        <Header />
-      </div>
+  return (
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <Header />
 
       {/* Main content area that grows to push footer down */}
-      <div className="flex-1">
-        {/* Hero section */}
-        <div className="relative z-10 px-6 py-12 sm:px-8 lg:px-12">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-              My RSVPs
-            </h1>
-            <p className="text-lg text-gray-300 max-w-2xl">
-              Track the parties you&apos;re in for. Confirmed, pending, and everything in between.
-            </p>
+      <main className="flex-1">
+        <div className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+          {/* Page header */}
+          <div className="font-mono text-[11px] tracking-[0.2em] text-primary uppercase">
+            My RSVPs
+          </div>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+            The parties you&apos;re in for.
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Confirmed, pending, and everything in between.
+          </p>
+
+          {/* Content */}
+          <div className="mt-10">
+            {loading ? (
+              <div className="rounded-xl border border-border bg-white px-6 py-16 text-center shadow-sm">
+                <div className="font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+                  Loading&hellip;
+                </div>
+              </div>
+            ) : error ? (
+              <div className="rounded-xl border border-border bg-white px-6 py-16 text-center shadow-sm">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            ) : rsvps.length === 0 ? (
+              <div className="rounded-xl border border-border bg-white px-6 py-16 text-center shadow-sm">
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <CalendarIcon className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold tracking-tight">No RSVPs Yet</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                  When you RSVP to events, they&apos;ll appear here with their status.
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-4">
+                {rsvps.map((rsvp) => (
+                  <li
+                    key={rsvp.id}
+                    className="rounded-xl border border-border bg-white p-5 shadow-sm transition-colors hover:border-primary/40 sm:p-6"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                      <div className="min-w-0">
+                        <h2 className="truncate text-base font-semibold tracking-tight sm:text-lg">
+                          {rsvp.event_id?.name || "Event"}
+                        </h2>
+                        <div className="mt-1 font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                          {rsvp.event_id?.start_date && rsvp.event_id?.end_date
+                            ? `${formatDate(rsvp.event_id.start_date)} – ${formatDate(rsvp.event_id.end_date)}`
+                            : "-"}
+                        </div>
+                      </div>
+                      <span
+                        className={`rounded-md px-2 py-1 font-mono text-[10px] tracking-wide uppercase ${
+                          isGoing(rsvp.status)
+                            ? "bg-[#e4f5ec] text-[#067a53]"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {rsvp.status}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border pt-4">
+                      <div className="font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                        Submitted {formatDate(rsvp.created_at)}
+                      </div>
+                      {rsvp.is_approved ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-[#e4f5ec] px-2 py-1 font-mono text-[10px] tracking-wide text-[#067a53] uppercase">
+                          <CheckCircleIcon className="h-3.5 w-3.5" title="Approved" />
+                          Approved by admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
+                          <XCircleIcon className="h-3.5 w-3.5" title="Not approved" />
+                          Not approved
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
-
-        {/* Content card */}
-        <div className="relative max-w-7xl mx-auto px-6 pb-16 sm:px-8 lg:px-12">
-        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-6 sm:p-8">
-          {loading ? (
-            <div className="text-gray-300">Loading...</div>
-          ) : error ? (
-            <div className="text-red-400">{error}</div>
-          ) : rsvps.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto mb-6 w-20 h-20 rounded-full bg-purple-800/30 flex items-center justify-center">
-                <CalendarIcon className="w-10 h-10 text-purple-300" />
-              </div>
-              <h3 className="text-2xl font-semibold text-white mb-2">No RSVPs Yet</h3>
-              <p className="text-gray-400 max-w-md mx-auto">
-                When you RSVP to events, they&apos;ll appear here with their status.
-              </p>
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto">
-              <table className="min-w-full text-left">
-                <thead className="bg-gray-700/60 text-gray-200">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Event Name</th>
-                    <th className="px-4 py-3 font-semibold">Event Date &amp; Time</th>
-                    <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 font-semibold">Submitted At</th>
-                    <th className="px-4 py-3 font-semibold text-center">Approved by admin</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700/60">
-                  {rsvps.map((rsvp) => (
-                    <tr key={rsvp.id} className="hover:bg-gray-700/30">
-                      <td className="px-4 py-3 text-gray-100">{rsvp.event_id?.name || "Event"}</td>
-                      <td className="px-4 py-3 text-gray-300">
-                        {rsvp.event_id?.start_date && rsvp.event_id?.end_date
-                          ? `${formatDate(rsvp.event_id.start_date)} - ${formatDate(rsvp.event_id.end_date)}`
-                          : "-"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-2 rounded-full bg-gray-700/70 px-3 py-1 text-sm text-gray-200 border border-gray-600">
-                          {rsvp.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-300">{formatDate(rsvp.created_at)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center">
-                          {rsvp.is_approved ? (
-                            <CheckCircleIcon className="w-6 h-6 text-green-400" title="Approved" />
-                          ) : (
-                            <XCircleIcon className="w-6 h-6 text-red-400" title="Not approved" />
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-        </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );

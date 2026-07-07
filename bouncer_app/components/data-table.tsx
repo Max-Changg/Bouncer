@@ -99,19 +99,19 @@ export function DataTable<
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-gray-700/50 bg-gray-800/30 backdrop-blur-sm overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow
                 key={headerGroup.id}
-                className="border-gray-700/50 bg-gray-800/50"
+                className="border-border bg-muted hover:bg-muted"
               >
                 {headerGroup.headers.map(header => {
                   return (
                     <TableHead
                       key={header.id}
-                      className="text-gray-300 font-semibold"
+                      className="h-11 px-4 font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase"
                     >
                       {header.isPlaceholder
                         ? null
@@ -131,10 +131,13 @@ export function DataTable<
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
-                  className="border-gray-700/30 hover:bg-gray-800/40 transition-colors"
+                  className="border-border transition-colors hover:bg-muted/60"
                 >
                   {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id} className="text-gray-200">
+                    <TableCell
+                      key={cell.id}
+                      className="px-4 py-3 text-sm text-foreground"
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -147,7 +150,7 @@ export function DataTable<
               <TableRow>
                 <TableCell
                   colSpan={resolvedColumns.length}
-                  className="h-24 text-center text-gray-400"
+                  className="h-24 text-center text-muted-foreground"
                 >
                   No RSVPs found.
                 </TableCell>
@@ -156,31 +159,23 @@ export function DataTable<
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-400">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="max-w-md text-sm text-muted-foreground">
           Click checkboxes to verify RSVPs, then save changes to update the
-          database. Under "Amount Paid", you can edit the value by the guest by clicking 
-          the amount. 
+          database. Under &quot;Amount Paid&quot;, you can edit the value by the guest by clicking
+          the amount.
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {onSendEmails && (
-            <Button
-              onClick={onSendEmails}
-              variant="outline"
-              className="bg-purple-800/20 border-purple-500/50 text-purple-300 hover:bg-purple-800/40 hover:text-white shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
-            >
-              <EnvelopeIcon className="w-4 h-4 mr-2" />
+            <Button onClick={onSendEmails} variant="outline">
+              <EnvelopeIcon className="mr-2 h-4 w-4" />
               Send Email to Guests
             </Button>
           )}
-          <Button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
                 <span>Saving...</span>
               </div>
             ) : (

@@ -32,72 +32,68 @@ export default function EventCard({ event, onShare, onDelete, isDeleting = false
   });
 
   return (
-    <div className="group bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-purple-800/30 transition-all duration-300 overflow-hidden hover:-translate-y-1 h-[400px] w-[320px] flex flex-col flex-shrink-0">
-      {/* Event Header with gradient */}
-      <div className="bg-gradient-to-r from-purple-700 to-indigo-700 p-6 text-white relative overflow-hidden flex-shrink-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
-        <div className="relative">
-          <h2 className="text-xl font-bold mb-2 line-clamp-2 min-h-[3.5rem]">
-            {event.name}
-          </h2>
-          <div className="flex items-center text-purple-100">
-            <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
-              {event.theme}
-            </span>
-          </div>
-        </div>
+    <div className="flex w-full max-w-[320px] flex-col rounded-xl border border-border bg-white p-6 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md sm:w-[320px]">
+      {/* Mono eyebrow row: label / theme */}
+      <div className="flex items-center justify-between gap-3 font-mono text-[10px] tracking-[0.18em] uppercase">
+        <span className="whitespace-nowrap text-primary">EVENT</span>
+        {event.theme && (
+          <span className="truncate rounded-md bg-primary/10 px-2 py-1 tracking-wide text-primary">
+            {event.theme}
+          </span>
+        )}
       </div>
 
-      {/* Event Details */}
-      <div className="p-6 space-y-4 flex-1 flex flex-col">
-        <div className="space-y-3 flex-1">
-          <div className="flex items-center text-gray-300">
-            <CalendarIcon className="w-5 h-5 mr-3 text-purple-300 flex-shrink-0" />
-            <span className="font-medium">{formattedStart}</span>
-          </div>
-          <div className="flex items-center text-gray-300">
-            <ClockIcon className="w-5 h-5 mr-3 text-purple-300 flex-shrink-0" />
-            <span>{formattedTime}</span>
-          </div>
-          {event.location && (
-            <div className="flex items-start text-gray-300">
-              <MapPinIcon className="w-5 h-5 mr-3 mt-0.5 text-purple-300 flex-shrink-0" />
-              <span className="text-sm line-clamp-3 overflow-hidden">
-                {event.location}
-              </span>
-            </div>
-          )}
-        </div>
+      {/* Event name */}
+      <h2 className="mt-3 line-clamp-2 min-h-[3.5rem] text-xl font-semibold tracking-tight text-foreground">
+        {event.name}
+      </h2>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-4 border-t border-gray-700 flex-shrink-0">
-          <Button
-            onClick={() => router.push(`/event/${event.id}`)}
-            className="flex-1 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-md hover:shadow-lg transition-all duration-200"
-          >
-            <UsersIcon className="w-4 h-4 mr-2" />
-            Manage
-          </Button>
-          <Button
-            onClick={() => onShare(event.id.toString())}
-            variant="outline"
-            className="flex-1 bg-gray-700/50 border-gray-600 text-gray-200 hover:bg-green-900/30 hover:border-green-500 hover:text-green-400 shadow-md transition-all duration-200"
-          >
-            Share
-          </Button>
-          <Button
-            onClick={() => onDelete(event.id)}
-            variant="outline"
-            disabled={isDeleting}
-            className="bg-gray-700/50 border-gray-600 text-gray-200 hover:bg-red-900/30 hover:border-red-500 hover:text-red-400 shadow-md transition-all duration-200 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isDeleting ? (
-              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <TrashIcon className="w-4 h-4" />
-            )}
-          </Button>
+      {/* Event details */}
+      <div className="mt-4 flex-1 space-y-3">
+        <div className="flex items-center text-sm text-muted-foreground">
+          <CalendarIcon className="mr-2.5 h-4 w-4 flex-shrink-0 text-primary" />
+          <span>{formattedStart}</span>
         </div>
+        <div className="flex items-center text-sm text-muted-foreground">
+          <ClockIcon className="mr-2.5 h-4 w-4 flex-shrink-0 text-primary" />
+          <span>{formattedTime}</span>
+        </div>
+        {event.location && (
+          <div className="flex items-start text-sm text-muted-foreground">
+            <MapPinIcon className="mr-2.5 mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+            <span className="line-clamp-3 overflow-hidden">{event.location}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div className="mt-6 flex gap-2 border-t border-border pt-4">
+        <Button
+          onClick={() => router.push(`/event/${event.id}`)}
+          className="flex-1"
+        >
+          <UsersIcon className="mr-2 h-4 w-4" />
+          Manage
+        </Button>
+        <Button
+          onClick={() => onShare(event.id.toString())}
+          variant="outline"
+          className="flex-1"
+        >
+          Share
+        </Button>
+        <Button
+          onClick={() => onDelete(event.id)}
+          variant="outline"
+          disabled={isDeleting}
+          className="px-3 text-red-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isDeleting ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <TrashIcon className="h-4 w-4" />
+          )}
+        </Button>
       </div>
     </div>
   );

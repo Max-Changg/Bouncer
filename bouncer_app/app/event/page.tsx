@@ -64,15 +64,15 @@ export default function Event() {
   // Delete single event with confirmation
   const deleteEvent = async (eventId: number) => {
     if (!session) return;
-    
+
     const eventToDelete = events.find(e => e.id === eventId);
     const confirmMessage = `Are you sure you want to delete "${eventToDelete?.name}"?\n\nThis will permanently delete:\n• The event\n• All tickets\n• All RSVPs\n\nThis action cannot be undone.`;
-    
+
     if (!confirm(confirmMessage)) return;
-    
+
     setDeleting(eventId);
     setError(null);
-    
+
     try {
       const response = await fetch(`/api/events/${eventId}`, {
         method: 'DELETE',
@@ -86,7 +86,7 @@ export default function Event() {
 
       // Remove event from local state
       setEvents(events.filter(e => e.id !== eventId));
-      
+
       // Event deleted successfully
     } catch (err) {
       // Error deleting event
@@ -124,11 +124,27 @@ export default function Event() {
   }, [session, fetchEvents]);
 
   if (loading) {
-    return <div>Loading events...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Loading events...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="w-full max-w-md rounded-xl border border-border bg-white p-8 text-center shadow-sm">
+          <div className="font-mono text-[10px] tracking-[0.18em] text-red-600 uppercase">
+            Error
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
@@ -136,167 +152,116 @@ export default function Event() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">      
-      {/* Extended Hero Section with Header */}
-      <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
-        {/* Background: subtle beams + dotted grid */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Thin rave-style light beams */}
-          <div
-            className="absolute top-0 left-1/2 w-32 h-full bg-gradient-to-b from-purple-600/50 via-purple-600/25 to-transparent transform -translate-x-[460px] skew-x-16"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-24 h-full bg-gradient-to-b from-orange-400/60 via-orange-500/30 to-transparent transform -translate-x-[200px]"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-28 h-full bg-gradient-to-b from-purple-400/55 via-purple-500/28 to-transparent transform -skew-x-16 translate-x-[60px]"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-20 h-full bg-gradient-to-b from-orange-600/45 via-orange-600/20 to-transparent transform translate-x-[300px] skew-x-12"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-16 h-full bg-gradient-to-b from-purple-500/40 via-purple-500/18 to-transparent transform -translate-x-[600px] -skew-x-8"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-18 h-full bg-gradient-to-b from-orange-400/40 via-orange-400/18 to-transparent transform translate-x-[500px] skew-x-8"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          {/* Dotted grid overlay */}
-          <div className="absolute inset-0 opacity-[0.14]" style={{
-            backgroundImage: 'radial-gradient(currentColor 1px, transparent 1px)',
-            color: '#ffffff',
-            backgroundSize: '22px 22px',
-            backgroundPosition: '0 0, 11px 11px',
-          }}></div>
-        </div>
-        
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-800/15 via-transparent to-indigo-800/25"></div>
-        
-        {/* Header integrated into hero */}
-        <div className="relative z-20">
-          <Header />
-        </div>
-        
-        {/* Hero content */}
-        <div className="relative px-6 py-16 sm:px-8 lg:px-12">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
-              My Events
-            </h1>
-            <p className="text-xl text-gray-300 max-w-2xl">
-              Manage and organize your events with style. View, edit, and share your upcoming events.
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
 
-      <div className="max-w-7xl mx-auto px-6 py-12 sm:px-8 lg:px-12">
-        {/* Controls Section with elevated dark card */}
-        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            {/* Sort Controls */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <span className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
-                Filter & Sort
-              </span>
-              
-              <div className="flex items-center gap-3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="bg-gray-700/90 border-gray-600 text-white hover:bg-gray-600 shadow-sm">
-                      Sort by: {sortBy === 'start_date' ? 'Date' : 'Name'}
-                      <ChevronDownIcon className="w-4 h-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-48 bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-xl">
-                    <DropdownMenuLabel className="text-gray-300">Sort Options</DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-gray-700" />
-                                         <DropdownMenuItem 
-                       onClick={() => setSortBy('start_date')}
-                       className="cursor-pointer hover:bg-purple-800/30 text-gray-200 hover:text-white"
-                     >
-                       <CalendarIcon className="w-4 h-4 mr-2 text-purple-300" />
-                       Start Date
-                     </DropdownMenuItem>
-                     <DropdownMenuItem 
-                       onClick={() => setSortBy('name')}
-                       className="cursor-pointer hover:bg-purple-800/30 text-gray-200 hover:text-white"
-                     >
-                       Event Name
-                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-16 sm:px-8 lg:px-12">
+        {/* Page header */}
+        <div className="font-mono text-[11px] tracking-[0.2em] text-primary uppercase">
+          MY EVENTS
+        </div>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          My Events
+        </h1>
+        <p className="mt-3 max-w-2xl text-muted-foreground">
+          Manage and organize your events with style. View, edit, and share your upcoming events.
+        </p>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="bg-gray-700/90 border-gray-600 text-white hover:bg-gray-600 shadow-sm">
-                      {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
-                      <ChevronDownIcon className="w-4 h-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-40 bg-gray-800/95 backdrop-blur-sm border-gray-700 shadow-xl">
-                    <DropdownMenuLabel className="text-gray-300">Order</DropdownMenuLabel>
-                    <DropdownMenuSeparator className="bg-gray-700" />
-                                         <DropdownMenuItem 
-                       onClick={() => setSortOrder('asc')}
-                       className="cursor-pointer hover:bg-purple-800/30 text-gray-200 hover:text-white"
-                     >
-                       Ascending
-                     </DropdownMenuItem>
-                     <DropdownMenuItem 
-                       onClick={() => setSortOrder('desc')}
-                       className="cursor-pointer hover:bg-purple-800/30 text-gray-200 hover:text-white"
-                     >
-                       Descending
-                     </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+        {/* Sort controls */}
+        <div className="mt-10 flex flex-col items-start justify-between gap-4 border-b border-border pb-6 sm:flex-row sm:items-center">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <span className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
+              Filter & Sort
+            </span>
+
+            <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    Sort by: {sortBy === 'start_date' ? 'Date' : 'Name'}
+                    <ChevronDownIcon className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48">
+                  <DropdownMenuLabel>Sort Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setSortBy('start_date')}
+                    className="cursor-pointer"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Start Date
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setSortBy('name')}
+                    className="cursor-pointer"
+                  >
+                    Event Name
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                    <ChevronDownIcon className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-40">
+                  <DropdownMenuLabel>Order</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setSortOrder('asc')}
+                    className="cursor-pointer"
+                  >
+                    Ascending
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setSortOrder('desc')}
+                    className="cursor-pointer"
+                  >
+                    Descending
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-
-            {/* Delete All Button */}
-            {/* {events.length > 0 && (
-              <Button
-                onClick={deleteAllEvents}
-                variant="destructive"
-                className="bg-red-600 hover:bg-red-700 shadow-lg hover:shadow-red-900/50 transition-all duration-200"
-                disabled={deleting}
-              >
-                {deleting ? 'Deleting...' : 'Delete All Events'}
-              </Button>
-            )} */}
           </div>
+
+          {/* Delete All Button */}
+          {/* {events.length > 0 && (
+            <Button
+              onClick={deleteAllEvents}
+              variant="destructive"
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting...' : 'Delete All Events'}
+            </Button>
+          )} */}
         </div>
 
         {/* Events Grid */}
         {events.length === 0 ? (
-          <div className="bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-700/50 shadow-xl p-12 text-center">
-            <div className="max-w-md mx-auto">
-                             <div className="w-20 h-20 bg-purple-800/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                 <CalendarIcon className="w-10 h-10 text-purple-300" />
-               </div>
-               <h3 className="text-2xl font-semibold text-white mb-3">No Events Yet</h3>
-               <p className="text-gray-400 mb-6">
-                 Ready to create your first event? Get started and bring people together!
-               </p>
-               <Button 
-                 onClick={() => router.push('/create-event')}
-                 className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
-               >
+          <div className="mt-10 rounded-2xl border border-border bg-white p-12 text-center shadow-sm">
+            <div className="mx-auto max-w-md">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <CalendarIcon className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="mb-3 text-2xl font-semibold tracking-tight text-foreground">
+                No Events Yet
+              </h3>
+              <p className="mb-6 text-muted-foreground">
+                Ready to create your first event? Get started and bring people together!
+              </p>
+              <Button onClick={() => router.push('/create-event')}>
                 Schedule Your First Event
               </Button>
             </div>
           </div>
-         ) : (
-           <>
-             <div className="w-full flex flex-wrap gap-8 justify-start items-start content-start">
-               {events.map(event => (
+        ) : (
+          <>
+            <div className="mt-10 flex w-full flex-wrap content-start items-start justify-start gap-6">
+              {events.map(event => (
                 <EventCard
                   key={event.id}
                   event={event}
@@ -304,20 +269,20 @@ export default function Event() {
                   onDelete={deleteEvent}
                   isDeleting={deleting === event.id}
                 />
-               ))}
-             </div>
-             <div className="mt-8">
+              ))}
+            </div>
+            <div className="mt-10">
               <Button
-                 onClick={() => router.push('/create-event')}
-                 className="bg-gray-800/95 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
-               >
-                <PlusIcon className="w-4 h-4 mr-2" />
+                variant="outline"
+                onClick={() => router.push('/create-event')}
+              >
+                <PlusIcon className="mr-2 h-4 w-4" />
                 Schedule Another Event
-               </Button>
-             </div>
-           </>
-         )}
-      </div>
+              </Button>
+            </div>
+          </>
+        )}
+      </main>
       <Footer />
     </div>
   );

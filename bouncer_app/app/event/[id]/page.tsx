@@ -93,7 +93,7 @@ export default function EventDetails() {
       // Show success message
       const successMessage = document.createElement('div');
       successMessage.className =
-        'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
+        'fixed top-4 right-4 z-50 rounded-lg border border-[#067a53]/20 bg-[#e4f5ec] px-6 py-3 text-sm text-[#067a53] shadow-lg';
       successMessage.textContent = 'Gmail connected successfully! You can now send emails automatically.';
       document.body.appendChild(successMessage);
 
@@ -443,7 +443,7 @@ export default function EventDetails() {
         // Show success notification in a more modern way
         const successMessage = document.createElement('div');
         successMessage.className =
-          'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
+          'fixed top-4 right-4 z-50 rounded-lg border border-[#067a53]/20 bg-[#e4f5ec] px-6 py-3 text-sm text-[#067a53] shadow-lg';
         successMessage.textContent = 'Verification changes saved successfully!';
         document.body.appendChild(successMessage);
 
@@ -520,7 +520,7 @@ export default function EventDetails() {
             // Show message to user
             const infoMessage = document.createElement('div');
             infoMessage.className =
-              'fixed top-4 right-4 bg-blue-800/90 text-blue-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-blue-600/50';
+              'fixed top-4 right-4 z-50 rounded-lg border border-border bg-white px-6 py-3 text-sm text-foreground shadow-lg';
             infoMessage.textContent = 'Please complete Gmail authentication in the popup window, then try sending emails again.';
             document.body.appendChild(infoMessage);
 
@@ -548,7 +548,7 @@ export default function EventDetails() {
         
         const infoMessage = document.createElement('div');
         infoMessage.className =
-          'fixed top-4 right-4 bg-blue-800/90 text-blue-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-blue-600/50';
+          'fixed top-4 right-4 z-50 rounded-lg border border-border bg-white px-6 py-3 text-sm text-foreground shadow-lg';
         infoMessage.textContent = `Opening ${recipients.length} email drafts in your default email client.`;
         document.body.appendChild(infoMessage);
 
@@ -581,7 +581,7 @@ export default function EventDetails() {
               // Show message to user
               const infoMessage = document.createElement('div');
               infoMessage.className =
-                'fixed top-4 right-4 bg-blue-800/90 text-blue-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-blue-600/50';
+                'fixed top-4 right-4 z-50 rounded-lg border border-border bg-white px-6 py-3 text-sm text-foreground shadow-lg';
               infoMessage.textContent = 'Please complete Gmail authentication in the popup window, then try sending emails again.';
               document.body.appendChild(infoMessage);
 
@@ -609,7 +609,7 @@ export default function EventDetails() {
       const { successful, failed } = result.results;
       const successMessage = document.createElement('div');
       successMessage.className =
-        'fixed top-4 right-4 bg-green-800/90 text-green-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-green-600/50';
+        'fixed top-4 right-4 z-50 rounded-lg border border-[#067a53]/20 bg-[#e4f5ec] px-6 py-3 text-sm text-[#067a53] shadow-lg';
       
       if (failed > 0) {
         successMessage.textContent = `Emails sent from your Gmail! ${successful} successful, ${failed} failed`;
@@ -633,7 +633,7 @@ export default function EventDetails() {
       // Show error message
       const errorMessage = document.createElement('div');
       errorMessage.className =
-        'fixed top-4 right-4 bg-red-800/90 text-red-100 px-6 py-3 rounded-lg shadow-lg z-50 border border-red-600/50';
+        'fixed top-4 right-4 z-50 rounded-lg border border-red-200 bg-red-50 px-6 py-3 text-sm text-red-600 shadow-lg';
       errorMessage.textContent = `Failed to send emails: ${error instanceof Error ? error.message : 'Unknown error'}`;
       document.body.appendChild(errorMessage);
 
@@ -801,12 +801,12 @@ export default function EventDetails() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading event details...</p>
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-border border-t-primary"></div>
+          <p className="text-muted-foreground">Loading event details...</p>
           {process.env.NODE_ENV === 'development' && (
-            <p className="text-xs text-gray-500 mt-2">Fetching event data...</p>
+            <p className="mt-2 font-mono text-xs text-muted-foreground">Fetching event data...</p>
           )}
         </div>
       </div>
@@ -815,11 +815,11 @@ export default function EventDetails() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center">
-          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
             <svg
-              className="w-8 h-8 text-red-400"
+              className="h-7 w-7 text-red-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -832,7 +832,7 @@ export default function EventDetails() {
               />
             </svg>
           </div>
-          <p className="text-red-300 text-lg">Error: {error}</p>
+          <p className="text-lg text-red-600">Error: {error}</p>
         </div>
       </div>
     );
@@ -841,10 +841,10 @@ export default function EventDetails() {
   // Show loading while checking authentication or authorization
   if (auth.loading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-border border-t-primary"></div>
+          <p className="text-muted-foreground">
             {!auth.isAuthenticated
               ? 'Checking authentication...'
               : loading
@@ -852,7 +852,7 @@ export default function EventDetails() {
                 : 'Verifying access...'}
           </p>
           {process.env.NODE_ENV === 'development' && (
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="mt-2 font-mono text-xs text-muted-foreground">
               Auth: {auth.isAuthenticated ? 'authenticated' : 'checking'},
               Authorized: {auth.isAuthorized?.toString() ?? 'checking'},
               Loading: {loading}
@@ -866,11 +866,11 @@ export default function EventDetails() {
   // Show unauthorized message if user is not the event owner
   if (auth.isAuthenticated && auth.isAuthorized === false) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
-        <div className="text-center max-w-md mx-4">
-          <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-xl border border-border bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
             <svg
-              className="w-8 h-8 text-red-400"
+              className="h-7 w-7 text-red-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -883,17 +883,14 @@ export default function EventDetails() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
-          <p className="text-gray-300 mb-4">
+          <h2 className="mb-2 text-xl font-semibold tracking-tight text-foreground">
+            Access Denied
+          </h2>
+          <p className="mb-6 text-sm text-muted-foreground">
             You are not authorized to view this event page. Only the event
             creator can access this page.
           </p>
-          <button
-            onClick={() => router.push('/event')}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            Go to Events
-          </button>
+          <Button onClick={() => router.push('/event')}>Go to Events</Button>
         </div>
       </div>
     );
@@ -927,218 +924,220 @@ export default function EventDetails() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-      {/* Extended Hero Section with Header */}
-      <div className="relative bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 text-white overflow-hidden">
-        {/* Background: subtle beams + dotted grid */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Thin rave-style light beams */}
-          <div
-            className="absolute top-0 left-1/2 w-32 h-full bg-gradient-to-b from-purple-600/50 via-purple-600/25 to-transparent transform -translate-x-[460px] skew-x-16"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-24 h-full bg-gradient-to-b from-orange-400/60 via-orange-500/30 to-transparent transform -translate-x-[200px]"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          <div
-            className="absolute top-0 left-1/2 w-28 h-full bg-gradient-to-b from-purple-400/55 via-purple-500/28 to-transparent transform -skew-x-16 translate-x-[60px]"
-            style={{ clipPath: 'polygon(45% 0%, 55% 0%, 85% 100%, 15% 100%)' }}
-          ></div>
-          {/* Dotted grid overlay */}
-          <div
-            className="absolute inset-0 opacity-[0.14]"
-            style={{
-              backgroundImage:
-                'radial-gradient(currentColor 1px, transparent 1px)',
-              color: '#ffffff',
-              backgroundSize: '22px 22px',
-              backgroundPosition: '0 0, 11px 11px',
-            }}
-          ></div>
-        </div>
+    <div className="flex min-h-screen flex-col bg-background">
+      <Header />
 
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-800/15 via-transparent to-indigo-800/25"></div>
-
-        {/* Header integrated into hero */}
-        <div className="relative z-20">
-          <Header />
-        </div>
-
-        {/* Hero content */}
-        <div className="relative px-6 py-16 sm:px-8 lg:px-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+      <main className="flex-1">
+        <div className="mx-auto max-w-7xl px-6 py-10 sm:py-14">
+          {/* Page header */}
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                Event · Manage
+              </div>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                 {event.name}
               </h1>
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleEdit}
-                  variant="outline"
-                  className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
-                >
-                  <PencilIcon className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button
-                  onClick={handleDelete}
-                  variant="outline"
-                  className="bg-red-800/20 border-red-500/50 text-red-300 hover:bg-red-800/40 hover:text-white"
-                >
-                  <TrashIcon className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-                <Button
-                  onClick={() => handleShare(event.id.toString())}
-                  className="bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 shadow-lg hover:shadow-green-800/50 transition-all duration-200"
-                >
-                  <ShareIcon className="w-4 h-4 mr-2" />
-                  Invite Guests
-                </Button>
-                <Button
-                  onClick={() => setShowScanner(true)}
-                  className="bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 shadow-lg hover:shadow-blue-800/50 transition-all duration-200"
-                >
-                  <QrCodeIcon className="w-4 h-4 mr-2" />
-                  Scan QR
-                </Button>
+              <p className="mt-2 max-w-2xl text-muted-foreground">
+                Manage your event details, track RSVPs, and verify payments
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={handleEdit} variant="outline">
+                <PencilIcon className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+              <Button
+                onClick={handleDelete}
+                variant="outline"
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <TrashIcon className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+              <Button
+                onClick={() => handleShare(event.id.toString())}
+                variant="secondary"
+              >
+                <ShareIcon className="w-4 h-4 mr-2" />
+                Invite Guests
+              </Button>
+              <Button onClick={() => setShowScanner(true)}>
+                <QrCodeIcon className="w-4 h-4 mr-2" />
+                Scan QR
+              </Button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {/* Stat tiles */}
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                <CalendarIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                Starts
+              </div>
+              <div className="mt-3 text-lg font-semibold tracking-tight text-foreground">
+                {formattedStart}
+              </div>
+              <div className="mt-1 font-mono text-xs text-muted-foreground">
+                {formattedStartTime}
               </div>
             </div>
-            <p className="text-xl text-gray-300 max-w-2xl">
-              Manage your event details, track RSVPs, and verify payments
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-12 sm:px-8 lg:px-12">
-        {error && (
-          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-8">
-            <p className="text-red-300 text-sm">{error}</p>
-          </div>
-        )}
-
-        {/* Event Details Card */}
-        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Event Details</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center text-gray-300">
-                <CalendarIcon className="w-5 h-5 mr-3 text-purple-300 flex-shrink-0" />
-                <div>
-                  <span className="font-medium">Start:</span> {formattedStart}{' '}
-                  at {formattedStartTime}
-                </div>
+            <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                <ClockIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                Ends
               </div>
-              <div className="flex items-center text-gray-300">
-                <ClockIcon className="w-5 h-5 mr-3 text-purple-300 flex-shrink-0" />
-                <div>
-                  <span className="font-medium">End:</span> {formattedEnd} at{' '}
-                  {formattedEndTime}
-                </div>
+              <div className="mt-3 text-lg font-semibold tracking-tight text-foreground">
+                {formattedEnd}
               </div>
-              {event.location && (
-                <div className="flex items-start text-gray-300">
-                  <MapPinIcon className="w-5 h-5 mr-3 mt-0.5 text-purple-300 flex-shrink-0" />
-                  <span className="text-sm">{event.location}</span>
-                </div>
-              )}
+              <div className="mt-1 font-mono text-xs text-muted-foreground">
+                {formattedEndTime}
+              </div>
             </div>
-            <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                <MapPinIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                Location
+              </div>
+              <div className="mt-3 break-words text-sm font-semibold text-foreground">
+                {event.location || 'TBD'}
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                <UsersIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                Guests
+              </div>
+              <div className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+                {rsvps.length}
+              </div>
+              <div className="mt-1 font-mono text-xs text-muted-foreground">
+                RSVPS RECEIVED
+              </div>
+            </div>
+          </div>
+
+          {/* Event Details Card */}
+          <div className="mt-6 rounded-xl border border-border bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              Event Details
+            </h2>
+            <div className="mt-5 grid gap-6 md:grid-cols-2">
               <div>
-                <span className="text-gray-300 font-medium">Theme:</span>
-                <span className="ml-2 px-3 py-1 bg-purple-800/30 rounded-full text-sm text-purple-300">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  Theme
+                </div>
+                <span className="mt-2 inline-block rounded-md bg-muted px-2 py-1 font-mono text-[10px] tracking-wide text-muted-foreground">
                   {event.theme}
                 </span>
               </div>
               <div>
-                <span className="text-gray-300 font-medium">Description:</span>
-                <p className="mt-2 text-gray-300 text-sm">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  Description
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-foreground">
                   {event.additional_info}
                 </p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Payment Upload Section - Admin Only */}
-        {auth.user && event && auth.user.id === event.user_id && (
-          <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8 mb-8">
-            <h3 className="text-2xl font-bold text-white mb-6">
-              Payment Verification
-            </h3>
-            <p className="text-gray-300 mb-6">
-              Upload your Venmo and Zelle statements to automatically verify
-              payments with your RSVPs.
-            </p>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Zelle Statement (.txt)
-                </label>
-                <input
-                  type="file"
-                  accept=".txt"
-                  onChange={handleZelleUpload}
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-800/50 file:text-purple-300 hover:file:bg-purple-800/70"
-                />
+          {/* Payment Upload Section - Admin Only */}
+          {auth.user && event && auth.user.id === event.user_id && (
+            <div className="mt-6 rounded-xl border border-border bg-white p-6 shadow-sm sm:p-8">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                Payment Matching
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Venmo Statement (.csv)
-                </label>
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleVenmoUpload}
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700/50 px-4 py-3 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-800/50 file:text-orange-300 hover:file:bg-orange-800/70"
-                />
+              <h3 className="mt-2 text-lg font-semibold tracking-tight text-foreground">
+                Payment Verification
+              </h3>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                Upload your Venmo and Zelle statements to automatically verify
+                payments with your RSVPs.
+              </p>
+              <div className="mt-6 grid gap-6 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    Zelle Statement (.txt)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".txt"
+                    onChange={handleZelleUpload}
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground hover:file:bg-[#eeedf3]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    Venmo Statement (.csv)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleVenmoUpload}
+                    className="w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground hover:file:bg-[#eeedf3]"
+                  />
+                </div>
               </div>
+              {processingPayments && (
+                <div className="mt-6 text-center">
+                  <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary"></div>
+                  <p className="text-sm text-muted-foreground">
+                    Processing payments...
+                  </p>
+                </div>
+              )}
             </div>
-            {processingPayments && (
-              <div className="mt-4 text-center">
-                <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-2"></div>
-                <p className="text-purple-300 text-sm">
-                  Processing payments...
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+          )}
 
-        {/* RSVPs Section */}
-        <div className="bg-gray-800/90 backdrop-blur-sm rounded-3xl border border-gray-700/50 shadow-xl shadow-black/50 p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-white">RSVPs</h3>
-            <div className="flex items-center text-gray-300">
-              <UsersIcon className="w-5 h-5 mr-2 text-purple-300" />
-              <span>{rsvps.length} guests</span>
+          {/* RSVPs Section */}
+          <div className="mt-6 rounded-xl border border-border bg-white p-6 shadow-sm sm:p-8">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                RSVPs
+              </h3>
+              <span className="flex items-center gap-2 rounded-md bg-muted px-2 py-1 font-mono text-[10px] tracking-wide text-muted-foreground">
+                <UsersIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                {rsvps.length} GUESTS
+              </span>
             </div>
+            <DataTable
+              columns={createColumns}
+              data={rsvps}
+              onSave={handleSave}
+              onViewPaymentProof={handleViewPaymentProof}
+              onAmountPaidChange={handleAmountPaidChange}
+              onSendEmails={handleOpenEmailModal}
+            />
           </div>
-          <DataTable
-            columns={createColumns}
-            data={rsvps}
-            onSave={handleSave}
-            onViewPaymentProof={handleViewPaymentProof}
-            onAmountPaidChange={handleAmountPaidChange}
-            onSendEmails={handleOpenEmailModal}
-          />
         </div>
-      </div>
+      </main>
 
       {/* QR Scanner Modal */}
       {showScanner && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800/95 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-2xl p-8 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Scan QR Code</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-xl">
+            <div className="mb-6 flex items-start justify-between">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                  Door Scanner
+                </div>
+                <h3 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
+                  Scan QR Code
+                </h3>
+              </div>
               <Button
                 onClick={() => setShowScanner(false)}
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-600 hover:text-white"
+                aria-label="Close scanner"
               >
                 <XMarkIcon className="w-4 h-4" />
               </Button>
@@ -1154,17 +1153,30 @@ export default function EventDetails() {
             </div>
 
             {verificationStatus && (
-              <div className="text-center">
+              <div
+                className={`rounded-xl px-4 py-3 ${
+                  verificationStatus === 'Verified'
+                    ? 'bg-[#e4f5ec]'
+                    : 'bg-red-50'
+                }`}
+              >
                 <div
-                  className={`rounded-lg p-4 text-2xl font-bold mb-4 ${
+                  className={`text-sm font-semibold ${
                     verificationStatus === 'Verified'
-                      ? 'bg-green-900/20 text-green-400 border border-green-500/30'
-                      : 'bg-red-900/20 text-red-400 border border-red-500/30'
+                      ? 'text-[#067a53]'
+                      : 'text-red-600'
                   }`}
                 >
+                  {verificationStatus === 'Verified' ? '✓ ' : ''}
                   {verificationStatus}
                 </div>
-                <p className="text-gray-300 text-sm">
+                <p
+                  className={`mt-0.5 font-mono text-[10px] tracking-wide ${
+                    verificationStatus === 'Verified'
+                      ? 'text-[#067a53]/80'
+                      : 'text-red-600/80'
+                  }`}
+                >
                   {verificationStatus === 'Verified'
                     ? 'Guest verified successfully!'
                     : 'Guest not found in RSVP list'}
@@ -1173,10 +1185,7 @@ export default function EventDetails() {
             )}
 
             <div className="flex justify-center mt-6">
-              <Button
-                onClick={() => setShowScanner(false)}
-                className="bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 shadow-lg hover:shadow-purple-800/50 transition-all duration-200"
-              >
+              <Button onClick={() => setShowScanner(false)} variant="outline">
                 Close Scanner
               </Button>
             </div>

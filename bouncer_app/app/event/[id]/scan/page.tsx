@@ -72,28 +72,44 @@ export default function ScanPage() {
   };
 
   return (
-    <div className="container mx-auto flex flex-col items-center py-10">
-      <h1 className="mb-4 text-3xl font-bold">Scan Attendee QR Code</h1>
-
-      <div className="mt-4 w-full max-w-md">
-        {!verificationStatus && (
-          <Scanner onScan={handleScanSuccess} onError={handleScanFailure} />
-        )}
-      </div>
-
-      {verificationStatus && (
-        <div className="mt-8 text-center">
-          <div
-            className={`rounded-lg p-4 text-4xl font-bold ${
-              verificationStatus === 'Verified'
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700'
-            }`}
-          >
-            {verificationStatus}
+    <div className="flex min-h-screen flex-col bg-background">
+      <main className="flex flex-1 flex-col items-center px-6 py-12 sm:py-16">
+        <div className="text-center">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+            Door Scanner
           </div>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Scan Attendee QR Code
+          </h1>
         </div>
-      )}
+
+        <div className="mt-8 w-full max-w-md rounded-2xl border border-border bg-white p-4 shadow-sm">
+          {!verificationStatus && (
+            <Scanner onScan={handleScanSuccess} onError={handleScanFailure} />
+          )}
+
+          {verificationStatus && (
+            <div
+              className={`rounded-xl px-4 py-8 text-center ${
+                verificationStatus === 'Verified'
+                  ? 'bg-[#e4f5ec]'
+                  : 'bg-red-50'
+              }`}
+            >
+              <div
+                className={`text-3xl font-semibold tracking-tight ${
+                  verificationStatus === 'Verified'
+                    ? 'text-[#067a53]'
+                    : 'text-red-600'
+                }`}
+              >
+                {verificationStatus === 'Verified' ? '✓ ' : ''}
+                {verificationStatus}
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
       <Footer />
     </div>
   );
