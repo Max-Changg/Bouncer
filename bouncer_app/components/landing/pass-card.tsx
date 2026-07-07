@@ -45,7 +45,7 @@ export function HeroPass() {
         <span className="font-mono text-xs text-[var(--muted-foreground)]">GA · $15.00</span>
       </div>
 
-      <div className="stamp-land absolute bottom-[86px] right-4 rounded-md border-2 border-[var(--ok)] bg-[var(--ok-bg)]/95 px-2.5 py-1 font-mono text-[10px] font-semibold tracking-[0.16em] text-[var(--ok)]">
+      <div className="stamp-land absolute bottom-[84px] right-3 rounded-md border-2 border-[var(--ok)] bg-[var(--ok-bg)]/95 px-2.5 py-1 font-mono text-[11px] font-semibold tracking-[0.16em] text-[var(--ok)]">
         VERIFIED · VENMO
       </div>
     </div>

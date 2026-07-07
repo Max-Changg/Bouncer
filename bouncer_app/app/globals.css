@@ -188,27 +188,32 @@ html:has(.landing) body {
 
 .landing-rise {
   opacity: 0;
-  animation: landing-rise 0.65s cubic-bezier(0.2, 0.7, 0.2, 1) var(--rise-delay, 0s) forwards;
+  animation: landing-rise var(--rise-duration, 0.9s) cubic-bezier(0.2, 0.7, 0.2, 1)
+    var(--rise-delay, 0s) forwards;
 }
 
 @keyframes stamp-land {
   0% {
     opacity: 0;
-    transform: scale(1.8) rotate(-14deg);
+    transform: scale(2.6) rotate(-22deg);
   }
-  65% {
+  55% {
     opacity: 1;
-    transform: scale(0.94) rotate(-6deg);
+    transform: scale(0.86) rotate(-9deg);
+  }
+  75% {
+    transform: scale(1.08) rotate(-11.5deg);
   }
   100% {
     opacity: 1;
-    transform: scale(1) rotate(-7deg);
+    transform: scale(1) rotate(-11deg);
   }
 }
 
+/* Lands just as the pass rise (1.05s delay + 0.9s) settles */
 .stamp-land {
   opacity: 0;
-  animation: stamp-land 0.4s cubic-bezier(0.2, 0.7, 0.3, 1.2) 0.9s forwards;
+  animation: stamp-land 0.45s cubic-bezier(0.2, 0.8, 0.25, 1) 1.7s forwards;
 }
 
 /* Hero scroll choreography — driven by --p (0–1) set on .hero-root each frame */
@@ -283,7 +288,7 @@ html:has(.landing) body {
 }
 
 .step-swap {
-  animation: step-swap 0.35s ease-out;
+  animation: step-swap 0.5s ease-out;
 }
 
 /* Receipt stagger reveal */
@@ -291,8 +296,8 @@ html:has(.landing) body {
   opacity: 0;
   transform: translateY(10px);
   transition:
-    opacity 0.45s ease calc(var(--i, 0) * 90ms),
-    transform 0.45s ease calc(var(--i, 0) * 90ms);
+    opacity 0.65s ease calc(var(--i, 0) * 120ms),
+    transform 0.65s ease calc(var(--i, 0) * 120ms);
 }
 
 .receipt-in .receipt-row {
@@ -310,7 +315,7 @@ html:has(.landing) body {
     opacity: 1;
   }
   .stamp-land {
-    transform: rotate(-7deg);
+    transform: rotate(-11deg);
   }
   .hero-copy,
   .hero-pass-wrap,

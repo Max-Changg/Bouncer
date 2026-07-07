@@ -24,7 +24,9 @@ function HeroCopy() {
       </span>
       <h1
         className="landing-rise mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-[var(--ink)] sm:text-5xl md:text-6xl"
-        style={{ '--rise-delay': '0.08s' } as React.CSSProperties}
+        style={
+          { '--rise-delay': '0.12s', '--rise-duration': '1.4s' } as React.CSSProperties
+        }
       >
         Event check-in,
         <br />
@@ -32,7 +34,7 @@ function HeroCopy() {
       </h1>
       <p
         className="landing-rise mt-5 max-w-xl text-base text-[var(--muted-foreground)] sm:text-lg"
-        style={{ '--rise-delay': '0.16s' } as React.CSSProperties}
+        style={{ '--rise-delay': '0.5s' } as React.CSSProperties}
       >
         Create your event, send unique QR passes, verify Venmo and Zelle
         payments automatically, and scan guests in at the door — with no
@@ -40,7 +42,7 @@ function HeroCopy() {
       </p>
       <div
         className="landing-rise mt-8 flex items-center gap-3"
-        style={{ '--rise-delay': '0.24s' } as React.CSSProperties}
+        style={{ '--rise-delay': '0.65s' } as React.CSSProperties}
       >
         <Link
           href="/create-event"
@@ -122,11 +124,16 @@ export default function LandingHero() {
               }}
               aria-hidden="true"
             />
-            <HeroPass />
+            <div
+              className="landing-rise"
+              style={{ '--rise-delay': '1.05s' } as React.CSSProperties}
+            >
+              <HeroPass />
+            </div>
             {/* Floating product context beside the pass (illustrative) */}
             <div
               className="landing-rise absolute -left-56 top-16 hidden -rotate-3 items-center gap-3 rounded-xl border border-[var(--line)] bg-white px-4 py-3 shadow-[0_16px_36px_-18px_rgba(20,19,24,0.25)] md:flex"
-              style={{ '--rise-delay': '0.55s' } as React.CSSProperties}
+              style={{ '--rise-delay': '0.75s' } as React.CSSProperties}
               aria-hidden="true"
             >
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--ok-bg)] text-[var(--ok)]">
@@ -151,7 +158,7 @@ export default function LandingHero() {
             </div>
             <div
               className="landing-rise absolute -right-52 bottom-24 hidden rotate-2 rounded-xl border border-[var(--line)] bg-white px-4 py-3 text-left shadow-[0_16px_36px_-18px_rgba(20,19,24,0.25)] md:block"
-              style={{ '--rise-delay': '0.7s' } as React.CSSProperties}
+              style={{ '--rise-delay': '0.95s' } as React.CSSProperties}
               aria-hidden="true"
             >
               <div className="text-lg font-semibold tracking-tight text-[var(--ink)]">
