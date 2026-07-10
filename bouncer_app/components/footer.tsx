@@ -25,7 +25,7 @@ const COLUMNS = [
     heading: 'Policies',
     links: [
       { href: '/SECURITY.md', label: 'Security' },
-      { href: '#', label: 'Privacy Policy' },
+      { href: '/privacy', label: 'Privacy Policy' },
       { href: '#', label: 'Terms of Service' },
     ],
   },

@@ -7,8 +7,6 @@ const protectedRoutes = [
   '/event/', // Match /event/[id] routes
   '/create-event',
   '/qr-code',
-  '/test-auth',
-  '/test-google',
   '/rsvp',
   '/my-rsvps',
 ];
