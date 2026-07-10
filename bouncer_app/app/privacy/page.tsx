@@ -203,9 +203,10 @@ export default function PrivacyPolicy() {
               <p>
                 We use industry-standard measures to protect your information,
                 including encrypted connections (HTTPS) and access controls on
-                our database and file storage. No method of transmission or
-                storage is completely secure, so we cannot guarantee absolute
-                security.
+                our database and file storage. Gmail authorization tokens are
+                encrypted at rest and are never accessible from the browser.
+                No method of transmission or storage is completely secure, so
+                we cannot guarantee absolute security.
               </p>
             </section>
 

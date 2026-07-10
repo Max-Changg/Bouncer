@@ -1,6 +1,8 @@
 import { google } from 'googleapis';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server-client';
+import { createAdminClient } from '@/lib/supabase-admin-client';
+import { encryptToken } from '@/lib/token-crypto';
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,15 +19,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/event?error=invalid_callback`);
     }
 
-    // Parse state data
-    let userId, eventId;
+    // Parse state data (eventId is only used for the redirect; the user is
+    // taken from the session, never from state)
+    let eventId;
     try {
       const stateData = JSON.parse(state);
-      userId = stateData.userId;
       eventId = stateData.eventId;
     } catch {
-      // Fallback for old format where state was just userId
-      userId = state;
+      // Old format where state was just userId — no eventId to extract
+    }
+
+    // Identify the user from their session, not from client-supplied state
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/event?error=not_signed_in`);
     }
 
     // Validate that we have the Google OAuth credentials
@@ -49,33 +59,32 @@ export async function GET(request: NextRequest) {
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const userInfo = await oauth2.userinfo.get();
 
-    // Store the tokens in Supabase using existing profiles table
-    const supabase = await createClient();
-    
-    // Update the existing profiles table with Gmail tokens
-    console.log('Attempting to store tokens for user:', userId);
-    console.log('User email from Google:', userInfo.data.email);
-    console.log('Access token exists:', !!tokens.access_token);
-    console.log('Refresh token exists:', !!tokens.refresh_token);
-    
-    const { error: upsertError } = await supabase
-      .from('profiles')
+    // The connect flow uses access_type=offline + prompt=consent, so Google
+    // always returns a refresh token here
+    if (!tokens.refresh_token || !userInfo.data.email) {
+      console.error('Gmail callback missing refresh token or email');
+      return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/event?error=missing_refresh_token`);
+    }
+
+    // Store the encrypted refresh token in the service-role-only
+    // gmail_credentials table. Access tokens are short-lived and fetched on
+    // demand from the refresh token, so they are not stored at all.
+    const admin = createAdminClient();
+    const { error: upsertError } = await admin
+      .from('gmail_credentials')
       .upsert({
-        id: userId,
-        gmail_access_token: tokens.access_token,
-        gmail_refresh_token: tokens.refresh_token,
-        gmail_email: userInfo.data.email
+        user_id: user.id,
+        gmail_email: userInfo.data.email,
+        refresh_token_enc: encryptToken(tokens.refresh_token),
+        updated_at: new Date().toISOString(),
       }, {
-        onConflict: 'id'
+        onConflict: 'user_id'
       });
 
     if (upsertError) {
-      console.error('Error storing Gmail tokens:', upsertError);
-      console.error('Upsert error details:', JSON.stringify(upsertError, null, 2));
+      console.error('Error storing Gmail credentials:', upsertError);
       return NextResponse.redirect(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/event?error=storage_error&details=${encodeURIComponent(upsertError.message)}`);
     }
-    
-    console.log('Gmail tokens stored successfully for user:', userId);
 
     // Redirect back to the specific event page or event list
     let redirectUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/event?gmail_connected=true`;

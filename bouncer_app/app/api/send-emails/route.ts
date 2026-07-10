@@ -1,13 +1,13 @@
 import { google } from 'googleapis';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server-client';
+import { createAdminClient } from '@/lib/supabase-admin-client';
+import { decryptToken } from '@/lib/token-crypto';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Send emails API called');
     const body = await request.json();
-    console.log('Request body:', body);
-    const { recipients, message, eventName, userId } = body;
+    const { recipients, message, eventName } = body;
 
     if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
       return NextResponse.json(
@@ -23,13 +23,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
-    }
-
     // Validate that we have the Google OAuth credentials
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
       console.error('Google OAuth credentials are not configured');
@@ -39,27 +32,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's stored Gmail tokens from Supabase
-    console.log('Fetching user profile for userId:', userId);
+    // Identify the sender from their session — never from the request body
     const supabase = await createClient();
-    const { data: userProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('gmail_access_token, gmail_refresh_token, gmail_email')
-      .eq('id', userId)
-      .single();
-    
-    console.log('Profile query result:', { userProfile, profileError });
-
-    if (profileError || !userProfile) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
       return NextResponse.json(
-        { error: 'User profile not found. Please authenticate with Gmail first.' },
-        { status: 404 }
+        { error: 'You must be signed in to send emails.' },
+        { status: 401 }
       );
     }
 
-    // If no Gmail tokens, fall back to mailto approach
-    if (!userProfile.gmail_access_token || !userProfile.gmail_refresh_token) {
-      console.log('No Gmail tokens found, falling back to mailto approach');
+    // Read the user's Gmail credentials via the service-role client — the
+    // gmail_credentials table is not accessible to browser clients
+    const admin = createAdminClient();
+    const { data: credentials, error: credentialsError } = await admin
+      .from('gmail_credentials')
+      .select('gmail_email, refresh_token_enc')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (credentialsError) {
+      console.error('Error fetching Gmail credentials:', credentialsError);
+      return NextResponse.json(
+        { error: 'Failed to look up Gmail connection.' },
+        { status: 500 }
+      );
+    }
+
+    // If Gmail isn't connected, fall back to mailto approach
+    if (!credentials) {
       return NextResponse.json({
         success: true,
         useMailto: true,
@@ -79,9 +82,10 @@ export async function POST(request: NextRequest) {
 `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/gmail/callback`
     );
 
+    // Only the refresh token is stored (encrypted); googleapis fetches a
+    // short-lived access token from it automatically
     oauth2Client.setCredentials({
-      access_token: userProfile.gmail_access_token,
-      refresh_token: userProfile.gmail_refresh_token,
+      refresh_token: decryptToken(credentials.refresh_token_enc),
     });
 
     // Initialize Gmail API
@@ -93,7 +97,7 @@ export async function POST(request: NextRequest) {
         // Create email content
         const emailContent = [
           `To: ${email}`,
-          `From: ${userProfile.gmail_email}`,
+          `From: ${credentials.gmail_email}`,
           `Subject: Update from ${eventName || 'Your Event'}`,
           'Content-Type: text/html; charset=utf-8',
           '',

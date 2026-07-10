@@ -115,9 +115,6 @@ export interface Database {
           avatar_url: string;
           website: string;
           qr_code_data: string;
-          gmail_access_token?: string;
-          gmail_refresh_token?: string;
-          gmail_email?: string;
         };
         Insert: {
           id: string;
@@ -126,9 +123,6 @@ export interface Database {
           avatar_url?: string;
           website?: string;
           qr_code_data?: string;
-          gmail_access_token?: string;
-          gmail_refresh_token?: string;
-          gmail_email?: string;
         };
         Update: {
           id?: string;
@@ -137,9 +131,26 @@ export interface Database {
           avatar_url?: string;
           website?: string;
           qr_code_data?: string;
-          gmail_access_token?: string;
-          gmail_refresh_token?: string;
+        };
+      };
+      gmail_credentials: {
+        Row: {
+          user_id: string;
+          gmail_email: string;
+          refresh_token_enc: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          gmail_email: string;
+          refresh_token_enc: string;
+          updated_at?: string;
+        };
+        Update: {
           gmail_email?: string;
+          refresh_token_enc?: string;
+          updated_at?: string;
         };
       };
     };
