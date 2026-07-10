@@ -240,10 +240,10 @@ export default function PrivacyPolicy() {
               <p>
                 Questions about this policy or your data? Email us at{" "}
                 <a
-                  href="mailto:hello@bouncer.app"
+                  href="mailto:otie.net@gmail.com"
                   className="text-primary underline underline-offset-4"
                 >
-                  hello@bouncer.app
+                  otie.net@gmail.com
                 </a>
                 .
               </p>

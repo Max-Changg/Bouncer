@@ -24,9 +24,9 @@ const COLUMNS = [
   {
     heading: 'Policies',
     links: [
-      { href: '/SECURITY.md', label: 'Security' },
+      { href: '/security', label: 'Security' },
       { href: '/privacy', label: 'Privacy Policy' },
-      { href: '#', label: 'Terms of Service' },
+      { href: '/terms', label: 'Terms of Service' },
     ],
   },
 ];
@@ -98,9 +98,9 @@ export default function Footer() {
             <span>Contact: </span>
             <a
               className="underline-offset-4 hover:underline"
-              href="mailto:hello@bouncer.app"
+              href="mailto:otie.net@gmail.com"
             >
-              hello@bouncer.app
+              otie.net@gmail.com
             </a>
           </div>
         </div>
